@@ -1,0 +1,63 @@
+# GitHub Actions: a robot that runs on GitHub's computers every time code is
+# pushed. It tests the game, builds it, and (on the main branch) publishes it
+# as a playable web page with GitHub Pages.
+#
+# See the results under the "Actions" tab of the repository on github.com.
+name: Build, test and publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Rules tests
+        run: npm test
+      - name: Build the single-file game
+        run: npm run build
+      - name: Browser test (headless Chrome)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser
+      - name: Save the itch.io ZIP (download it from the run's summary page)
+        uses: actions/upload-artifact@v4
+        with:
+          name: burn-bright-itch
+          path: dist/burn-bright-itch.zip
+      - name: Prepare the web page for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  publish:
+    # Needs a one-time setting: Settings -> Pages -> Source: "GitHub Actions".
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
