@@ -58,4 +58,4 @@ git push
 
 Your game will then be live at `https://mountaindrowner.github.io/Rhythm-Game/`. You can open that link on your iPhone to test it.
 
-Until you do step 2, the "publish" step in Actions will show a red ✗. The build and tests still run, and the itch.io ZIP is still produced.
+This is set up. Every push to `main` re-publishes the game there within a few minutes.

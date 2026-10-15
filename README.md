@@ -2,6 +2,8 @@
 
 A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway toward you while The Pixel Riot play *You Won't Let Me Fall* on a lit-up 3D stage. Tap the four pads (Bass, Vocals, Guitar, Drums) in time with the real recording.
 
+**▶ Play it now: https://mountaindrowner.github.io/Rhythm-Game/** (updates automatically on every push to `main`; add `?autoplay` to watch it play itself)
+
 **Features**
 
 - **3D band:** blocky 3D musicians with real joints. Their strums, drum hits and singing land exactly on the song's notes, and they react to your hits and misses. Switch to the original pixel-art band in Settings.
