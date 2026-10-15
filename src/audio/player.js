@@ -31,18 +31,11 @@ export class SongPlayer {
    * Resolves once the music is scheduled; rejects with a readable error.
    */
   async start() {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) throw new Error('This browser does not support Web Audio.');
-
     // Step 1 — unlock audio synchronously, while we are still inside the tap.
-    if (!this.ctx) {
-      this.ctx = new AudioCtx({ latencyHint: 'interactive' });
-      this.master = this.ctx.createGain();
-      this.master.gain.value = 0.9;
-      this.master.connect(this.ctx.destination);
-    }
-    const unlocked = this.ctx.resume();
+    const unlocked = this.unlock();
     this.stopSource();
+    this.master.gain.cancelScheduledValues(0);
+    this.master.gain.value = 0.9;
 
     // Step 2 — the slow part: turn the MP3 bytes into playable audio (once).
     if (!this.buffer) {
@@ -58,6 +51,35 @@ export class SongPlayer {
     this.begin = this.ctx.currentTime + 0.12; // tiny safety margin
     this.source.start(this.begin + LEAD);
     this.playing = true;
+  }
+
+  /**
+   * Create (first time) and wake up the AudioContext. Must run inside a tap.
+   * Also used by the calibration screen, which plays clicks on the same clock.
+   */
+  unlock() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) throw new Error('This browser does not support Web Audio.');
+      this.ctx = new AudioCtx({ latencyHint: 'interactive' });
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.9;
+      this.master.connect(this.ctx.destination);
+    }
+    return this.ctx.resume();
+  }
+
+  /**
+   * Game over sound: the band's power gets cut. The song slows down like a
+   * tape machine losing power and fades out over about 1.5 seconds.
+   */
+  powerDown() {
+    if (!this.ctx || !this.source) return;
+    const now = this.ctx.currentTime;
+    this.source.playbackRate.setValueAtTime(1, now);
+    this.source.playbackRate.exponentialRampToValueAtTime(0.25, now + 1.4);
+    this.master.gain.setValueAtTime(this.master.gain.value, now);
+    this.master.gain.linearRampToValueAtTime(0, now + 1.5);
   }
 
   /** Game time in seconds (0 = moment Start was pressed, LEAD = song begins). */

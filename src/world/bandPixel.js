@@ -1,5 +1,6 @@
 // =============================================================================
-// band.js — the four musicians.
+// bandPixel.js — the four musicians as flat pixel-art cut-outs (the original
+// art style). Choose it in Settings → Band look → Pixel art.
 //
 // Each musician is a flat "cut-out" (a plane) standing in the 3D world, showing
 // one pose from the sprite atlas (assets/art/burn_bright_clean_atlas.png).
@@ -39,7 +40,10 @@ const LAYOUT = [
   { lane: 3, row: 3, x: DRUM_RISER.x, y: TOP + DRUM_RISER.h, z: DRUM_RISER.z, h: 5.8 }, // drummer
 ];
 
-export function createBand(scene, atlasUrl) {
+export function createBandPixel(scene, atlasUrl) {
+  const group = new THREE.Group();
+  scene.add(group);
+  let defeated = false;
   const atlas = new THREE.TextureLoader().load(atlasUrl);
   atlas.colorSpace = THREE.SRGBColorSpace;
   atlas.magFilter = THREE.NearestFilter; // crisp pixels up close
@@ -60,14 +64,14 @@ export function createBand(scene, atlasUrl) {
     const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(spot.x, spot.y, spot.z);
-    scene.add(mesh);
+    group.add(mesh);
 
     // Soft shadow on the floor.
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(w * 0.36, 24), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
     shadow.scale.y = 0.45;
     shadow.position.set(spot.x, spot.y + 0.01, spot.z + 0.2);
-    scene.add(shadow);
+    group.add(shadow);
 
     // A colored ring that bursts outward from their feet when you hit a note.
     const ring = new THREE.Mesh(
@@ -79,7 +83,7 @@ export function createBand(scene, atlasUrl) {
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.set(spot.x, spot.y + 0.03, spot.z + 0.2);
-    scene.add(ring);
+    group.add(ring);
 
     return {
       ...spot, mesh, tex, mat, ring,
@@ -100,6 +104,7 @@ export function createBand(scene, atlasUrl) {
 
   /** Restart: rewind music cues and clear reactions. */
   function reset() {
+    defeated = false;
     for (const m of members) {
       m.lastHit = m.lastMistake = m.lastCue = -99;
       m.cueCount = 0;
@@ -129,7 +134,9 @@ export function createBand(scene, atlasUrl) {
       let pose;
       let bounce = 0;
 
-      if (sinceMiss >= 0 && sinceMiss < 0.72) {
+      if (defeated) {
+        pose = 5;                                        // game over: slumped
+      } else if (sinceMiss >= 0 && sinceMiss < 0.72) {
         pose = sinceMiss < 0.42 ? 5 : 6;                 // stumble, then recover
       } else if (sinceHit >= 0 && sinceHit < 0.2) {
         pose = m.lane === 1 ? 2 : 4;                     // big accent on your hit
@@ -165,5 +172,9 @@ export function createBand(scene, atlasUrl) {
     }
   }
 
-  return { update, onEvent, reset };
+  return {
+    update, onEvent, reset,
+    setDefeated(v) { defeated = v; },
+    setVisible(v) { group.visible = v; },
+  };
 }

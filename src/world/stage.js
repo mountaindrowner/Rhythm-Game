@@ -84,6 +84,15 @@ export function createStage(scene) {
   beam.position.set(0, 10, Z0 - 2);
   group.add(beam);
 
+  // Chase lights along the bottom of the truss beam
+  const chase = [];
+  for (let i = 0; i < 14; i++) {
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: '#ffffff' }));
+    lamp.position.set(-8.45 + i * 1.3, 9.65, Z0 - 1.7);
+    group.add(lamp);
+    chase.push(lamp);
+  }
+
   // ---- Speaker stacks --------------------------------------------------------
   const cabMat = std('#1b1830');
   const coneMat = std('#2c3566', { roughness: 0.3 });
@@ -168,6 +177,7 @@ export function createStage(scene) {
   const cA = new THREE.Color();
   const cB = new THREE.Color();
   const WHITE = new THREE.Color('#ffffff');
+  const DIM = new THREE.Color('#2a2440');
   let lastLedKey = '';
 
   /**
@@ -198,6 +208,11 @@ export function createStage(scene) {
     });
 
     edge.material.color.copy(cA).lerp(WHITE, pulse * 0.5);
+    const lit = Math.floor(beat * 2);
+    chase.forEach((lamp, i) => {
+      const on = big ? (i + lit) % 3 === 0 : (i + lit) % 7 === 0;
+      lamp.material.color.copy(on ? (i % 2 ? cA : cB) : DIM);
+    });
 
     // Crowd bounces on the beat; bigger sections = bigger jumps.
     for (let i = 0; i < crowdCount; i++) {
@@ -214,19 +229,23 @@ export function createStage(scene) {
 
     // Redraw the LED wall only when something visible changes (saves battery).
     const step = Math.floor(beat * 2);
-    const key = `${step}|${section}|${Math.round(hype * 4)}`;
+    const fireStep = big ? Math.floor(time * 12) : 0; // flames flicker 12×/s
+    const key = `${step}|${section}|${Math.round(hype * 4)}|${fireStep}`;
     if (key !== lastLedKey) {
       lastLedKey = key;
-      drawLed(ledCtx, step, intensity, main, accent);
+      drawLed(ledCtx, step, intensity, main, accent, big ? fireStep : -1);
       ledTex.needsUpdate = true;
     }
   }
 
-  return { group, update };
+  return { group, update, fans };
 }
 
-/** Pixel-art LED wall: animated equalizer bars + the band name. */
-function drawLed(g, step, intensity, main, accent) {
+/**
+ * Pixel-art LED wall: animated equalizer bars + the band name.
+ * During choruses (fire >= 0) the bars become flickering flames.
+ */
+function drawLed(g, step, intensity, main, accent, fire) {
   const W = g.canvas.width;
   const H = g.canvas.height;
   g.fillStyle = '#0d0b1c';
@@ -238,12 +257,24 @@ function drawLed(g, step, intensity, main, accent) {
       g.fillRect(x, y, 3, 3);
     }
   }
-  // Equalizer bars along the bottom, pseudo-random per half-beat
-  const bars = 24;
-  for (let i = 0; i < bars; i++) {
-    const h = Math.floor((0.25 + 0.75 * hash(i * 13 + step * 7)) * intensity * 7) * 4;
-    g.fillStyle = i % 2 ? main : accent;
-    for (let y = 0; y < h; y += 4) g.fillRect(i * 8 + 1, H - 4 - y, 6, 3);
+  if (fire >= 0) {
+    // Flames: columns of hot pixels, flickering
+    const FIRE = ['#ff3b1f', '#ff6a1f', '#ff9d2e', '#ffd34d', '#fff2b0'];
+    for (let x = 0; x < W; x += 4) {
+      const h = Math.floor((0.35 + 0.65 * hash(x * 7 + fire * 13)) * 9) * 4;
+      for (let y = 0; y < h; y += 4) {
+        g.fillStyle = FIRE[Math.min(FIRE.length - 1, Math.floor((y / h) * FIRE.length))];
+        g.fillRect(x, H - 4 - y, 3, 3);
+      }
+    }
+  } else {
+    // Equalizer bars along the bottom, pseudo-random per half-beat
+    const bars = 24;
+    for (let i = 0; i < bars; i++) {
+      const h = Math.floor((0.25 + 0.75 * hash(i * 13 + step * 7)) * intensity * 7) * 4;
+      g.fillStyle = i % 2 ? main : accent;
+      for (let y = 0; y < h; y += 4) g.fillRect(i * 8 + 1, H - 4 - y, 6, 3);
+    }
   }
   g.textAlign = 'center';
   g.textBaseline = 'middle';

@@ -21,8 +21,11 @@ export function createWorld(canvas) {
   scene.fog = new THREE.Fog('#0b0b18', 24, 58);
 
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 120);
-  camera.position.set(...CAMERA.position);
-  const lookTarget = new THREE.Vector3(...CAMERA.lookAt);
+  // Developer tool: add ?view=stage to the page address for a close-up of the
+  // band (handy for checking animation). Normal players never see this.
+  const closeUp = new URLSearchParams(location.search).get('view') === 'stage';
+  camera.position.set(...(closeUp ? [0, 4.4, -3.5] : CAMERA.position));
+  const lookTarget = new THREE.Vector3(...(closeUp ? [0, 3.4, -19] : CAMERA.lookAt));
   camera.lookAt(lookTarget);
 
   // Soft base lighting so nothing is pitch black.

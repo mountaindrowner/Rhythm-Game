@@ -74,8 +74,8 @@ test('hold notes: letting go early is HOLD LOST', () => {
 
 test('calibration offset shifts judging', () => {
   const p = new Performance([note(1, 0)]);
-  // The tap arrives 80 ms late, but the player set a +80 ms offset.
-  const e = p.press(0, LEAD + 1.08, -0.08);
+  // The tap arrives 80 ms late, and the player calibrated a +80 ms offset.
+  const e = p.press(0, LEAD + 1.08, 0.08);
   assert.equal(e.grade, 'perfect');
 });
 
@@ -86,4 +86,19 @@ test('every 25th hit in a row is a combo milestone', () => {
   notes.forEach((n) => { last = p.press(n.lane, n.time); });
   assert.equal(p.combo, 25);
   assert.equal(last.milestone, true);
+});
+
+test('energy can run out: failed becomes true at 0', () => {
+  const notes = Array.from({ length: 40 }, (_, i) => note(1 + i * 0.3, 0));
+  const p = new Performance(notes);
+  assert.equal(p.failed, false);
+  p.update(LEAD + 20);
+  assert.equal(p.energy, 0);
+  assert.equal(p.failed, true);
+});
+
+test('easier difficulties drain less energy per miss', () => {
+  const p = new Performance([note(1, 0)], { drain: 0.5 });
+  p.update(LEAD + 1.5);
+  assert.equal(p.energy, ENERGY.start + ENERGY.miss * 0.5);
 });

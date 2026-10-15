@@ -13,9 +13,13 @@ import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN } from '../config.js
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 export class Performance {
-  /** @param {Array} notes  from notesForDifficulty() */
-  constructor(notes) {
+  /**
+   * @param {Array} notes  from notesForDifficulty()
+   * @param {{drain?:number}} options  drain scales energy lost from mistakes
+   */
+  constructor(notes, { drain = 1 } = {}) {
     this.notes = notes;
+    this.drain = drain;
     this.total = notes.length;
     this.score = 0;
     this.combo = 0;
@@ -29,11 +33,12 @@ export class Performance {
   }
 
   /**
-   * A lane was pressed at game time t. `offset` is the player's calibration
-   * (seconds) — positive means "my taps register late, judge them earlier".
+   * A lane was pressed at game time t. `offset` is the player's tap timing
+   * calibration in seconds: +0.05 means "my taps arrive 50 ms late", so we
+   * judge each tap as if it happened 50 ms earlier.
    */
   press(lane, t, offset = 0) {
-    const now = t + offset;
+    const now = t - offset;
     let best = null;
     let bestDelta = Infinity;
     for (let i = this.cursor; i < this.notes.length; i++) {
@@ -86,7 +91,7 @@ export class Performance {
   /** Call every frame. Returns a list of events (misses, finished holds). */
   update(t, offset = 0) {
     const events = [];
-    const now = t + offset;
+    const now = t - offset;
 
     for (let lane = 0; lane < 4; lane++) {
       const n = this.holding[lane];
@@ -130,7 +135,7 @@ export class Performance {
   mistake(lane, t, kind, energyChange) {
     this.lastMistake[lane] = t;
     this.combo = 0;
-    this.energy = clamp(this.energy + energyChange, 0, 100);
+    this.energy = clamp(this.energy + energyChange * this.drain, 0, 100);
     return { type: 'mistake', kind, lane };
   }
 
@@ -138,6 +143,11 @@ export class Performance {
   get accuracy() {
     const c = this.counts;
     return this.total ? Math.round(((c.perfect + c.great * 0.85 + c.good * 0.65) / this.total) * 100) : 0;
+  }
+
+  /** Out of energy: the crowd has had enough (game over unless practicing). */
+  get failed() {
+    return this.energy <= 0;
   }
 
   get headline() {

@@ -76,7 +76,8 @@ The world's coordinates:
 |---|---|
 | `scene.js` | renderer, camera (widens on narrow phones), basic lights, fog for depth |
 | `stage.js` | stage platform, drum riser, LED wall (a canvas drawn as a texture), truss, speakers, 4 moving spotlights with visible beams, 140 crowd members drawn as one object (*instancing*), floating haze |
-| `band.js` | the musicians (below) |
+| `band3d/`, `bandPixel.js` | the musicians (below) |
+| `showfx.js` | chorus effects: fire jets, lasers, confetti, crowd lights |
 | `highway.js` | road, lane strips, beat lines, hit line, targets, **note gems** and **hold trails** |
 | `effects.js` | spark particles |
 
@@ -84,18 +85,47 @@ The world's coordinates:
 
 **Object pools:** the song has up to 1,091 notes, but only about 30 are on screen at once. So `highway.js` makes 90 gem meshes up front and reuses them each frame for whichever notes are visible. This is much faster than creating and deleting objects.
 
-## 6. The band (`src/world/band.js`)
+## 6. The band (`src/world/band3d/`)
 
-The musicians are 2D pixel art standing in a 3D world, a style sometimes called "HD-2D." Each one is a flat plane showing one cell of `assets/art/burn_bright_clean_atlas.png` (7 poses × 4 musicians). Changing pose just slides which cell the plane shows.
+The musicians are built from boxes (a "low-poly" style) with real joints. Read the files in this order:
 
-Poses are chosen every frame by priority:
+1. **`rig.js`: the skeleton.** A tree of joints (hips → spine → chest → shoulder → elbow → hand). Rotating a joint moves everything below it.
+2. **IK ("inverse kinematics"), also in `rig.js`.** Instead of picking shoulder and elbow angles by hand, we say *"put the hand here"* and `solveTwoBone()` works out the angles using the law of cosines from school geometry. That's how a hand lands on the guitar strings or a stick lands on the snare.
+3. **`instruments.js`: the props.** Guitar and bass bodies are a 2D outline (`THREE.Shape`) pushed into 3D (`ExtrudeGeometry`). The drum kit is cylinders and cones, plus a pixel-art flame drawn on a canvas for the kick drum.
+4. **`members.js`: the looks.** Each musician follows the character descriptions in the blueprint: the bassist's backwards cap, glasses and lab coat; the singer's ponytail, hoops and sleeved band tee; the guitarist's buzz cut and cross necklace; the clean-shaven drummer with wavy hair.
+5. **`index.js`: the animation.** This is the interesting part.
 
-1. **Mistake** (you missed their lane): stumble pose, red flash, then recover.
-2. **Your hit:** big accent pose, a colored ring bursts from their feet, and a little squash-and-stretch.
-3. **Music cue:** the chart has a note for their instrument right now, so they play it, whether or not you hit it. This keeps the band in time with the song.
-4. **Groove:** alternate poses on the beat.
+**How the band stays in time:** for each musician we look up the previous and next chart note for their instrument (`lastIndex()`, a binary search). Then:
 
-## 7. Audio and iPhones (`src/audio/player.js`)
+- **Strumming** (`strumCurve`) sweeps the hand across the strings so it crosses them exactly at each note, alternating down and up.
+- **Drumming** (`liftCurve`) puts the stick on the drum exactly at each hit and lifts it in between. The right hand plays the snare on the backbeat, the left plays the hi-hat, and the right foot plays the kick pedal.
+- **Singing** opens the mouth on vocal notes and raises the mic. A new hand gesture starts with each vocal phrase.
+
+Reactions are layered on top:
+
+| Priority | When | What you see |
+|---|---|---|
+| 1 | game over | everyone slumps |
+| 2 | you missed their lane | slump, head shake, hand drops |
+| 3 | you hit their note | small bounce; **every 25 in a row the whole band does a big move** (guitar necks up, singer points at the sky, drummer crashes the cymbals) |
+| 4 | the chart has a note | they play it |
+| 5 | always | head-nods and knee bounces on the beat |
+
+The singer's ponytail is a tiny physics simulation: a spring pushed around by her head's movement.
+
+**The pixel band** (`bandPixel.js`) is the original 2D art, kept as an option in Settings. Each musician is a flat plane showing one cell of the sprite sheet.
+
+## 7. Big concert effects (`src/world/showfx.js`)
+
+When a chorus starts: a strobe flash, all four fire jets, and confetti from the truss. During choruses the fire jets fire on each bar, lasers sweep the crowd, the LED wall turns to flames, the truss lights chase, and the crowd holds up phone lights (also during the bridge). Fire and confetti are particles (see `Particles` in `effects.js`): lots of dots that each have a position, speed, color and lifetime.
+
+## 8. Game over, settings and the timing check
+
+- **Game over** (`failGame()` in `main.js`): when energy reaches 0, the music slows down and fades out like a tape machine losing power (`player.powerDown()`), the band slumps, and the results screen says SHOW'S OVER. Practice mode turns this off. `ENERGY.drain` in `config.js` makes Casual and Standard more forgiving.
+- **Settings** (`settings.js`) are saved in the browser, so they're remembered next time.
+- **Timing check** (`ui/calibration.js`): every phone and headphone adds a small delay (Bluetooth can add 150 ms or more). The game plays clicks and you tap along. The median gap between click and tap becomes your *tap offset*, and the referee then judges each tap that much earlier. The screen flashes only when **you** tap, not on the click, so your eyes don't do the timing for you.
+
+## 9. Audio and iPhones (`src/audio/player.js`)
 
 Two hard-won rules from the original project:
 
@@ -104,14 +134,14 @@ Two hard-won rules from the original project:
 
 Pausing suspends the audio system, which freezes the music and the clock together, so the notes stay in sync after resuming.
 
-## 8. Building (`vite.config.js`)
+## 10. Building (`vite.config.js`)
 
 [Vite](https://vite.dev) is the build tool.
 
 - `npm run dev` serves the game while you edit and reloads instantly.
 - `npm run build` bundles everything into **one** `dist/index.html`. The `vite-plugin-singlefile` plugin embeds the code, CSS, MP3, PNG and chart inside it. `scripts/package-itch.mjs` then zips it for itch.io.
 
-## 9. Ideas for your first changes
+## 11. Ideas for your first changes
 
 | Try this | Where |
 |---|---|
@@ -121,6 +151,10 @@ Pausing suspends the audio system, which freezes the music and the clock togethe
 | Change the chorus light colors | `MOODS` in `src/world/stage.js` |
 | Make the crowd bigger | `crowdCount` in `src/world/stage.js` |
 | Change the LED wall graphics | `drawLed()` in `src/world/stage.js` |
-| Make the band stand somewhere else | `LAYOUT` in `src/world/band.js` |
+| Move a 3D musician | `place(...)` calls in `src/world/band3d/index.js` |
+| Change an outfit color | `buildBody({...})` calls in `src/world/band3d/members.js` |
+| Make strums bigger | `strum * 0.2` in `animateStringed()` (`band3d/index.js`) |
+| Make Casual more or less forgiving | `ENERGY.drain` in `src/config.js` |
+| Change the fire jet positions | `PYRO_X` in `src/world/showfx.js` |
 
-Run `npm run dev`, make the change, save, and watch the browser update.
+Run `npm run dev`, make the change, save, and watch the browser update. Open `http://localhost:5173/?autoplay&view=stage` to watch the band up close while you tweak them.

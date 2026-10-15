@@ -196,9 +196,55 @@ button.primary {
   box-shadow: 0 5px 0 #8a3f2c;
 }
 button:disabled { opacity: 0.6; }
-.offset { display: grid; gap: 4px; font-size: 11px; font-weight: 800; color: var(--muted); }
-.offset b { color: var(--cream); }
-.offset input { width: 100%; accent-color: var(--gold); }
+/* ---------- Settings ---------- */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row2 button { font-size: 12px; }
+.setting {
+  display: grid; gap: 8px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 2px solid #3a2d63;
+  border-radius: 14px;
+  text-align: left;
+  font-size: 13px; font-weight: 800;
+}
+.setting small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+.setting b { color: var(--gold); float: right; }
+.setting input[type='range'] { width: 100%; accent-color: var(--gold); }
+.setting.toggle { grid-template-columns: 1fr auto; align-items: center; cursor: pointer; }
+.toggle input {
+  appearance: none; -webkit-appearance: none;
+  width: 52px; height: 30px; border-radius: 15px;
+  background: #2a2142; border: 2px solid var(--purple);
+  position: relative; cursor: pointer; margin: 0;
+}
+.toggle input::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--muted); transition: transform 0.15s;
+}
+.toggle input:checked { background: var(--gold); border-color: #fff2d1; }
+.toggle input:checked::after { transform: translateX(22px); background: #1d1533; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.seg button { min-height: 40px; font-size: 12px; }
+
+/* ---------- Timing check ---------- */
+.cal-info { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; min-height: 3em; }
+.cal-pad {
+  justify-self: center;
+  width: min(60vw, 200px); aspect-ratio: 1; border-radius: 50%;
+  font-size: 28px; border: 4px solid var(--gold); background: #1d1533;
+  touch-action: none;
+}
+.cal-pad.flash { animation: calflash 0.2s ease-out; }
+@keyframes calflash { from { background: var(--gold); color: #1d1533; transform: scale(0.94); } to { background: #1d1533; } }
+.cal-result { margin: 0; font-size: 18px; font-weight: 900; color: var(--gold); min-height: 1.3em; }
+.result-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+/* Full-screen strobe flash for big moments (softened by REDUCE FLASHING). */
+#flash { position: absolute; inset: 0; pointer-events: none; background: #fff6e0; opacity: 0; }
+#flash.pop { animation: strobe 0.35s ease-out; }
+@keyframes strobe { from { opacity: var(--flash-strength, 0.4); } to { opacity: 0; } }
 .status { margin: 0; font-size: 12px; color: var(--gold); }
 .status.error { color: var(--drums); }
 .fine { margin: 0; font-size: 11px; color: var(--muted); }

@@ -7,7 +7,7 @@
 // =============================================================================
 
 // ---- Version shown on the menu so you can tell which build is live. --------
-export const BUILD_LABEL = '3D · v0.1';
+export const BUILD_LABEL = '3D · v0.2';
 
 // ---- Music timing -----------------------------------------------------------
 export const BPM = 152;                 // estimated tempo of the song
@@ -57,6 +57,9 @@ export const ENERGY = {
   miss: -3.1,      // was 2.1 + 1
   wrong: -2,
   holdLost: -5,    // was 4 + 1
+  // Energy LOST from mistakes is multiplied by this per difficulty, so Casual
+  // players get more room before a game over.
+  drain: { casual: 0.5, standard: 0.75, expert: 1 },
 };
 
 // A wrong press on the same lane within this time is ignored (stops

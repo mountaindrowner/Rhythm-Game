@@ -9,19 +9,26 @@
 //   4. Move everything in the 3D world to match the current time.
 //   5. Draw the 3D scene.
 //
-// GAME STATES: menu -> preparing -> playing <-> paused -> results -> menu
+// GAME STATES:
+//   menu -> preparing -> playing <-> paused
+//                          |-> results   (song finished)
+//                          |-> failing -> failed   (energy ran out)
 // =============================================================================
-import { BUILD_LABEL, LEAD, BEAT } from './config.js';
+import { BUILD_LABEL, LEAD, BEAT, ENERGY } from './config.js';
 import { SONG, SONG_END, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition } from './song/chart.js';
+import { settings, updateSettings } from './settings.js';
 import { SongPlayer } from './audio/player.js';
 import { Performance } from './game/rules.js';
 import { Input } from './game/input.js';
 import { createWorld } from './world/scene.js';
 import { createStage } from './world/stage.js';
-import { createBand } from './world/band.js';
+import { createBandPixel } from './world/bandPixel.js';
+import { createBand3D } from './world/band3d/index.js';
 import { createHighway } from './world/highway.js';
 import { createEffects } from './world/effects.js';
+import { createShowFx } from './world/showfx.js';
 import { createHud } from './ui/hud.js';
+import { createCalibration } from './ui/calibration.js';
 
 // These imports become embedded data inside the final index.html (see
 // vite.config.js), so the published game never has to download a file.
@@ -33,22 +40,47 @@ const $ = (id) => document.getElementById(id);
 // ---- Build everything ------------------------------------------------------
 const world = createWorld($('world'));
 const stage = createStage(world.scene);
-const band = createBand(world.scene, atlasUrl);
+const bands = { '3d': createBand3D(world.scene), pixel: createBandPixel(world.scene, atlasUrl) };
 const highway = createHighway(world.scene);
 const effects = createEffects(world.scene);
+const showfx = createShowFx(world.scene, stage.fans, $('flash'));
 const hud = createHud();
 const player = new SongPlayer(songUrl);
 
+let band = bands['3d'];
 let status = 'menu';
 let perf = new Performance([]);
-let difficulty = load('difficulty', 'casual');
-let offsetMs = Number(load('offsetMs', 0)) || 0;
-let hype = 0;   // extra stage excitement from combos (0..1), fades over time
+let hype = 0;          // extra stage excitement from combos (0..1), fades over time
+let lastSection = '';
+let failedAt = 0;      // game time when energy ran out
+
+const offset = () => settings.tapOffsetMs / 1000;
+
+// Developer/demo tool: add ?autoplay to the page address and the game plays
+// itself perfectly — handy for watching the band and testing effects.
+const AUTOPLAY = new URLSearchParams(location.search).has('autoplay');
+const autoRelease = [Infinity, Infinity, Infinity, Infinity];
+function autoplay(t) {
+  for (let i = perf.cursor; i < perf.notes.length; i++) {
+    const n = perf.notes[i];
+    if (n.time > t) break;
+    if (!n.hit && !n.miss) {
+      handle(perf.press(n.lane, n.time));
+      autoRelease[n.lane] = n.time + Math.max(n.hold, 0.06);
+    }
+  }
+  for (let lane = 0; lane < 4; lane++) {
+    if (t >= autoRelease[lane]) {
+      handle(perf.release(lane, t));
+      autoRelease[lane] = Infinity;
+    }
+  }
+}
 
 const input = new Input($('pads'), {
   onPress(lane) {
     if (status !== 'playing') return;
-    handle(perf.press(lane, player.time, offsetMs / 1000));
+    handle(perf.press(lane, player.time, offset()));
   },
   onRelease(lane) {
     if (status !== 'playing') return;
@@ -65,12 +97,14 @@ function handle(e) {
     highway.flash(e.lane, t);
     effects.burst(e.lane, e.grade === 'perfect' ? 26 : 14);
     hud.judgement(e.grade);
-    if (e.grade === 'perfect') world.kick(0.25);
+    if (e.grade === 'perfect') kick(0.25);
     if (e.milestone) {
       hype = 1;
       hud.banner(`${perf.combo} COMBO! CROWD ON FIRE!`);
       for (let lane = 0; lane < 4; lane++) effects.burst(lane, 12);
-      world.kick(0.8);
+      // Pyro every 50 in a row, confetti too every 100.
+      if (perf.combo % 50 === 0) showfx.celebrate(perf.combo % 100 === 0);
+      kick(0.8);
     }
   } else if (e.type === 'holdComplete') {
     highway.flash(e.lane, t);
@@ -81,6 +115,8 @@ function handle(e) {
   }
 }
 
+const kick = (amount) => world.kick(settings.reduceFlashing ? amount * 0.3 : amount);
+
 // ---- Game states -----------------------------------------------------------
 async function startGame() {
   if (status === 'preparing') return;
@@ -89,13 +125,15 @@ async function startGame() {
   setStatus('Tuning up… preparing the recording.');
   $('startBtn').disabled = true;
 
-  perf = new Performance(notesForDifficulty(difficulty));
+  perf = new Performance(notesForDifficulty(settings.difficulty), { drain: ENERGY.drain[settings.difficulty] });
   highway.setNotes(perf.notes);
   band.reset();
   effects.clear();
+  showfx.clear();
   input.reset();
   hud.reset();
   hype = 0;
+  lastSection = '';
 
   // player.start() is called right here, inside the tap, so iPhones allow audio.
   try {
@@ -135,17 +173,47 @@ function resumeGame() {
 function quitGame() {
   status = 'menu';
   player.stop();
+  showfx.clear();
+  band.setDefeated(false);
   input.reset();
   input.enabled = false;
   highway.setNotes([]);
   show({ menu: true });
 }
 
+/** Energy hit zero: cut the power, let the band slump, then show the result. */
+function failGame() {
+  status = 'failing';
+  failedAt = player.time;
+  input.reset();
+  input.enabled = false;
+  perf.cancelHolds();
+  player.powerDown();
+  band.setDefeated(true);
+  hud.banner("SHOW'S OVER!");
+  setTimeout(() => {
+    if (status !== 'failing') return;
+    status = 'failed';
+    player.stop();
+    const reached = Math.max(0, failedAt - LEAD);
+    const pct = Math.round((reached / SONG.duration) * 100);
+    showResults("SHOW'S OVER", `The crowd ran out of energy at ${clock(reached)} (${pct}% of the song). `
+      + 'Hit notes to keep the energy up — or turn on Practice mode in Settings.');
+  }, 1700);
+}
+
 function endGame() {
   status = 'results';
   player.stop();
   input.enabled = false;
-  $('headline').textContent = perf.headline;
+  showfx.celebrate();
+  showResults(perf.headline, settings.practice ? 'Practice mode was on.' : '');
+}
+
+function showResults(headline, note) {
+  $('headline').textContent = headline;
+  $('resultNote').textContent = note;
+  $('resultNote').hidden = !note;
   $('finalScore').textContent = perf.score.toLocaleString('en-US');
   $('rPerfect').textContent = perf.counts.perfect;
   $('rGreat').textContent = perf.counts.great;
@@ -157,11 +225,10 @@ function endGame() {
   show({ results: true });
 }
 
-function show({ menu = false, hud: hudOn = false, pause = false, results = false }) {
-  $('menu').hidden = !menu;
-  $('hud').hidden = !hudOn;
-  $('pauseScreen').hidden = !pause;
-  $('results').hidden = !results;
+const OVERLAYS = ['menu', 'hud', 'pauseScreen', 'results', 'settingsScreen'];
+function show({ menu = false, hud: hudOn = false, pause = false, results = false, settings: settingsOn = false }) {
+  const on = { menu, hud: hudOn, pauseScreen: pause, results, settingsScreen: settingsOn };
+  for (const id of OVERLAYS) $(id).hidden = !on[id];
 }
 
 function setStatus(msg, error = false) {
@@ -171,6 +238,8 @@ function setStatus(msg, error = false) {
   s.classList.toggle('error', error);
 }
 
+const clock = (secs) => `${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, '0')}`;
+
 // ---- The game loop ---------------------------------------------------------
 let lastFrame = performance.now();
 let menuClock = 0;
@@ -178,25 +247,37 @@ let menuClock = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
-  const live = status === 'playing' || status === 'paused';
+  const live = status === 'playing' || status === 'paused' || status === 'failing';
 
   // 1. The master clock. In menus we fake a clock so the stage keeps moving.
+  //    After a game over, time freezes where the power was cut.
   menuClock += dt;
-  const t = live ? player.time : LEAD + (menuClock % 140);
+  let t = live ? player.time : LEAD + (menuClock % 140);
+  if (status === 'failing') t = failedAt;
 
   // 2–3. Rules + reactions.
   if (status === 'playing') {
-    for (const e of perf.update(t, offsetMs / 1000)) handle(e);
-    if (t >= SONG_END) endGame();
+    if (AUTOPLAY) autoplay(t);
+    for (const e of perf.update(t, offset())) handle(e);
+    if (!settings.practice && perf.failed) failGame();
+    else if (t >= SONG_END) endGame();
   }
 
   // 4. Animate the world.
   const songTime = t - LEAD;
   const beat = beatPosition(songTime);
   const section = live ? sectionAt(Math.max(0, songTime)) : 'OPENING';
+  if (live && section !== lastSection) {
+    if (lastSection) showfx.onSection(section);
+    lastSection = section;
+  }
+  const big = section.includes('CHORUS') || section === 'OUTRO';
+  const musicEnergy = live ? (big ? 1 : section.includes('BUILD') ? 0.7 : 0.45) : 0.2;
   hype = Math.max(Math.min(1, perf.combo / 60) * (live ? 1 : 0), hype - dt * 0.5);
-  stage.update(now / 1000, beat, section, hype);
-  band.update(live ? t : menuClock, live ? beat : menuClock / BEAT, live && songTime > -0.2);
+  const stageTime = status === 'failing' ? failedAt : now / 1000;
+  stage.update(stageTime, beat, status === 'failing' ? 'OPENING' : section, hype);
+  showfx.update(now / 1000, beat, section, live && status !== 'failing', dt);
+  band.update(live ? t : menuClock, live ? beat : menuClock / BEAT, live && songTime > -0.2, dt, musicEnergy);
   highway.update(t, (lane) => input.isHeld(lane));
   effects.update(dt);
   world.updateCamera(dt, now / 1000);
@@ -216,28 +297,71 @@ $('menuBpm').textContent = `~${SONG.bpm} BPM`;
 
 const diffButtons = [...document.querySelectorAll('[data-diff]')];
 function selectDifficulty(d) {
-  difficulty = DIFFICULTIES[d] ? d : 'casual';
+  updateSettings({ difficulty: DIFFICULTIES[d] ? d : 'casual' });
   diffButtons.forEach((b) => {
-    const on = b.dataset.diff === difficulty;
+    const on = b.dataset.diff === settings.difficulty;
     b.classList.toggle('selected', on);
     b.setAttribute('aria-checked', on);
   });
-  save('difficulty', difficulty);
 }
 diffButtons.forEach((b) => b.addEventListener('click', () => selectDifficulty(b.dataset.diff)));
-selectDifficulty(difficulty);
+selectDifficulty(settings.difficulty);
+
+function refreshMenuNote() {
+  const bits = ['Headphones recommended'];
+  if (settings.practice) bits.push('Practice mode ON');
+  if (settings.tapOffsetMs) bits.push(`Tap timing ${settings.tapOffsetMs > 0 ? '+' : ''}${settings.tapOffsetMs} ms`);
+  $('menuFine').textContent = bits.join(' · ');
+}
+
+// ---- Settings screen -------------------------------------------------------
+const bandButtons = [...document.querySelectorAll('[data-band]')];
+function selectBand(style) {
+  updateSettings({ bandStyle: bands[style] ? style : '3d' });
+  for (const [key, b] of Object.entries(bands)) b.setVisible(key === settings.bandStyle);
+  band = bands[settings.bandStyle];
+  bandButtons.forEach((b) => b.classList.toggle('selected', b.dataset.band === settings.bandStyle));
+}
+bandButtons.forEach((b) => b.addEventListener('click', () => selectBand(b.dataset.band)));
+selectBand(settings.bandStyle);
 
 const offsetInput = $('offset');
-offsetInput.value = offsetMs;
-const showOffset = () => { $('offsetValue').textContent = `${offsetMs > 0 ? '+' : ''}${offsetMs} ms`; };
-offsetInput.addEventListener('input', () => {
-  offsetMs = Number(offsetInput.value);
-  save('offsetMs', offsetMs);
-  showOffset();
+function setOffset(ms) {
+  updateSettings({ tapOffsetMs: Math.max(-250, Math.min(250, Math.round(ms / 5) * 5)) });
+  offsetInput.value = settings.tapOffsetMs;
+  const v = settings.tapOffsetMs;
+  $('offsetValue').textContent = v === 0 ? '0 ms' : `${v > 0 ? '+' : ''}${v} ms (${v > 0 ? 'late' : 'early'})`;
+  refreshMenuNote();
+}
+offsetInput.addEventListener('input', () => setOffset(Number(offsetInput.value)));
+setOffset(settings.tapOffsetMs);
+
+$('practiceToggle').checked = settings.practice;
+$('practiceToggle').addEventListener('change', (e) => { updateSettings({ practice: e.target.checked }); refreshMenuNote(); });
+$('flashToggle').checked = settings.reduceFlashing;
+showfx.setReduceFlashing(settings.reduceFlashing);
+$('flashToggle').addEventListener('change', (e) => {
+  updateSettings({ reduceFlashing: e.target.checked });
+  showfx.setReduceFlashing(settings.reduceFlashing);
 });
-showOffset();
+
+// The timing check opens from the menu or from Settings, and returns there.
+let calibrationReturn = 'menu';
+const calibration = createCalibration(player, {
+  onApply: (ms) => setOffset(ms),
+  onClose: () => show({ [calibrationReturn]: true }),
+});
+const openCalibration = (from) => {
+  calibrationReturn = from;
+  show({});
+  calibration.open();
+};
 
 $('startBtn').addEventListener('click', startGame);
+$('settingsBtn').addEventListener('click', () => show({ settings: true }));
+$('settingsDone').addEventListener('click', () => show({ menu: true }));
+$('calibrateBtn').addEventListener('click', () => openCalibration('menu'));
+$('calibrateBtn2').addEventListener('click', () => openCalibration('settings'));
 $('pauseBtn').addEventListener('click', pauseGame);
 $('resumeBtn').addEventListener('click', resumeGame);
 $('restartBtn').addEventListener('click', startGame);
@@ -246,6 +370,7 @@ $('againBtn').addEventListener('click', startGame);
 $('menuBtn').addEventListener('click', quitGame);
 
 window.addEventListener('keydown', (e) => {
+  if (calibration.isOpen) return;
   if (e.code === 'Escape') pauseGame();
   else if ((e.code === 'Space' || e.code === 'Enter') && status === 'paused') resumeGame();
 });
@@ -253,21 +378,15 @@ window.addEventListener('keydown', (e) => {
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 window.addEventListener('blur', pauseGame);
 
-// ---- Remember settings (safely: storage can be blocked) --------------------
-function load(key, fallback) {
-  try { return localStorage.getItem(`burnbright.${key}`) ?? fallback; } catch { return fallback; }
-}
-function save(key, value) {
-  try { localStorage.setItem(`burnbright.${key}`, value); } catch { /* ignore */ }
-}
-
 // ---- Hook for automated browser tests (tests/browser-smoke.mjs) ------------
 window.__BURN_BRIGHT_TEST__ = {
   get state() {
     return {
-      status, t: player.time, difficulty, total: perf.total, notesCount: perf.notes.length,
+      status, t: player.time, difficulty: settings.difficulty, total: perf.total, notesCount: perf.notes.length,
       score: perf.score, combo: perf.combo, energy: perf.energy, judged: perf.judged,
       ...perf.counts, hasRecording: player.hasRecording, build: BUILD_LABEL,
+      tapOffsetMs: settings.tapOffsetMs, practice: settings.practice, bandStyle: settings.bandStyle,
+      drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
     };
   },
   start: startGame,

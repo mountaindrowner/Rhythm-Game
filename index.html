@@ -36,6 +36,7 @@
       <div id="countIn" aria-live="polite"></div>
       <div id="judgement"></div>
       <div id="banner"></div>
+      <div id="flash" aria-hidden="true"></div>
 
       <div id="pads" role="group" aria-label="Instrument pads"></div>
 
@@ -53,13 +54,53 @@
             <button data-diff="standard">STANDARD</button>
             <button data-diff="expert">EXPERT</button>
           </div>
-          <label class="offset">
-            <span>TAP OFFSET <b id="offsetValue">0 ms</b></span>
-            <input id="offset" type="range" min="-120" max="120" step="10" value="0" />
-          </label>
           <button id="startBtn" class="primary">▶ START THE SHOW</button>
           <p id="status" class="status" hidden></p>
-          <p class="fine">Headphones recommended</p>
+          <div class="row2">
+            <button id="settingsBtn">⚙ SETTINGS</button>
+            <button id="calibrateBtn">◎ TIMING CHECK</button>
+          </div>
+          <p class="fine" id="menuFine"></p>
+        </div>
+      </section>
+
+      <section id="settingsScreen" class="overlay" hidden>
+        <div class="panel">
+          <h2>SETTINGS</h2>
+          <div class="setting">
+            <span>BAND LOOK</span>
+            <div class="seg" role="radiogroup" aria-label="Band look">
+              <button data-band="3d">3D MODELS</button>
+              <button data-band="pixel">PIXEL ART</button>
+            </div>
+          </div>
+          <label class="setting toggle">
+            <span>PRACTICE MODE<small>No game over when energy runs out</small></span>
+            <input type="checkbox" id="practiceToggle" />
+          </label>
+          <label class="setting toggle">
+            <span>REDUCE FLASHING<small>Softer strobes and less camera shake</small></span>
+            <input type="checkbox" id="flashToggle" />
+          </label>
+          <div class="setting">
+            <span>TAP TIMING <b id="offsetValue">0 ms</b></span>
+            <input id="offset" type="range" min="-250" max="250" step="5" value="0" aria-label="Tap timing offset" />
+            <small>+ means your taps land late. Use TIMING CHECK to measure it.</small>
+            <button id="calibrateBtn2">◎ TIMING CHECK</button>
+          </div>
+          <button id="settingsDone" class="primary">✓ DONE</button>
+        </div>
+      </section>
+
+      <section id="calibration" class="overlay" hidden>
+        <div class="panel">
+          <h2>TIMING CHECK</h2>
+          <p id="calInfo" class="cal-info"></p>
+          <button id="calPad" class="cal-pad" aria-label="Tap here on each click">TAP</button>
+          <p id="calResult" class="cal-result" aria-live="polite"></p>
+          <button id="calStart" class="primary">▶ START</button>
+          <button id="calApply" class="primary" hidden>✓ USE THIS TIMING</button>
+          <button id="calCancel">✕ CLOSE</button>
         </div>
       </section>
 
@@ -75,6 +116,7 @@
       <section id="results" class="overlay" hidden>
         <div class="panel">
           <h2 id="headline">HEADLINER!</h2>
+          <p id="resultNote" class="result-note" hidden></p>
           <div id="finalScore" class="big-number">0</div>
           <dl class="stats">
             <dt>Perfect</dt><dd id="rPerfect">0</dd>
