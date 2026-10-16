@@ -1,0 +1,10 @@
+{
+  "_about": "Retro 16-bit band (64 px, PixelLab v3, view side, black outline, medium detail). Chosen look, pending final approval; animations not made yet. Pack with: python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro/source.json --allow-missing",
+  "members": {
+    "bassist":   { "lane": 0, "character_id": "0ffefa3c-caa5-4a57-8de6-f1b7adaf8fde" },
+    "singer":    { "lane": 1, "character_id": "15f7fc9d-fa49-4552-8e3c-dc0b735fda87" },
+    "guitarist": { "lane": 2, "character_id": "29bf08d6-000e-4e21-84fd-9b7a68a5e1d4" },
+    "drummer":   { "lane": 3, "character_id": "565befd0-46f7-4b8f-af4d-6a15bbaca679" }
+  },
+  "drumkit": { "object_id": "ddb28255-432c-40ca-b714-acd4cb6fcb21" }
+}
