@@ -84,6 +84,79 @@ function gradient(g, stops) {
   g.fillRect(0, 0, g.canvas.width, g.canvas.height);
 }
 
+// ---- Loading-screen poster art ----------------------------------------------
+const POSTER = { w: 176, h: 112 };
+
+/**
+ * Paint a small picture of a venue for the loading screen's gig poster:
+ * a window into the venue's backdrop (outdoor venues) or a pixel arena.
+ */
+export function paintPoster(canvas, key) {
+  const venue = VENUES[key] || VENUES.arena;
+  canvas.width = POSTER.w;
+  canvas.height = POSTER.h;
+  const g = canvas.getContext('2d');
+  if (!venue.backdrop) {
+    paintArenaPoster(g);
+    return;
+  }
+  const full = document.createElement('canvas');
+  full.width = BACKDROP.px;
+  full.height = BACKDROP.py;
+  venue.backdrop(full.getContext('2d'));
+  // The middle of the backdrop, from the sky down to just below the horizon.
+  const horizon = rowOf(EYE - 3);
+  const y = Math.max(0, Math.min(BACKDROP.py - POSTER.h, horizon - POSTER.h + 14));
+  g.drawImage(full, (BACKDROP.px - POSTER.w) / 2, y, POSTER.w, POSTER.h, 0, 0, POSTER.w, POSTER.h);
+}
+
+/** The arena: rows of lights, beams, and a sea of hands. */
+function paintArenaPoster(g) {
+  const W = POSTER.w;
+  const H = POSTER.h;
+  const rand = seeded(7);
+  gradient(g, [[0, '#05030c'], [0.6, '#24103a'], [1, '#3a1440']]);
+  // Light beams fanning down from the rig.
+  const colors = ['#ff3d6e', '#ffbe3b', '#4bbdff', '#63ff79', '#b65bff'];
+  g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) {
+    const x = 12 + i * 19;
+    const grd = g.createLinearGradient(x, 6, x, H);
+    grd.addColorStop(0, `${colors[i % colors.length]}66`);
+    grd.addColorStop(1, `${colors[i % colors.length]}00`);
+    g.fillStyle = grd;
+    g.beginPath();
+    g.moveTo(x - 1, 6);
+    g.lineTo(x + 1, 6);
+    g.lineTo(x + 14 + (i - 4) * 4, H);
+    g.lineTo(x - 14 + (i - 4) * 4, H);
+    g.fill();
+  }
+  g.globalCompositeOperation = 'source-over';
+  // The lighting rig across the top.
+  g.fillStyle = '#5d6178';
+  g.fillRect(0, 3, W, 2);
+  for (let i = 0; i < 9; i++) {
+    g.fillStyle = colors[i % colors.length];
+    g.fillRect(11 + i * 19, 5, 3, 2);
+  }
+  // A sea of fans with their hands up.
+  for (let row = 0; row < 3; row++) {
+    const y = H - 30 + row * 11;
+    for (let x = -2; x < W; x += 6 + Math.floor(rand() * 4)) {
+      const c = 26 - row * 8;
+      g.fillStyle = `rgb(${c + 8},${c},${c + 18})`;
+      g.fillRect(x, y, 5, 4);
+      g.fillRect(x - 1, y + 4, 7, H);
+      if (rand() < 0.4) g.fillRect(x + (rand() < 0.5 ? -1 : 5), y - 7, 1, 8);
+      if (rand() < 0.08) {
+        g.fillStyle = '#e8f6ff';
+        g.fillRect(x + 5, y - 9, 1, 2);
+      }
+    }
+  }
+}
+
 // ---- City at night (You're Not My Plan B) ----------------------------------
 function paintCity(g) {
   const W = g.canvas.width;

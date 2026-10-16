@@ -14,7 +14,7 @@ Mobile-first rhythm game (Vite + Three.js). The band is **X-ROADS** ("Crossroads
 - Run both before pushing. Look at screenshots and short video captures for any visual change, not just test results.
 
 ## Rules that must not break
-- Songs play from MP3s embedded in the single built `index.html` (no separate asset files; that caused itch.io 404s). Audio unlocks inside the Start tap (iPhone). New songs: chart them with `scripts/chart/make_chart.py` and add them to `src/song/songs.js`.
+- Songs play from MP3s embedded in the single built `index.html` (no separate asset files; that caused itch.io 404s). Audio unlocks inside a tap (iPhone): every menu button wakes it, and `player.load()` runs inside the PLAY tap. New songs: chart them with `scripts/chart/make_chart.py` and add them to `src/song/songs.js`.
 - Lane order is fixed: 0 Bass (green), 1 Vocals (gold), 2 Guitar (blue), 3 Drums (red).
 - Characters follow the blueprint's descriptions: the singer is always modestly dressed (full-length sleeved band tee, no bare midriff); the drummer is always clean-shaven; the bassist has only light stubble.
 

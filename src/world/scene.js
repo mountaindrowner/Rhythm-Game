@@ -52,14 +52,26 @@ export function createWorld(canvas) {
   // A tiny camera "kick" on big moments. Kept small so notes stay readable.
   let shake = 0;
   const basePos = camera.position.clone();
+  const baseLook = lookTarget.clone();
+  // The SHOW INTRO: the camera starts high up at the back of the crowd,
+  // looking at the band, and swoops down to the playing position.
+  const introPos = new THREE.Vector3(2.5, 8, 15);
+  const introLook = new THREE.Vector3(0, 2.6, -19);
+  const pos = new THREE.Vector3();
   function kick(amount) { shake = Math.max(shake, amount); }
-  function updateCamera(dt, time) {
+  /** intro: 0 = start of the swoop, 1 = normal playing view. */
+  function updateCamera(dt, time, intro = 1) {
     shake = Math.max(0, shake - dt * 3);
+    // Ease in and out: start gently, glide, settle softly.
+    const x = Math.min(1, Math.max(0, intro));
+    const k = closeUp ? 1 : x < 0.5 ? 4 * x ** 3 : 1 - (2 - 2 * x) ** 3 / 2;
+    pos.lerpVectors(introPos, basePos, k);
     camera.position.set(
-      basePos.x + Math.sin(time * 61) * shake * 0.05,
-      basePos.y + Math.sin(time * 47) * shake * 0.04,
-      basePos.z,
+      pos.x + Math.sin(time * 61) * shake * 0.05,
+      pos.y + Math.sin(time * 47) * shake * 0.04,
+      pos.z,
     );
+    lookTarget.lerpVectors(introLook, baseLook, k);
     camera.lookAt(lookTarget);
   }
 

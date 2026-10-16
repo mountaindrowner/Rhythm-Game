@@ -10,18 +10,25 @@
 //   5. Draw the 3D scene.
 //
 // GAME STATES:
-//   menu -> preparing -> playing <-> paused
-//                          |-> results   (song finished)
-//                          |-> failing -> failed   (energy ran out)
+//   menu -> loading -> playing <-> paused
+//                        |-> results   (song finished)
+//                        |-> failing -> failed   (energy ran out)
+//
+// MENU SCREENS (all while status = 'menu', in front of their own pixel-art
+// rock show, src/ui/menuScene.js; the 3D game isn't drawn at all):
+//   title (START THE SHOW) -> difficulty -> set list (song + best score,
+//   with a preview) -> PLAY -> loading screen -> the show intro + count-in
 // =============================================================================
-import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY, RIOT, SOLO } from './config.js';
+import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, LEAD, BEAT, ENERGY, RIOT, SOLO } from './config.js';
 import {
   SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, prepareSong, sectionAt, beatPosition,
+  countInTimes,
 } from './song/chart.js';
-import { VENUES } from './world/venues.js';
+import { VENUES, paintPoster } from './world/venues.js';
 import { getBest, recordResult, starText } from './progress.js';
 import { settings, updateSettings } from './settings.js';
 import { SongPlayer } from './audio/player.js';
+import { createPreview } from './audio/preview.js';
 import { Performance, perfectScore, starsFor } from './game/rules.js';
 import { Input } from './game/input.js';
 import { createWorld } from './world/scene.js';
@@ -37,6 +44,7 @@ import { createCrowd } from './world/crowd.js';
 import { createPerfMonitor } from './perf.js';
 import { createHud } from './ui/hud.js';
 import { createCalibration } from './ui/calibration.js';
+import { createMenuScene } from './ui/menuScene.js';
 
 // These imports become embedded data inside the final index.html (see
 // vite.config.js), so the published game never has to download a file.
@@ -60,6 +68,8 @@ const crowd = createCrowd(world.scene, stage.fans);
 const perfMonitor = createPerfMonitor(world);
 const hud = createHud();
 const player = new SongPlayer(SONG.audio);
+const preview = createPreview(player);
+const menuScene = createMenuScene($('menuScene'));
 
 // When a different song is picked: its recording, its venue, and who sings
 // lead (her, him, or both) so the band animates to match.
@@ -262,12 +272,60 @@ function bigMoments(t) {
 }
 
 // ---- Game states -----------------------------------------------------------
+// Funny and useful lines for the loading screen.
+const TIPS = [
+  'TIP: Gold notes fill the RIOT meter. When it\'s full, swipe up!',
+  'TIP: Riot Mode doubles your score and can save a show that\'s going wrong.',
+  'TIP: Every 10 notes in a row raises your multiplier, up to ×4.',
+  'TIP: In a solo, watch the lights, then copy what the band just played.',
+  'TIP: Big Rock Ending: mash the pads, then hit the very last note!',
+  'TIP: Notes feel early or late? Try the TIMING CHECK in the main menu.',
+  'TIP: Headphones make the timing feel tighter than phone speakers.',
+  'BACKSTAGE: The drummer has lost 14 sticks this tour. He blames the fans.',
+  'BACKSTAGE: The bassist says the lab coat is "for science". Nobody asks.',
+  'BACKSTAGE: The guitarist tuned for 45 minutes. It\'s still a little sharp.',
+];
+const LOADING_STEPS = ['WARMING UP THE AMPS…', 'TUNING THE GUITARS…', 'SOUNDCHECK: ONE, TWO…', 'THE CROWD IS GETTING LOUD…'];
+let loadingTimer = 0;
+
+/** Fill in the loading screen's gig poster for the current song. */
+function showLoadingScreen() {
+  const venue = VENUES[SONG.venue] || VENUES.arena;
+  $('loadVenue').textContent = `AT ${venue.name}`;
+  $('loadTitle').textContent = SONG.title;
+  const best = getBest(SONG.id, settings.difficulty);
+  $('loadInfo').textContent = `${DIFFICULTIES[settings.difficulty].label} · ${SONG.bpm} BPM`
+    + (best ? ` · BEST ${best.score.toLocaleString('en-US')}` : '');
+  $('loadTip').textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
+  paintPoster($('posterArt'), SONG.venue);
+  $('loadBack').hidden = true;
+  setStatus('');
+  // The "amp" bar fills while the song gets ready, with a new line every so often.
+  let step = 0;
+  $('loadStep').textContent = LOADING_STEPS[0];
+  $('loadFill').style.transition = 'none';
+  $('loadFill').style.width = '4%';
+  void $('loadFill').offsetWidth;
+  $('loadFill').style.transition = '';
+  $('loadFill').style.width = '80%';
+  clearInterval(loadingTimer);
+  loadingTimer = setInterval(() => {
+    step = Math.min(step + 1, LOADING_STEPS.length - 1);
+    $('loadStep').textContent = LOADING_STEPS[step];
+  }, 650);
+  $('loading').classList.remove('leaving');
+  show('loading');
+}
+
 async function startGame() {
-  if (status === 'preparing') return;
-  status = 'preparing';
-  show({ menu: true });
-  setStatus('Tuning up… preparing the recording.');
-  $('startBtn').disabled = true;
+  if (status === 'loading') return;
+  const restart = status !== 'menu'; // Play Again / Restart: a shorter loading screen
+  status = 'loading';
+  preview.stop();
+  input.reset();
+  input.enabled = false;
+  band.setRiot?.(false);
+  band.setDefeated(false);
 
   const play = prepareSong(settings.difficulty);
   solo = play.solo;
@@ -287,26 +345,48 @@ async function startGame() {
   band.reset();
   effects.clear();
   showfx.clear();
-  input.reset();
   hud.reset();
+  const countIn = countInTimes();
+  hud.setShow({ venue: (VENUES[SONG.venue] || VENUES.arena).name, title: SONG.title.toUpperCase(), countIn });
   hype = 0;
   lastSection = '';
+  showLoadingScreen();
+  const shownAt = performance.now();
 
-  // player.start() is called right here, inside the tap, so iPhones allow audio.
+  // player.load() is called right here, inside the tap, so iPhones allow audio.
   try {
-    await player.start();
+    await player.load();
   } catch (err) {
+    if (status !== 'loading') return;
     status = 'menu';
-    setStatus(`Audio failed to start: ${err?.message || err}. Tap Start to try again.`, true);
-    $('startBtn').disabled = false;
+    clearInterval(loadingTimer);
+    $('loadStep').textContent = 'THE AMPS WON\'T TURN ON';
+    setStatus(`Audio failed to start: ${err?.message || err}. Go back and try again.`, true);
+    $('loadBack').hidden = false;
     return;
   }
-  if (status !== 'preparing') return; // player quit while loading
-  $('startBtn').disabled = false;
-  setStatus('');
+  // Keep the poster up long enough to read (the 3D stage gets ready behind it).
+  const minimum = restart ? 900 : 2300;
+  await new Promise((r) => setTimeout(r, Math.max(0, minimum - (performance.now() - shownAt))));
+  if (status !== 'loading') return; // player quit while loading
+  clearInterval(loadingTimer);
+  $('loadFill').style.width = '100%';
+  $('loadStep').textContent = 'HERE WE GO!';
+  await new Promise((r) => setTimeout(r, 250));
+  if (status !== 'loading') return;
+
+  // GO: the clock starts, the loading screen drops away, the camera swoops in.
+  player.play();
+  player.countIn(countIn);
+  player.sfx('boom');
   status = 'playing';
   input.enabled = true;
-  show({ hud: true });
+  show('hud', 'loading');
+  $('loading').classList.add('leaving');
+  setTimeout(() => {
+    $('loading').classList.remove('leaving');
+    if (status !== 'loading') $('loading').hidden = true;
+  }, 600);
 }
 
 function pauseGame() {
@@ -316,7 +396,7 @@ function pauseGame() {
   perf.cancelHolds();
   input.reset();
   input.enabled = false;
-  show({ hud: true, pause: true });
+  show('hud', 'pauseScreen');
 }
 
 function resumeGame() {
@@ -324,10 +404,11 @@ function resumeGame() {
   status = 'playing';
   player.resume();
   input.enabled = true;
-  show({ hud: true });
+  show('hud');
 }
 
-function quitGame() {
+/** Leave the song: back to the set list (or the title screen). */
+function quitGame(to = 'songScreen') {
   status = 'menu';
   band.setRiot?.(false);
   highway.setFreestyle(false);
@@ -337,7 +418,8 @@ function quitGame() {
   input.reset();
   input.enabled = false;
   highway.setNotes([]);
-  show({ menu: true });
+  if (to === 'songScreen') openSongs();
+  else show(to);
 }
 
 /** Energy hit zero: cut the power, let the band slump, then show the result. */
@@ -422,14 +504,21 @@ function showResults(headline, note, finished = true) {
   $('rWrong').textContent = perf.counts.wrong;
   $('rCombo').textContent = perf.maxCombo;
   $('rAccuracy').textContent = `${perf.accuracy}%`;
-  show({ results: true });
+  show('results');
 }
 
-const OVERLAYS = ['menu', 'hud', 'pauseScreen', 'results', 'settingsScreen'];
-function show({ menu = false, hud: hudOn = false, pause = false, results = false, settings: settingsOn = false }) {
-  const on = { menu, hud: hudOn, pauseScreen: pause, results, settingsScreen: settingsOn };
-  for (const id of OVERLAYS) $(id).hidden = !on[id];
-  if (!hudOn) {
+// Every screen, and which of them are MENUS (shown in front of the menu's
+// own rock-show scene instead of the 3D game).
+const SCREENS = ['menu', 'diffScreen', 'songScreen', 'loading', 'settingsScreen', 'hud', 'pauseScreen', 'results'];
+const MENU_SCREENS = ['menu', 'diffScreen', 'songScreen', 'settingsScreen', 'calibration'];
+let inMenus = true;
+/** Show exactly these screens (by id) and hide the rest. */
+function show(...names) {
+  for (const id of SCREENS) $(id).hidden = !names.includes(id);
+  inMenus = names.some((n) => MENU_SCREENS.includes(n));
+  $('menuScene').hidden = !inMenus;
+  menuScene.setMode(names.includes('menu') ? 'title' : 'menu');
+  if (!names.includes('hud')) {
     $('riotHint').hidden = true;
     $('phone').classList.remove('riot');
   }
@@ -451,10 +540,18 @@ let menuClock = 0;
 function frame(now) {
   const workStart = performance.now(); // for the smoothness numbers (perf.js)
   const frameMs = now - lastFrame;
-  const dt = Math.min(0.05, frameMs / 1000);
+  const dt = Math.max(0, Math.min(0.05, frameMs / 1000)); // (the first frame can be slightly negative)
   lastFrame = now;
   perfMonitor.frame(frameMs);
   const live = status === 'playing' || status === 'paused' || status === 'failing';
+
+  // In the menus only the menu's own rock show is drawn: the 3D game rests.
+  if (inMenus) {
+    menuScene.update(dt);
+    perfMonitor.work(performance.now() - workStart, 0);
+    requestAnimationFrame(frame);
+    return;
+  }
 
   // 1. The master clock. In menus we fake a clock so the stage keeps moving.
   //    After a game over, time freezes where the power was cut.
@@ -497,7 +594,8 @@ function frame(now) {
   band.update(live ? t : menuClock, live ? beat : menuClock / BEAT, live && songTime > -0.2, dt, musicEnergy, section);
   highway.update(t, (lane) => input.isHeld(lane));
   effects.update(dt);
-  world.updateCamera(dt, now / 1000);
+  // The show intro: the camera swoops in until the drummer's first click.
+  world.updateCamera(dt, now / 1000, live ? t / countInTimes()[0] : 0);
   if (live) hud.update(perf, t, section);
   for (let lane = 0; lane < 4; lane++) hud.setPadDown(lane, input.isHeld(lane));
 
@@ -514,31 +612,83 @@ requestAnimationFrame(frame);
 highway.warmUp(6);
 
 // ---- Menu wiring -----------------------------------------------------------
-$('buildLabel').textContent = `${BAND_NAME} · LIVE`;
 document.title = GAME_TITLE.replace(/\b(\w)(\w*)/g, (_, a, b) => a + b.toLowerCase());
 // Version badge on every screen, so you always know which build you're playing.
 for (const el of document.querySelectorAll('.version')) {
   el.textContent = `${BUILD_LABEL}${BUILD_DATE ? ` · ${BUILD_DATE}` : ''}`;
 }
-// Song picker: one button per song in the set list (song/songs.js).
+
+// Every menu button: wake the audio (iPhone rule: only inside a tap) and blip.
+// ("true" = this runs BEFORE the button's own click handler.)
+document.addEventListener('click', (e) => {
+  const button = e.target.closest('button');
+  if (!button || !inMenus) return;
+  try { player.unlock(); } catch { /* no Web Audio: play silently */ }
+  if (button.id !== 'startBtn' && button.id !== 'playBtn' && !button.dataset.song) player.sfx('blip');
+}, true);
+
+// TITLE: START THE SHOW -> difficulty.
+$('startBtn').addEventListener('click', () => {
+  player.sfx('chord');
+  show('diffScreen');
+});
+// Back buttons go to the screen named in data-back.
+for (const b of document.querySelectorAll('[data-back]')) {
+  b.addEventListener('click', () => {
+    preview.stop();
+    show(b.dataset.back);
+  });
+}
+
+// DIFFICULTY: pick one -> the set list.
+const diffButtons = [...document.querySelectorAll('[data-diff]')];
+function selectDifficulty(d) {
+  updateSettings({ difficulty: DIFFICULTIES[d] ? d : 'casual' });
+  diffButtons.forEach((b) => {
+    const on = b.dataset.diff === settings.difficulty;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-checked', on);
+  });
+  $('diffChip').textContent = `${DIFFICULTIES[settings.difficulty].label} ✎`;
+  refreshSongBests();
+}
+diffButtons.forEach((b) => b.addEventListener('click', () => {
+  selectDifficulty(b.dataset.diff);
+  openSongs();
+}));
+$('diffChip').addEventListener('click', () => { preview.stop(); show('diffScreen'); });
+
+// SET LIST: one row per song (song/songs.js), with your best for this level.
+// Tap a song to hear a preview; tap it again (or PLAY) to start the show.
 const songButtons = SONGS.map((entry) => {
   const b = document.createElement('button');
   b.dataset.song = entry.id;
   b.setAttribute('role', 'radio');
-  b.innerHTML = `<strong>${entry.chart.title}</strong><span class="song-side">`
-    + `<span>${(VENUES[entry.venue] || VENUES.arena).name} · ${Math.round(entry.chart.estimated_bpm)} BPM</span>`
-    + '<span class="best"></span></span>';
-  b.addEventListener('click', () => pickSong(entry.id));
+  const venue = (VENUES[entry.venue] || VENUES.arena).name;
+  const extras = [entry.solo && `${entry.solo.who === 'bassist' ? 'BASS' : 'GUITAR'} SOLO`, entry.bigRockEnding && 'BIG ENDING']
+    .filter(Boolean).map((x) => `<i>${x}</i>`).join('');
+  b.innerHTML = `<span class="song-main"><strong>${entry.chart.title}</strong>`
+    + `<span class="song-meta">${venue} · ${Math.round(entry.chart.estimated_bpm)} BPM</span>`
+    + `<span class="song-tags">${extras}</span></span>`
+    + '<span class="song-side"><span class="stars-small"></span><span class="best"></span></span>';
+  b.addEventListener('click', () => {
+    if (status !== 'menu') return;
+    if (SONG.id === entry.id && b.classList.contains('selected')) startGame();
+    else {
+      pickSong(entry.id);
+      preview.play(SONG);
+    }
+  });
   $('songList').append(b);
   return b;
 });
-/** Show your best stars (for the chosen difficulty) on each song button. */
+/** Show your best stars and score (for the chosen difficulty) on each song. */
 function refreshSongBests() {
   for (const b of songButtons) {
     const best = getBest(b.dataset.song, settings.difficulty);
-    const el = b.querySelector('.best');
-    el.textContent = best ? `${starText(best.stars)}  ${best.score.toLocaleString('en-US')}` : 'NOT PLAYED YET';
-    el.classList.toggle('gold', !!best?.gold);
+    b.querySelector('.stars-small').textContent = starText(best ? best.stars : 0);
+    b.querySelector('.stars-small').classList.toggle('gold', !!best?.gold);
+    b.querySelector('.best').textContent = best ? best.score.toLocaleString('en-US') : 'NOT PLAYED YET';
   }
 }
 
@@ -553,19 +703,16 @@ function pickSong(id) {
   });
 }
 pickSong(settings.songId);
-
-const diffButtons = [...document.querySelectorAll('[data-diff]')];
-function selectDifficulty(d) {
-  updateSettings({ difficulty: DIFFICULTIES[d] ? d : 'casual' });
-  diffButtons.forEach((b) => {
-    const on = b.dataset.diff === settings.difficulty;
-    b.classList.toggle('selected', on);
-    b.setAttribute('aria-checked', on);
-  });
-  refreshSongBests();
-}
-diffButtons.forEach((b) => b.addEventListener('click', () => selectDifficulty(b.dataset.diff)));
 selectDifficulty(settings.difficulty);
+
+/** Open the set list and start the picked song's preview. */
+function openSongs() {
+  refreshSongBests();
+  show('songScreen');
+  preview.play(SONG);
+}
+$('playBtn').addEventListener('click', startGame);
+$('loadBack').addEventListener('click', () => quitGame());
 
 function refreshMenuNote() {
   const bits = ['Headphones recommended'];
@@ -605,29 +752,30 @@ $('flashToggle').addEventListener('change', (e) => {
   showfx.setReduceFlashing(settings.reduceFlashing);
 });
 
-// The timing check opens from the menu or from Settings, and returns there.
+// The timing check opens from the title screen, Settings or the results
+// screen's timing tip, and returns there.
 let calibrationReturn = 'menu';
 const calibration = createCalibration(player, {
   onApply: (ms) => setOffset(ms),
-  onClose: () => show({ [calibrationReturn]: true }),
+  onClose: () => show(calibrationReturn),
 });
 const openCalibration = (from) => {
   calibrationReturn = from;
-  show({});
+  show('calibration');
   calibration.open();
 };
 
-$('startBtn').addEventListener('click', startGame);
-$('settingsBtn').addEventListener('click', () => show({ settings: true }));
-$('settingsDone').addEventListener('click', () => show({ menu: true }));
+$('settingsBtn').addEventListener('click', () => show('settingsScreen'));
+$('settingsDone').addEventListener('click', () => show('menu'));
 $('calibrateBtn').addEventListener('click', () => openCalibration('menu'));
-$('calibrateBtn2').addEventListener('click', () => openCalibration('settings'));
+$('calibrateBtn2').addEventListener('click', () => openCalibration('settingsScreen'));
 $('pauseBtn').addEventListener('click', pauseGame);
 $('resumeBtn').addEventListener('click', resumeGame);
 $('restartBtn').addEventListener('click', startGame);
-$('quitBtn').addEventListener('click', quitGame);
+$('quitBtn').addEventListener('click', () => quitGame());
 $('againBtn').addEventListener('click', startGame);
-$('menuBtn').addEventListener('click', quitGame);
+$('menuBtn').addEventListener('click', () => quitGame());
+$('titleBtn').addEventListener('click', () => quitGame('menu'));
 
 window.addEventListener('keydown', (e) => {
   if (calibration.isOpen) return;
@@ -653,6 +801,8 @@ window.__BURN_BRIGHT_TEST__ = {
       nextRiotNote: perf.notes.find((n) => n.riot && !n.riotBroken && !n.hit && !n.miss && n.time > player.time)?.time ?? null,
       riotPhrases: new Set(perf.notes.filter((n) => n.riot).map((n) => n.riot)).size,
       drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
+      screen: SCREENS.find((id) => !$(id).hidden) || '', inMenus, previewing: preview.playing,
+      countIn: countInTimes(), intro: $('introCard').classList.contains('show'), countText: $('countIn').textContent,
       perf: { ...perfMonitor.stats },
     };
   },

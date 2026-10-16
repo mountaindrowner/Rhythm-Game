@@ -8,7 +8,8 @@ A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway 
 
 **Features**
 
-- **Three songs, three venues:** pick a song on the menu and the stage changes with it: an indoor arena, a city rooftop at night (skyline, neon, string lights), or an open-air stage at sunrise (mountains, pine trees, festival flags).
+- **A real show from the first screen:** the title screen is its own pixel-art rock show (truss scaffolding, sweeping lights, the band jamming, a crowd with their hands up, and a logo crackling with electricity). START THE SHOW, pick a difficulty, pick a song from the set list (with your best score and a preview of its chorus), then a gig-poster loading screen, a camera swoop over the crowd and the drummer's 1-2-3-4 count-in.
+- **Three songs, three venues:** pick a song on the set list and the stage changes with it: an indoor arena, a city rooftop at night (skyline, neon, string lights), or an open-air stage at sunrise (mountains, pine trees, festival flags).
 - **Chart maker:** `scripts/chart/make_chart.py` listens to any MP3, finds the tempo and every beat, and places notes for all four lanes and three difficulties. See [docs/ADDING_SONGS.md](docs/ADDING_SONGS.md).
 - **Retro 16-bit band (default):** chunky pixel-art musicians made with [PixelLab](https://pixellab.ai), each with a library of about 10 smooth, 16-frame animations: calm and hype grooves, variations, big moves, stumbles, a cheer and a bow. A choreographer switches moves on bar lines so it never looks choppy. The guitarist has his own mic and sings too. See [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
 - **More band looks in Settings:** *Pixel HD* (bigger, more detailed pixel band), *3D models* (blocky musicians with real joints whose strums and drum hits land exactly on the notes) or *Classic* (the original pixel art).

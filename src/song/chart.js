@@ -66,6 +66,16 @@ export const DIFFICULTIES = {
   expert:   { label: 'EXPERT',   maxTier: 2 },
 };
 
+/**
+ * The drummer's count-in: 4 stick clicks (game times) on the song's own beat,
+ * the last one a beat before the song's first beat. The beat is extended
+ * backwards from the chart's first beat, so the clicks lead straight in.
+ */
+export function countInTimes() {
+  const first = SONG.beats[0] ?? 0;
+  return [4, 3, 2, 1].map((k) => LEAD + first - k * SONG.beatLength);
+}
+
 /** When the results screen appears (game time) for the current song. */
 export const songEnd = () => LEAD + SONG.duration + 0.28;
 

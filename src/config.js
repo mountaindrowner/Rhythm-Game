@@ -21,7 +21,10 @@ export const BUILD_LABEL = `v${VERSION} · ${COMMIT}`;
 // ---- Music timing -----------------------------------------------------------
 export const BPM = 152;                 // estimated tempo of the song
 export const BEAT = 60 / BPM;           // seconds per beat (~0.395 s)
-export const LEAD = BEAT * 4;           // 4-beat count-in before the song starts
+// Seconds from "go" to the first sound of the song: the camera swoops in over
+// the crowd, then the drummer clicks his sticks 4 times (on the song's own
+// beat, see countInTimes in song/chart.js), then the band starts.
+export const LEAD = 3.6;
 
 // How many seconds a note is visible before it reaches the hit line.
 // Smaller = faster notes. (The original game used 1.84.)

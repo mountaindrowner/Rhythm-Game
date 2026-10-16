@@ -1,11 +1,11 @@
 // =============================================================================
 // hud.js — updates the on-screen text: score, combo, energy bar, song section,
-// judgement pop-ups, count-in, and the four pads' pressed look.
+// judgement pop-ups, the show intro and count-in, and the four pads' pressed look.
 //
 // This is plain HTML/CSS (see index.html + styles.css) drawn on top of the 3D
 // canvas. Text is much crisper as HTML than inside a 3D scene.
 // =============================================================================
-import { LANES, BEAT, LEAD } from '../config.js';
+import { LANES, LEAD } from '../config.js';
 import { SONG, onSongChange } from '../song/chart.js';
 
 const $ = (id) => document.getElementById(id);
@@ -37,7 +37,11 @@ export function createHud() {
     clock: $('clock'), progress: $('progressFill'), judgement: $('judgement'),
     countIn: $('countIn'), banner: $('banner'), mult: $('mult'),
     riotFill: $('riotFill'), riotRow: $('riotFill').closest('.riot-row'), riotHint: $('riotHint'),
+    intro: $('introCard'),
   };
+  // The count-in: game times of the drummer's 4 stick clicks (see setShow).
+  let clicks = [LEAD - 1.6, LEAD - 1.2, LEAD - 0.8, LEAD - 0.4];
+  const COUNT = ['3', '2', '1', 'ROCK!'];
   let shown = {}; // cache so we only touch the page when something changes
 
   const set = (key, node, value, apply) => {
@@ -68,6 +72,13 @@ export function createHud() {
       }
     },
     banner(message) { popup(el.banner, message, '#ffbe3b'); },
+
+    /** Before a song: the intro card's words and the count-in click times. */
+    setShow({ venue, title, countIn }) {
+      $('introVenue').textContent = `LIVE AT ${venue}`;
+      $('introTitle').textContent = title;
+      clicks = countIn;
+    },
 
     /** Called every frame while playing. */
     update(perf, t, section) {
@@ -100,9 +111,21 @@ export function createHud() {
       const secs = Math.floor(songTime);
       set('clock', el.clock, `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, text);
       set('progress', el.progress, Math.round((songTime / SONG.duration) * 200), (n, v) => { n.style.width = `${v / 2}%`; });
-      // Count-in: 3, 2, 1, GO! over the four beats before the song.
-      const beatIdx = Math.floor(t / BEAT);
-      set('countIn', el.countIn, t < LEAD && t >= 0 ? ['3', '2', '1', 'GO!'][beatIdx] ?? '' : '', text);
+      // Show intro: "LIVE AT THE ARENA" + the song title while the camera
+      // swoops in, then 3, 2, 1, ROCK! on the drummer's stick clicks.
+      set('intro', el.intro, t >= 0.15 && t < clicks[0] - 0.1, (n, v) => n.classList.toggle('show', v));
+      let count = '';
+      if (t < clicks[3] + 0.5) {
+        for (let i = clicks.length - 1; i >= 0; i--) {
+          if (t >= clicks[i]) { count = COUNT[i]; break; }
+        }
+      }
+      set('countIn', el.countIn, count, (n, v) => {
+        n.textContent = v;
+        n.classList.toggle('rock', v === 'ROCK!');
+        n.classList.remove('pop');
+        if (v) { void n.offsetWidth; n.classList.add('pop'); } // restart the slam animation
+      });
     },
 
     setPadDown(lane, down) {
@@ -112,6 +135,7 @@ export function createHud() {
     reset() {
       shown = {};
       el.countIn.textContent = '';
+      el.intro.classList.remove('show');
       el.judgement.classList.remove('pop');
       el.banner.classList.remove('pop');
       el.riotHint.hidden = true;

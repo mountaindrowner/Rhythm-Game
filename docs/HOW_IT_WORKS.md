@@ -19,11 +19,15 @@ Two kinds of time appear in the code:
 | Name | Meaning |
 |---|---|
 | `songTime` | seconds since the MP3 started (what the charts in `charts/` use) |
-| `t` (game time) | seconds since you pressed Start = `songTime + LEAD` (LEAD is the 4-beat count-in) |
+| `t` (game time) | seconds since the show started (right after the loading screen) = `songTime + LEAD`. `LEAD` (3.6 s) is the intro: the camera swoop, then the drummer's 4-click count-in |
 
 ## 2. The game loop (`src/main.js`)
 
-`frame()` runs about 60 times a second:
+**The screens.** The game opens on the **title screen** (START THE SHOW, SETTINGS, TIMING CHECK). START THE SHOW leads to **difficulty**, then the **set list** (your best stars and score for that difficulty on every song, and the picked song plays a preview), then a **loading screen** (a gig poster with a tip), then the **show intro**: the camera swoops in over the crowd with "LIVE AT THE ARENA", the drummer clicks his sticks 4 times on the song's own beat (3, 2, 1, ROCK!), and the band starts. `show('screenId', ...)` in `main.js` switches screens.
+
+**The menus have their own world.** While a menu is open, the 3D game isn't drawn at all (it saves battery too). Instead `src/ui/menuScene.js` draws a little pixel-art rock show on a 2D canvas: truss scaffolding with stage lights, an LED wall, speaker stacks, the band (the same Retro sprite sheets), sparks and a crowd, and on the title screen the RHYTHM RIOT logo (letters hand-drawn in `src/ui/pixelFont.js`) crackling with electricity. Every few seconds lightning strikes and the band flashes into their Riot Mode versions for two bars. The canvas is only 240 pixels wide and the browser scales it up with sharp pixels, which makes it cheap to draw and gives the 16-bit look.
+
+`frame()` runs about 60 times a second (in the menus it just draws the menu scene and stops there):
 
 1. Read the clock: `t = player.time`.
 2. Ask the referee for anything that happened on its own, like a note going past unhit: `perf.update(t)` returns **events**.
@@ -165,8 +169,10 @@ When a chorus starts: a strobe flash, all four fire jets, and confetti from the 
 
 Two hard-won rules from the original project:
 
-1. **iPhones only allow sound after a tap.** `player.start()` is called directly from the Start button and unlocks audio before doing anything slow.
+1. **iPhones only allow sound after a tap.** `player.load()` is called directly from the PLAY tap and unlocks audio before doing anything slow (decoding the MP3). After the loading screen, `player.play()` starts the clock and schedules the song `LEAD` seconds later, and `player.countIn()` schedules the drummer's stick clicks on the same clock. Every menu button also wakes the audio (and makes a little "blip"), so sounds work from the first tap.
 2. **No separate MP3 file.** The song is embedded inside `index.html` when you build, so itch.io can never fail to find it (that caused "HTTP 404" in the original).
+
+**Song previews** (`src/audio/preview.js`): on the set list, the picked song plays its chorus. Decoding a whole song takes a moment and about 70 MB of memory, so the preview cuts just the chorus out of the MP3 file and decodes only that. Only the song you're playing is kept fully decoded.
 
 Pausing suspends the audio system, which freezes the music and the clock together, so the notes stay in sync after resuming.
 
@@ -192,5 +198,8 @@ Pausing suspends the audio system, which freezes the music and the clock togethe
 | Make strums bigger | `strum * 0.2` in `animateStringed()` (`band3d/index.js`) |
 | Make Casual more or less forgiving | `ENERGY.drain` in `src/config.js` |
 | Change the fire jet positions | `PYRO_X` in `src/world/showfx.js` |
+| Change the title screen (lights, crowd, logo colors) | `src/ui/menuScene.js` (`LIGHT_COLORS`, `makeCrowd`, `buildLogo`) |
+| Add a loading-screen tip | `TIPS` in `src/main.js` |
+| Make the intro longer or shorter | `LEAD` in `src/config.js` |
 
 Run `npm run dev`, make the change, save, and watch the browser update. Open `http://localhost:5173/?autoplay&view=stage` to watch the band up close while you tweak them.

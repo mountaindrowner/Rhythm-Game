@@ -1,4 +1,4 @@
-# How other rhythm games do it (research, v0.6.1)
+# How other rhythm games do it (research, v0.6.1 and v0.11)
 
 Before building Riot Mode and the rest of `docs/GAME_DESIGN.md`, we looked at how the well-known rhythm games handle the same problems. The aim is to keep what works for them and avoid what players complain about, so Rhythm Riot isn't designed in a vacuum. Sources are listed at the end. Most are reviews, wikis and player guides rather than official design documents, so exact numbers are approximate.
 
@@ -96,6 +96,24 @@ Before building Riot Mode and the rest of `docs/GAME_DESIGN.md`, we looked at ho
 
 ---
 
+## 6. Menus and the start of a song (v0.11)
+
+The owner found the old menu plain, cluttered and see-through. Before rebuilding it we checked how other games get you from "open the game" to "playing". (This round came from web-search summaries, because most pages couldn't be opened directly, so treat the details as approximate.)
+
+| Game | How you get to a song |
+|---|---|
+| **Guitar Hero III** | A short main menu: Career, Quickplay, Options. Loading screens show **tips and jokes** ("use Star Power at ×4"). Guitar Hero Live opens a show with a **walk-on**: backstage, then out on stage to a cheering crowd. |
+| **Rock Band 4** | Difficulty chosen per player before the song. "Shows" split songs into sets. The **drummer counts the song in**. Bigger venues get bigger stage effects. |
+| **Fortnite Festival** | Difficulty sits in the lobby and **stays picked between songs**. Then you choose the song and ready up. |
+| **Beat Saber** | Solo / Campaign / Online / Party, then pick a track, then a difficulty. Every song has a **preview** start time and length, and its own environment (venue). |
+| **Project Sekai, Beatstar** | Difficulty as a row of buttons; **best result remembered per difficulty**; one big play button in thumb reach. |
+
+**Common patterns:** a short first menu (one main "play" path plus options); the **best score per difficulty** on every song; **song previews** while browsing; loading screens with tips and humor; the start of a song treated as part of the show (walk-on, count-in); the main buttons in the **bottom third** of a phone screen where thumbs reach.
+
+**What we built (v0.11):** a title screen that's its own pixel-art rock show (truss scaffolding, lights, an LED wall, the band, a crowd, a logo crackling with electricity), with START THE SHOW, SETTINGS and TIMING CHECK at the bottom. Then **difficulty → set list** (the owner's order, and the Fortnite one: your best stars and score for that difficulty show on every song, and the picked song plays a chorus preview), a **gig-poster loading screen** with a tip, a camera **swoop over the crowd** with "LIVE AT THE ARENA", and the drummer's **4 stick clicks** on the song's own beat (3, 2, 1, ROCK!).
+
+---
+
 ## Sources
 - Guitar Hero Star Power and squeezing: [Giant Bomb: Star Power](https://giantbomb.com/wiki/Concepts/Star_Power), [Giant Bomb: Squeezing](https://giantbomb.com/wiki/Concepts/Squeezing)
 - Rock Band Overdrive, Unison Phrases, Big Rock Ending: [MobyGames: Rock Band](https://www.mobygames.com/game/32021), [Wikipedia: Rock Band](https://en.wikipedia.org/wiki/Rock_Band_(video_game)), [StrategyWiki: Rock Band gameplay](https://strategywiki.org/wiki/Rock_Band/Gameplay), [Wikipedia: Rock Band 4](https://en.wikipedia.org/wiki/Rock_Band_4), [Futurelooks: World Tour vs Rock Band 2](https://www.futurelooks.com/battle-of-the-band-games-guitar-hero-world-tour-vs-rock-band-2/2/)
@@ -110,4 +128,5 @@ Before building Riot Mode and the rest of `docs/GAME_DESIGN.md`, we looked at ho
 - Project DIVA Chance Time: [pixiv encyclopedia: Project DIVA](https://dic.pixiv.net/history/ProjectDIVA/664153)
 - Rock Band 4 freestyle solos: [TechCrunch](https://techcrunch.com/2015/07/14/rock-band-4-guitar-solos), [Game Informer](https://gameinformer.com/games/rock_band_4/b/xboxone/archive/2015/08/29/rock-band-4-freestyle-guitar-solos-are-fun-once-you-understand-them)
 - Mobile progression: [Wikipedia: Arcaea](https://en.wikipedia.org/wiki/Arcaea), [Wikipedia: Hatsune Miku: Colorful Stage!](https://en.wikipedia.org/wiki/Hatsune_Miku:_Colorful_Stage!), [Project Sekai beginner guide](https://shapes.inc/games/guides/project-sekai-beginner-guide)
+- Menus and song starts (v0.11): [Guitar Hero loading phrases](https://guitarhero.fandom.com/wiki/Loading_phrases), [Guitar Hero Quickplay](https://guitarhero.fandom.com/wiki/Quickplay), [Wikipedia: Guitar Hero Live](https://en.wikipedia.org/wiki/Guitar_Hero_Live), [Destructoid: Guitar Hero Live review](https://www.destructoid.com/reviews/review-guitar-hero-live/), [Cheat CC: Rock Band 4 preview](https://www.cheatcc.com/articles/rock-band-4-preview-ps4/), [Engadget: Rock Band venues](https://www.engadget.com/2007-10-09-rock-bands-virtual-venues-unveiled.html), [Epic Games: Fortnite Festival help](https://www.epicgames.com/help/fortnite-festival-c-202300000001635/a202300000012260), [Beat Saber: preparing a song](https://beatsaber.com/documentation/preparing-the-song/index.html), [Steam: Beat Saber](https://store.steampowered.com/app/620980), [Android Central: Beatstar](https://www.androidcentral.com/beatstar-android-game-week), [Thumb-zone design](https://parachutedesign.ca/blog/thumb-zone-ux/)
 - Charting: [osu! forum: mapping the prominent layer](https://osu.ppy.sh/community/forums/posts/7011477), [Flash Flash Revolution: stepping easier charts](https://www.flashflashrevolution.com/vbz/node/97913), [Clone Hero difficulty guidelines](https://customsongscentral.com/diff-guitar)

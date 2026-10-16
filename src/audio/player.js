@@ -21,7 +21,7 @@ export class SongPlayer {
     this.songUrl = songUrl;
     this.ctx = null;       // the AudioContext (created on first Start tap)
     this.buffer = null;    // decoded song, kept so Restart is instant
-    this.buffers = new Map(); // every song decoded so far, by URL
+    this.buffers = new Map(); // the decoded song, by URL (only the current one is kept)
     this.source = null;    // the node currently playing the song
     this.begin = 0;        // ctx time at which game time = 0
     this.playing = false;
@@ -35,34 +35,63 @@ export class SongPlayer {
   }
 
   /**
-   * Start the song from the beginning. MUST be called from a tap/click handler.
-   * Resolves once the music is scheduled; rejects with a readable error.
+   * Get the song ready to play: unlock audio and decode the MP3 (the slow
+   * part, done once per song). MUST be called from a tap/click handler.
+   * Resolves when ready; rejects with a readable error.
    */
-  async start() {
+  async load() {
     // Step 1 — unlock audio synchronously, while we are still inside the tap.
     const unlocked = this.unlock();
     this.stopSource();
-    this.master.gain.cancelScheduledValues(0);
-    this.master.gain.value = 0.9;
+    this.playing = false;
 
     // Step 2 — the slow part: turn the MP3 bytes into playable audio (once).
     if (!this.buffer) {
       const url = this.songUrl;
-      const bytes = await loadBytes(url);
-      const buffer = await this.ctx.decodeAudioData(bytes);
+      const bytes = await songBytes(url);
+      // decodeAudioData takes the bytes over, so give it a copy (the original
+      // stays cached for the song previews).
+      const buffer = await this.ctx.decodeAudioData(bytes.slice(0).buffer);
+      // A decoded song is big (about 70 MB for 3.5 minutes), so only the
+      // current one is kept: phones run out of memory otherwise.
+      this.buffers.clear();
       this.buffers.set(url, buffer);
       if (url !== this.songUrl) throw new Error('The song was changed while loading.');
       this.buffer = buffer;
     }
     await unlocked;
+  }
 
-    // Step 3 — schedule the song to begin after the count-in.
+  /**
+   * Start the clock: game time 0 is right now, and the song itself begins
+   * LEAD seconds later (after the intro and the count-in). load() first.
+   */
+  play() {
+    this.stopSource();
+    this.master.gain.cancelScheduledValues(0);
+    this.master.gain.value = 0.9;
     this.source = this.ctx.createBufferSource();
     this.source.buffer = this.buffer;
     this.source.connect(this.master);
     this.begin = this.ctx.currentTime + 0.12; // tiny safety margin
     this.source.start(this.begin + LEAD);
     this.playing = true;
+  }
+
+  /** load() + play() in one go (Restart). MUST be called from a tap. */
+  async start() {
+    await this.load();
+    this.play();
+  }
+
+  /**
+   * The drummer's count-in: a stick click at each of these GAME times
+   * (seconds; scheduled on the audio clock, so they're perfectly in time).
+   */
+  countIn(times) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    times.forEach((t, i) => stickClick(ctx, this.master, this.begin + t, i === times.length - 1));
   }
 
   /**
@@ -97,16 +126,65 @@ export class SongPlayer {
   /**
    * Little sound effects, made from scratch with oscillators (no extra
    * files). They play on top of the music.
+   *   'blip'     a menu button
+   *   'chord'    a big power chord (START THE SHOW)
+   *   'boom'     a deep thump (the show is about to start)
    *   'riot'     a rising whoosh and a big power chord (Riot Mode!)
    *   'trombone' the classic "wah wah wah waaah" (the show is over)
    */
-  sfx(name) {
+  sfx(name, retry = true) {
     const ctx = this.ctx;
-    if (!ctx || ctx.state !== 'running') return;
+    if (!ctx) return;
+    if (ctx.state !== 'running') {
+      // Audio is asleep (menus): wake it, then play the sound (one try only).
+      if (retry) ctx.resume().then(() => this.sfx(name, false), () => {});
+      return;
+    }
     const now = ctx.currentTime;
     const out = ctx.createGain();
     out.connect(ctx.destination);
-    if (name === 'riot') {
+    if (name === 'blip') {
+      // Menu button: a short bright "bip" that slides up.
+      const o = ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.setValueAtTime(520, now);
+      o.frequency.exponentialRampToValueAtTime(1040, now + 0.06);
+      out.gain.setValueAtTime(0.05, now);
+      out.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+      o.connect(out);
+      o.start(now);
+      o.stop(now + 0.1);
+    } else if (name === 'chord') {
+      // START THE SHOW: a big crunchy power chord that rings out.
+      for (const [f, delay] of [[82.4, 0], [123.5, 0.01], [164.8, 0.02], [247, 0.03]]) {
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(2600, now);
+        lp.frequency.exponentialRampToValueAtTime(500, now + 1.4);
+        const gn = ctx.createGain();
+        gn.gain.setValueAtTime(0.0001, now + delay);
+        gn.gain.exponentialRampToValueAtTime(0.09, now + delay + 0.02);
+        gn.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+        o.connect(lp).connect(gn).connect(out);
+        o.start(now + delay);
+        o.stop(now + 1.7);
+      }
+    } else if (name === 'boom') {
+      // The curtain drops: a deep thump.
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(140, now);
+      o.frequency.exponentialRampToValueAtTime(38, now + 0.5);
+      out.gain.setValueAtTime(0.0001, now);
+      out.gain.exponentialRampToValueAtTime(0.6, now + 0.01);
+      out.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      o.connect(out);
+      o.start(now);
+      o.stop(now + 0.75);
+    } else if (name === 'riot') {
       // Whoosh: white noise through a filter that sweeps up.
       const noise = ctx.createBufferSource();
       const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -197,16 +275,58 @@ export class SongPlayer {
   get hasRecording() { return !!this.source; }
 }
 
-/** Get the raw MP3 bytes, either by decoding an embedded data URL or fetching. */
-async function loadBytes(url) {
+// The raw MP3 bytes of every song asked for so far (a few MB each). Kept so
+// song previews and replays don't have to unpack them again.
+const bytesCache = new Map();
+
+/**
+ * Get the raw MP3 bytes (a Uint8Array), either by unpacking an embedded data
+ * URL or by fetching the file (dev server). Shared with the song previews.
+ */
+export async function songBytes(url) {
+  if (bytesCache.has(url)) return bytesCache.get(url);
+  let bytes;
   if (url.startsWith('data:')) {
-    const base64 = url.slice(url.indexOf(',') + 1);
-    const raw = atob(base64);
-    const bytes = new Uint8Array(raw.length);
+    const raw = atob(url.slice(url.indexOf(',') + 1));
+    bytes = new Uint8Array(raw.length);
     for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    return bytes.buffer;
+  } else {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not load song file (HTTP ${res.status}).`);
+    bytes = new Uint8Array(await res.arrayBuffer());
   }
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Could not load song file (HTTP ${res.status}).`);
-  return res.arrayBuffer();
+  bytesCache.set(url, bytes);
+  return bytes;
+}
+
+/**
+ * One drumstick click (the count-in). Made from scratch: a very short burst
+ * of noise for the "tick" plus a quick high tone for the wood.
+ */
+function stickClick(ctx, out, when, accent) {
+  const len = 0.05;
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * len), ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.006));
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 3200;
+  bp.Q.value = 1.2;
+  const g = ctx.createGain();
+  g.gain.value = accent ? 1.1 : 0.8;
+  noise.connect(bp).connect(g).connect(out);
+  noise.start(when);
+
+  const wood = ctx.createOscillator();
+  wood.type = 'triangle';
+  wood.frequency.setValueAtTime(accent ? 2100 : 1800, when);
+  const wg = ctx.createGain();
+  wg.gain.setValueAtTime(0.0001, when);
+  wg.gain.exponentialRampToValueAtTime(0.35, when + 0.002);
+  wg.gain.exponentialRampToValueAtTime(0.0001, when + 0.04);
+  wood.connect(wg).connect(out);
+  wood.start(when);
+  wood.stop(when + 0.05);
 }

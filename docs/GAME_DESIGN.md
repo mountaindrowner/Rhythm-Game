@@ -1,6 +1,6 @@
 # Rhythm Riot: game design (working draft)
 
-> **Research note (v0.6.1):** `docs/RESEARCH_RHYTHM_GAMES.md` compares this plan with Guitar Hero, Rock Band, Fortnite Festival, Rhythm Heaven and others, and suggests changes (Riot *phrases*, a swipe-up or button trigger, a visible ×1–×4 multiplier, EARLY/LATE hints, stars per song). Those suggestions are waiting on the owner's approval.
+> **Research note (v0.6.1):** `docs/RESEARCH_RHYTHM_GAMES.md` compares this plan with Guitar Hero, Rock Band, Fortnite Festival, Rhythm Heaven and others, and suggests changes (Riot *phrases*, a swipe-up or button trigger, a visible ×1–×4 multiplier, EARLY/LATE hints, stars per song). The owner approved them; they were built in v0.7–v0.9 (see §9).
 
 **Rhythm Riot** (working title) stars **X-ROADS**, a four-piece rock band. This doc fleshes out how the game should *play*: the core loop, **Riot Mode**, and the **ridiculous moments** that make it memorable. It's a proposal to react to. Nothing here is built yet unless it says **(built)**.
 
@@ -149,6 +149,7 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 - **Finale:** a **Big Rock Ending** when the song's ending suits it.
 - **Failure is funny**, never sad.
 - **Difficulty:** Standard and Expert were too hard on a phone; v0.7 made every difficulty gentler.
+- **Menus (v0.11):** the menus are their own rock show, not see-through to the game; a title screen with START THE SHOW, SETTINGS and TIMING CHECK; then **difficulty first, then the song** (with your best score); a full loading screen; and a countdown into the song **(built)**.
 
 ## 10. Earlier questions (still open)
 1. ~~Riot Mode trigger~~ (decided: swipe up)
