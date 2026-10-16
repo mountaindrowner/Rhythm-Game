@@ -1,8 +1,9 @@
 # Next steps (handoff)
 
-_Last updated: v0.8._
+_Last updated: v0.9._
 
 ## Where things stand
+- **v0.9: call-and-response solos + Big Rock Endings.** *You Won't Let Me Fall* (guitarist) and *Trust God Anyway* (bassist) have solos in their bridges; *You're Not My Plan B* has none (no bridge found; tell me where a solo spot is and it's one line in `songs.js`). All three songs end with a Big Rock Ending (they end on a big hit rather than a fade). **Next ideas:** more ridiculous moments as solo/Riot rewards (MAD SCIENCE, STICK LAUNCH, INFLATABLE DUCK), a daily challenge, and testing everything on a real iPhone.
 - **v0.8: Riot Mode + funny failure.** Gold Riot phrases fill the meter; swipe up to unleash ×2 (up to ×8), no energy loss, +30 energy, and a 2.5-second "swipe to save the show" chance when energy runs out. Game over now plays a sad trombone, rolls a tumbleweed across the stage and gives a silly reason. **Next:** v0.9 call-and-response solos and a Big Rock Ending.
 - **v0.7 (owner-approved plan from the research):** gentler charts for all three songs (the owner found Standard and Expert too hard on a phone), a visible ×1–×4 multiplier, EARLY/LATE hints, an early/late count and "fix my timing" tip on the results screen, and stars + best scores per song and difficulty (gold stars = Expert full combo). **Next:** v0.8 Riot Mode (gold phrases, swipe up, rescue from game over, ×8) + funny failure; then v0.9 call-and-response solos and a Big Rock Ending (see `GAME_DESIGN.md` §9).
 - **Research (v0.6.1):** `docs/RESEARCH_RHYTHM_GAMES.md` looks at how other rhythm games handle power-ups, scoring, timing feedback, progression and humor, with a suggested build order and 4 questions for the owner. **Nothing from it is built yet**; the owner wants to review it first.

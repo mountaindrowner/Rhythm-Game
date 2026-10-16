@@ -8,7 +8,7 @@
 // listen to those events to draw sparks, animate the band, update the HUD.
 // Keeping the rules separate makes them easy to test (see tests/unit/).
 // =============================================================================
-import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS, RIOT } from '../config.js';
+import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS, RIOT, FINALE } from '../config.js';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -18,7 +18,7 @@ export const multiplierFor = (streak) => Math.min(SCORE.maxMultiplier, 1 + Math.
 /** The score of a perfect run: every note PERFECT, every long note held. */
 export function perfectScore(notes) {
   let total = 0;
-  notes.forEach((n, i) => {
+  notes.filter((n) => !n.ghost).forEach((n, i) => {
     const mult = multiplierFor(i + 1);
     total += SCORE.perfect.base * mult + (n.hold > 0 ? SCORE.holdBonus * mult : 0);
   });
@@ -38,10 +38,18 @@ export class Performance {
    * @param {{drain?:number, beatLength?:number}} options  drain scales energy
    *   lost from mistakes; beatLength (seconds) sets how long Riot Mode lasts
    */
-  constructor(notes, { drain = 1, beatLength = 0.4 } = {}) {
+  constructor(notes, { drain = 1, beatLength = 0.4, finale = null } = {}) {
     this.notes = notes;
     this.drain = drain;
     this.beatLength = beatLength;
+    // Solo: how many of your "response" notes there are, and how many you hit.
+    this.soloTotal = notes.filter((n) => n.solo).length;
+    this.soloHits = 0;
+    // Big Rock Ending: when the free-for-all starts, and the points waiting
+    // to be banked by hitting the final note.
+    this.finale = finale;
+    this.finalePending = 0;
+    this.finaleBanked = 0;
     // Riot Mode: the meter (0..1), whether it's running, and each gold
     // phrase's progress: { notes in it, hit so far, broken by a miss }.
     this.riotMeter = 0;
@@ -55,7 +63,7 @@ export class Performance {
       if (!this.phrases.has(n.riot)) this.phrases.set(n.riot, { total: 0, hit: 0, broken: false });
       this.phrases.get(n.riot).total++;
     }
-    this.total = notes.length;
+    this.total = notes.filter((n) => !n.ghost).length; // ghost notes are the soloist's, not yours
     this.score = 0;
     this.combo = 0;
     this.maxCombo = 0;
@@ -83,11 +91,17 @@ export class Performance {
     for (let i = this.cursor; i < this.notes.length; i++) {
       const n = this.notes[i];
       if (n.time > now + WINDOWS.good) break; // the rest are further in the future
-      if (n.lane !== lane || n.hit || n.miss) continue;
+      if (n.ghost || n.hit || n.miss) continue;
+      if (n.lane !== lane && n.lane !== -1) continue; // lane -1 = the finale note: any pad
       const d = Math.abs(n.time - now);
       if (d < WINDOWS.good && d < bestDelta) { best = n; bestDelta = d; }
     }
 
+    if (!best && this.finale && now >= this.finale.start && now < this.finale.time - WINDOWS.good) {
+      // Big Rock Ending: every tap is worth points (banked at the final note).
+      this.finalePending += FINALE.perTap * this.multiplier;
+      return { type: 'freestyle', lane, pending: this.finalePending };
+    }
     if (!best) {
       // Pressing during the count-in is free practice; after that it's a mistake.
       if (t >= LEAD - 0.02 && t - this.lastMistake[lane] > WRONG_PRESS_COOLDOWN) {
@@ -114,6 +128,14 @@ export class Performance {
     if (best.hold > 0) this.holding[lane] = best;
     else best.done = true;
     // Riot phrase: every note hit = more meter.
+    if (best.solo) this.soloHits++;
+    let finaleBonus = 0;
+    if (best.finale) {
+      finaleBonus = this.finalePending;
+      this.score += finaleBonus;
+      this.finaleBanked = finaleBonus;
+      this.finalePending = 0;
+    }
     let riotPhrase = false;
     const phrase = best.riot && this.phrases.get(best.riot);
     if (phrase && !phrase.broken && ++phrase.hit === phrase.total) {
@@ -121,7 +143,7 @@ export class Performance {
       riotPhrase = true;
     }
     return {
-      type: 'hit', lane, grade, note: best, timing, riotPhrase,
+      type: 'hit', lane, grade, note: best, timing, riotPhrase, finaleBonus,
       combo: this.combo,
       milestone: this.combo % SCORE.comboMilestone === 0,
     };
@@ -156,6 +178,7 @@ export class Performance {
     for (let i = this.cursor; i < this.notes.length; i++) {
       const n = this.notes[i];
       if (n.time > now + 0.2) break;
+      if (n.ghost) continue;
       if (!n.hit && !n.miss && now - n.time > WINDOWS.missAfter) {
         n.miss = true;
         n.done = true;
@@ -166,7 +189,12 @@ export class Performance {
           phrase.broken = true; // a missed gold note loses that phrase (its notes turn normal)
           for (const other of this.notes) if (other.riot === n.riot) other.riotBroken = true;
         }
-        events.push(this.mistake(n.lane, t, 'miss', ENERGY.miss));
+        if (n.finale) {
+          this.finalePending = 0; // missed the final note: the bonus is gone
+          events.push({ ...this.mistake(0, t, 'miss', 0), finaleLost: true });
+        } else {
+          events.push(this.mistake(n.lane, t, 'miss', ENERGY.miss));
+        }
       }
     }
     // Riot Mode drains the meter: a full meter lasts RIOT.fullBeats beats.
@@ -219,6 +247,18 @@ export class Performance {
     // In Riot Mode the crowd forgives everything: no energy lost.
     if (!this.riotActive) this.energy = clamp(this.energy + energyChange * this.drain, 0, 100);
     return { type: 'mistake', kind, lane };
+  }
+
+  /** Solo medal so far: '', 'bronze', 'silver' or 'gold' (from the share of response notes hit). */
+  soloMedal(thresholds) {
+    if (!this.soloTotal) return '';
+    const share = this.soloHits / this.soloTotal;
+    return share >= thresholds.gold ? 'gold' : share >= thresholds.silver ? 'silver' : share >= thresholds.bronze ? 'bronze' : '';
+  }
+
+  /** Extra points (solo medals). */
+  addBonus(points) {
+    this.score += points;
   }
 
   /** Can Riot Mode be unleashed right now? */

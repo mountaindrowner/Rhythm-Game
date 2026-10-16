@@ -71,6 +71,16 @@ export const RIOT = {
   lastChance: 2.5,   // seconds to swipe when your energy runs out with Riot ready
 };
 
+// ---- Solos and the Big Rock Ending -------------------------------------------
+export const SOLO = {
+  // Share of the solo's "response" notes you need to hit for each medal.
+  bronze: 0.6, silver: 0.8, gold: 0.95,
+  bonus: { bronze: 1000, silver: 2500, gold: 5000 },
+};
+export const FINALE = {
+  perTap: 25,        // points per pad tap during the Big Rock Ending (× multiplier)
+};
+
 // ---- Stars (results screen and song picker) --------------------------------
 // Stars come from your score as a share of a "perfect run" (every note
 // PERFECT, never dropping the streak). Gold stars: an Expert full combo

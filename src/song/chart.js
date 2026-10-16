@@ -52,6 +52,8 @@ export function selectSong(id) {
     beats,
     firstDownbeat: chart.first_downbeat || 0, // which beat is "1" of the first bar
     allNotes: chart.notes,
+    solo: entry.solo || null,                 // call-and-response solo (songs.js)
+    bigRockEnding: !!entry.bigRockEnding,      // free-for-all finale (songs.js)
   });
   for (const fn of listeners) fn(SONG);
   return SONG;
@@ -82,6 +84,9 @@ export function notesForDifficulty(difficulty) {
       hold: n.hold,        // seconds; 0 = normal tap note
       role: n.role,        // e.g. "kick", "guitar-strum" (used for animation)
       riot: 0,             // which Riot phrase this note belongs to (0 = none)
+      ghost: false,        // a solo "call" note: the soloist plays it, not you
+      solo: false,         // a solo "response" note: you copy the soloist
+      finale: false,       // the Big Rock Ending's final note (any lane hits it)
       hit: false,          // player hit the head of the note
       miss: false,         // note went past without a hit
       done: false,         // nothing more can happen to this note
@@ -89,6 +94,89 @@ export function notesForDifficulty(difficulty) {
     .sort((a, b) => a.time - b.time || a.lane - b.lane);
   markRiotPhrases(notes, difficulty);
   return notes;
+}
+
+/**
+ * Everything needed to play the current song on a difficulty: the notes,
+ * plus the song's big moments if it has them (see songs.js):
+ *   solo   { who, lane, pairs: [{ callStart, responseStart, end }], start, end }
+ *   finale { start, time }  (game times)
+ */
+export function prepareSong(difficulty) {
+  let notes = notesForDifficulty(difficulty);
+  const solo = SONG.solo ? applySolo(notes, SONG.solo) : null;
+  const finale = SONG.bigRockEnding ? applyFinale(notes) : null;
+  notes = notes.filter((n) => !n.removed);
+  for (const n of notes) if (n.ghost || n.solo || n.finale) n.riot = 0;
+  notes.sort((a, b) => a.time - b.time || a.lane - b.lane);
+  notes.forEach((n, i) => { n.id = i; });
+  return { notes, solo, finale };
+}
+
+/** Song time of a beat position (the opposite of beatPosition). */
+export function timeAtBeat(pos) {
+  const beats = SONG.beats;
+  if (pos <= 0) return beats[0] + pos * SONG.beatLength;
+  const last = beats.length - 1;
+  if (pos >= last) return beats[last] + (pos - last) * SONG.beatLength;
+  const i = Math.floor(pos);
+  return beats[i] + (pos - i) * (beats[i + 1] - beats[i]);
+}
+
+const SOLO_LANE = { bassist: 0, singer: 1, guitarist: 2, drummer: 3 };
+
+/**
+ * CALL AND RESPONSE: inside the solo section, every 4 bars are split in two.
+ * In the first 2 bars ("call") the soloist plays: those notes become ghost
+ * notes you just watch. In the next 2 bars ("response") you play the very
+ * same rhythm back. Pairs whose call has fewer than 2 notes are left alone.
+ */
+function applySolo(notes, { section, who }) {
+  const i = SONG.sections.findIndex((s) => s.name.startsWith(section));
+  if (i < 0) return null;
+  const secStart = SONG.sections[i].time;
+  const secEnd = SONG.sections[i + 1]?.time ?? SONG.duration;
+  const fd = SONG.firstDownbeat;
+  const firstBar = Math.round((beatPosition(secStart) - fd) / 4);
+  const endBar = Math.floor((beatPosition(secEnd) - fd) / 4);
+  const at = (bar) => LEAD + timeAtBeat(fd + bar * 4); // game time a bar starts
+  const pairs = [];
+  for (let bar = firstBar; bar + 4 <= endBar; bar += 4) {
+    const callStart = at(bar);
+    const responseStart = at(bar + 2);
+    const end = at(bar + 4);
+    const call = notes.filter((n) => !n.removed && n.time >= callStart - 0.02 && n.time < responseStart - 0.02);
+    if (call.length < 2) continue;
+    for (const n of notes) if (n.time >= responseStart - 0.02 && n.time < end - 0.02) n.removed = true;
+    for (const n of call) {
+      n.ghost = true;
+      n.done = true; // nothing to judge: the soloist plays it
+      const copy = { ...n, ghost: false, done: false, solo: true };
+      copy.time = LEAD + timeAtBeat(beatPosition(n.time - LEAD) + 8); // same spot, 2 bars later
+      notes.push(copy);
+    }
+    pairs.push({ callStart, responseStart, end });
+  }
+  if (!pairs.length) return null;
+  return { who, lane: SOLO_LANE[who] ?? 2, pairs, start: pairs[0].callStart, end: pairs[pairs.length - 1].end };
+}
+
+/**
+ * BIG ROCK ENDING: the last 4 bars before the song's final hit are cleared.
+ * You mash any pads for bonus points, then hit the big final note (any lane)
+ * to keep them.
+ */
+function applyFinale(notes) {
+  const last = notes.reduce((a, n) => (n.time > a.time ? n : a), notes[0]);
+  if (!last) return null;
+  const time = last.time;
+  const start = LEAD + timeAtBeat(beatPosition(time - LEAD) - 16);
+  for (const n of notes) if (n.time >= start - 0.02 && !n.removed) n.removed = true;
+  notes.push({
+    id: 0, time, lane: -1, hold: 0, role: 'finale', riot: 0, ghost: false, solo: false, finale: true,
+    hit: false, miss: false, done: false,
+  });
+  return { start, time };
 }
 
 /**

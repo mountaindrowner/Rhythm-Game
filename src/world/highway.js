@@ -105,6 +105,8 @@ export function createHighway(scene) {
   }));
   const capMat = new THREE.MeshStandardMaterial({ color: '#fff6dc', emissive: '#fff1c4', emissiveIntensity: 0.6 });
   const missMat = new THREE.MeshStandardMaterial({ color: '#4a4458', roughness: 0.8 });
+  // Solo "call" notes: see-through, because the soloist plays them, not you.
+  const ghostMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.28, depthWrite: false });
   // Riot phrase notes keep their lane color but wear a glowing gold cap.
   const riotCapMat = new THREE.MeshStandardMaterial({ color: '#ffd24a', emissive: '#ffb020', emissiveIntensity: 1.2 });
   // ...and a glowing gold ring around them, so they stand out on a small screen.
@@ -137,6 +139,15 @@ export function createHighway(scene) {
     return m;
   });
 
+  // The Big Rock Ending's final note: one wide gold bar across all four lanes.
+  const finaleBar = new THREE.Mesh(
+    new THREE.BoxGeometry(HALF * 2 - 0.1, 0.22, 0.42),
+    new THREE.MeshStandardMaterial({ color: '#ffd24a', emissive: '#ffa020', emissiveIntensity: 1.3 }),
+  );
+  finaleBar.visible = false;
+  group.add(finaleBar);
+  let freestyle = false; // Big Rock Ending: lanes pulse in rainbow colors
+
   let notes = [];
   let start = 0;
 
@@ -161,9 +172,29 @@ export function createHighway(scene) {
 
     let gi = 0;
     let ti = 0;
+    finaleBar.visible = false;
     for (let i = start; i < notes.length; i++) {
       const n = notes[i];
       if (n.time - t > TRAVEL + 0.05) break; // not visible yet; nor are later ones
+      if (n.finale) {
+        // The final note of a Big Rock Ending: a gold bar across the highway.
+        finaleBar.visible = !n.hit && !n.miss && n.time - t > -0.15;
+        finaleBar.position.set(0, 0.12, zFor(n.time));
+        continue;
+      }
+      if (n.ghost) {
+        // The soloist's notes: shown until they reach the line, then gone.
+        if (n.time < t || gi >= gems.length) continue;
+        const gem = gems[gi++];
+        gem.g.visible = true;
+        gem.g.position.set(laneX(n.lane), 0.1, zFor(n.time));
+        gem.g.scale.set(0.9, 0.9, 0.9);
+        gem.g.rotation.y = 0;
+        gem.puck.material = ghostMat;
+        gem.cap.visible = false;
+        gem.halo.visible = false;
+        continue;
+      }
       const isHolding = n.hit && n.hold > 0 && !n.done;
       if (n.hit && !isHolding) continue;      // hit tap notes vanish
       if (n.done && !n.miss) continue;
@@ -227,7 +258,8 @@ export function createHighway(scene) {
       r.glow.material.opacity = (held ? 0.35 : 0) + f * 0.6;
       const s = 1 + (held ? 0.12 : 0) + f * 0.25;
       r.ring.scale.set(s, s, s);
-      strips[lane].material.opacity = (held ? 0.2 : 0.06) + (riot ? 0.08 + 0.06 * Math.sin(t * 10) : 0);
+      strips[lane].material.opacity = (held ? 0.2 : 0.06) + (riot ? 0.08 + 0.06 * Math.sin(t * 10) : 0)
+        + (freestyle ? 0.15 + 0.15 * Math.sin(t * 14 + lane * 1.6) : 0);
     });
   }
 
@@ -238,5 +270,8 @@ export function createHighway(scene) {
     dividerMat.opacity = on ? 0.9 : 0.55;
   }
 
-  return { group, update, setNotes, flash, setRiot };
+  /** Big Rock Ending on/off: the lanes pulse like a light show. */
+  function setFreestyle(on) { freestyle = on; }
+
+  return { group, update, setNotes, flash, setRiot, setFreestyle };
 }

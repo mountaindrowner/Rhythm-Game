@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { WORLD } from '../config.js';
 import { Particles, softDot } from './effects.js';
-import { moodFor } from './stage.js';
+import { moodFor, BAND_SPOTS } from './stage.js';
 
 const Z0 = WORLD.stageZ;
 const TOP = WORLD.stageHeight;
@@ -78,6 +78,28 @@ export function createShowFx(scene, fans, flashEl) {
   scene.add(tumble);
   let tumbleStart = -1;
 
+  // Solo spotlight: a bright beam straight down on the soloist.
+  const soloBeam = new THREE.Mesh(
+    (() => { const g = new THREE.ConeGeometry(1.7, 10, 24, 1, true); g.translate(0, -5, 0); return g; })(),
+    new THREE.MeshBasicMaterial({
+      color: '#fff6dc', transparent: true, opacity: 0, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide, fog: false,
+    }),
+  );
+  soloBeam.visible = false;
+  scene.add(soloBeam);
+  let soloWho = null;
+
+  // SHRED moment: flames under the floating soloist and lightning from the truss.
+  let shredWho = null;
+  let shredStart = -1;
+  const boltMat = new THREE.LineBasicMaterial({ color: '#d8f0ff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+  const bolts = [0, 1, 2].map(() => {
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 9 }, () => new THREE.Vector3())), boltMat);
+    scene.add(line);
+    return line;
+  });
+
   let riot = false;
   let lastBar = -1;
   let lastHalf = -1;
@@ -131,6 +153,21 @@ export function createShowFx(scene, fans, flashEl) {
       riot = on;
     },
 
+    /** Solo spotlight on a band member ('guitarist', ...), or off with null. */
+    setSoloSpot(who) { soloWho = who; },
+
+    /** A gold solo: flames and lightning for whoever is floating. */
+    shred(who) {
+      shredWho = who;
+      shredStart = -2; // starts on the next update
+      strobe();
+    },
+
+    /** A small fire pop (Big Rock Ending taps). */
+    pop() {
+      pyro([(Math.random() * 4) | 0]);
+    },
+
     /** Game over gag: a tumbleweed rolls across the stage. */
     tumbleweed() { tumbleStart = -2; }, // starts on the next update
 
@@ -157,6 +194,9 @@ export function createShowFx(scene, fans, flashEl) {
       riot = false;
       tumbleStart = -1;
       tumble.visible = false;
+      soloWho = shredWho = null;
+      soloBeam.visible = false;
+      boltMat.opacity = 0;
     },
 
     /**
@@ -201,6 +241,45 @@ export function createShowFx(scene, fans, flashEl) {
         lightPos[i * 3 + 2] = f.z;
       });
       lightGeo.attributes.position.needsUpdate = true;
+
+      // Solo spotlight fades in over the soloist.
+      const spot = soloWho && BAND_SPOTS[soloWho];
+      soloBeam.visible = !!spot || soloBeam.material.opacity > 0.01;
+      if (spot) soloBeam.position.set(spot.x, TOP + 10.5, spot.z);
+      soloBeam.material.opacity += ((spot ? 0.22 : 0) - soloBeam.material.opacity) * (1 - Math.exp(-dt * 5));
+
+      // SHRED: 5 seconds of flames under the soloist (who floats, see
+      // bandSprites.shred) and three flickering lightning bolts.
+      if (shredStart === -2) shredStart = time;
+      const shredSpot = shredWho && BAND_SPOTS[shredWho];
+      if (shredSpot && shredStart >= 0) {
+        const k = (time - shredStart) / 5;
+        if (k >= 1) {
+          shredWho = null;
+          boltMat.opacity = 0;
+        } else {
+          const lift = Math.sin(Math.PI * k) * 2.2;
+          for (let i = 0; i < 6; i++) {
+            fire.emit(shredSpot.x + (Math.random() - 0.5) * 1.2, TOP + lift + 0.2, shredSpot.z + 0.3,
+              (Math.random() - 0.5) * 1.5, -1 - Math.random() * 2, 0, FIRE[(Math.random() * FIRE.length) | 0], 0.35);
+          }
+          // Lightning: re-zigzag each bolt, flickering on and off.
+          const flicker = Math.random() < 0.35;
+          boltMat.opacity = flicker && k < 0.6 ? 1 : 0;
+          if (flicker) {
+            bolts.forEach((bolt, b) => {
+              const pos = bolt.geometry.attributes.position;
+              for (let i = 0; i < pos.count; i++) {
+                const f = i / (pos.count - 1);
+                pos.setXYZ(i, shredSpot.x + (b - 1) * 0.08 + (i && i < pos.count - 1 ? (Math.random() - 0.5) * 1.4 : 0),
+                  TOP + 10 - f * (10 - lift - 4.5), shredSpot.z);
+              }
+              pos.needsUpdate = true;
+            });
+            pyroFlash = Math.max(pyroFlash, 0.6);
+          }
+        }
+      }
 
       // The tumbleweed bounces across the front of the stage in 4.5 seconds.
       if (tumbleStart === -2) tumbleStart = time;

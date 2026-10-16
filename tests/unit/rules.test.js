@@ -194,3 +194,37 @@ test('a swipe that starts on an empty pad gets its wrong-note penalty back', () 
   assert.equal(p.counts.wrong, 0);
   assert.equal(p.energy, Math.min(100, before + 30));
 });
+
+// ---- Solos and the Big Rock Ending ---------------------------------------------
+test('ghost notes (the soloist playing) are not yours: no hit, no miss, not counted', () => {
+  const ghost = { ...note(1, 2), ghost: true, done: true };
+  const p = new Performance([ghost, { ...note(2, 2), solo: true }]);
+  assert.equal(p.total, 1);
+  assert.equal(p.press(2, LEAD + 1).type, 'mistake'); // nothing to hit at 1 s
+  p.update(LEAD + 1.5);
+  assert.equal(p.counts.miss, 0);
+  p.press(2, LEAD + 2);
+  assert.equal(p.soloHits, 1);
+  assert.equal(p.soloMedal({ bronze: 0.6, silver: 0.8, gold: 0.95 }), 'gold');
+});
+
+test('Big Rock Ending: taps earn pending points, the final note (any lane) banks them', () => {
+  const final = { ...note(5, -1), finale: true };
+  const p = new Performance([final], { finale: { start: LEAD + 2, time: LEAD + 5 } });
+  assert.equal(p.press(0, LEAD + 1).type, 'mistake'); // before the finale: a wrong note
+  for (let i = 0; i < 4; i++) assert.equal(p.press(i, LEAD + 3).type, 'freestyle');
+  assert.equal(p.finalePending, 100);
+  const e = p.press(3, LEAD + 5); // any pad hits the final note
+  assert.equal(e.type, 'hit');
+  assert.equal(e.finaleBonus, 100);
+});
+
+test('Big Rock Ending: missing the final note loses the pending points', () => {
+  const final = { ...note(5, -1), finale: true };
+  const p = new Performance([final], { finale: { start: LEAD + 2, time: LEAD + 5 } });
+  p.press(1, LEAD + 3);
+  const events = p.update(LEAD + 5.3);
+  assert.ok(events.some((e) => e.finaleLost));
+  assert.equal(p.finalePending, 0);
+  assert.equal(p.score, 0);
+});

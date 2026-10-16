@@ -20,6 +20,15 @@ const DEPTH = 9;                  // stage depth (front to back)
 // The drum riser's position is shared with band.js so the drummer stands on it.
 export const DRUM_RISER = { x: 1.9, z: Z0 - 5.4, h: 1.6 };
 
+// Where each musician stands on stage (x and z). Used by the bands, and by
+// the effects that aim at one of them (solo spotlight, flames, lightning).
+export const BAND_SPOTS = {
+  bassist:   { x: -5.0, z: Z0 - 2.3 },
+  singer:    { x: -1.5, z: Z0 - 1.3 },
+  guitarist: { x: 5.0,  z: Z0 - 2.3 },
+  drummer:   { x: DRUM_RISER.x, z: DRUM_RISER.z - 0.4 },
+};
+
 // Colors used per song section: [main light, accent light].
 const MOODS = {
   OPENING: ['#3b6dff', '#8f5bff'],

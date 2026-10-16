@@ -22,7 +22,9 @@ const file = resolve(process.argv[2] || 'dist/index.html');
 const shots = process.argv[3];
 if (shots) mkdirSync(shots, { recursive: true });
 
-const EXPECTED = { casual: 197, standard: 355, expert: 640 };
+// Notes YOU play in the first song (the solo's ghost notes are the guitarist's, and the
+// Big Rock Ending turns its last 4 bars into one final note).
+const EXPECTED = { casual: 184, standard: 333, expert: 596 };
 let failures = 0;
 const check = (ok, message) => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${message}`);

@@ -14,9 +14,9 @@
 //                          |-> results   (song finished)
 //                          |-> failing -> failed   (energy ran out)
 // =============================================================================
-import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY, RIOT } from './config.js';
+import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY, RIOT, SOLO } from './config.js';
 import {
-  SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition,
+  SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, prepareSong, sectionAt, beatPosition,
 } from './song/chart.js';
 import { VENUES } from './world/venues.js';
 import { getBest, recordResult, starText } from './progress.js';
@@ -76,6 +76,14 @@ let hype = 0;          // extra stage excitement from combos (0..1), fades over 
 let lastSection = '';
 let failedAt = 0;      // game time when energy ran out
 let lastChanceUntil = 0; // game time the "swipe to save the show" chance ends (0 = none)
+// This song's big moments (from prepareSong): the solo and the Big Rock Ending.
+let solo = null;
+let finale = null;
+let soloStep = -1;       // which part of the solo we're in (to show each banner once)
+let ghostCursor = 0;     // next solo "call" note the soloist will play
+let finaleStarted = false;
+let freestyleTaps = 0;
+const SOLOIST_NAME = { bassist: 'BASS', singer: 'VOCAL', guitarist: 'GUITAR', drummer: 'DRUM' };
 
 const offset = () => settings.tapOffsetMs / 1000;
 
@@ -85,12 +93,19 @@ const AUTOPLAY = new URLSearchParams(location.search).has('autoplay');
 const autoRelease = [Infinity, Infinity, Infinity, Infinity];
 function autoplay(t) {
   if (perf.riotReady) handle(perf.activateRiot(t)); // the robot loves Riot Mode
+  // Big Rock Ending: mash a random pad every few frames.
+  if (finale && t >= finale.start && t < finale.time - 0.2 && Math.random() < 0.3) {
+    const lane = (Math.random() * 4) | 0;
+    handle(perf.press(lane, t));
+    handle(perf.release(lane, t));
+  }
   for (let i = perf.cursor; i < perf.notes.length; i++) {
     const n = perf.notes[i];
     if (n.time > t) break;
-    if (!n.hit && !n.miss) {
-      handle(perf.press(n.lane, n.time));
-      autoRelease[n.lane] = n.time + Math.max(n.hold, 0.06);
+    if (!n.hit && !n.miss && !n.ghost) {
+      const lane = n.lane < 0 ? 1 : n.lane; // the finale note can be hit with any pad
+      handle(perf.press(lane, n.time));
+      autoRelease[lane] = n.time + Math.max(n.hold, 0.06);
     }
   }
   for (let lane = 0; lane < 4; lane++) {
@@ -140,6 +155,13 @@ function handle(e) {
     effects.burst(e.lane, e.grade === 'perfect' ? 26 : 14);
     hud.judgement(e.grade, e.timing);
     if (e.riotPhrase) hud.banner(perf.riotReady ? 'RIOT READY!' : 'RIOT PHRASE!');
+    if (e.note.finale) {
+      // The final note of the Big Rock Ending: bank the bonus!
+      highway.setFreestyle(false);
+      showfx.celebrate(true);
+      kick(1);
+      hud.banner(e.finaleBonus ? `BIG ROCK ENDING! +${e.finaleBonus.toLocaleString('en-US')}` : 'BIG ROCK ENDING!');
+    }
     if (e.grade === 'perfect') kick(0.25);
     if (e.milestone) {
       hype = 1;
@@ -153,8 +175,18 @@ function handle(e) {
     highway.flash(e.lane, t);
     effects.burst(e.lane, 10);
     hud.judgement('holdComplete');
+  } else if (e.type === 'freestyle') {
+    // Big Rock Ending: every tap is a little firework.
+    highway.flash(e.lane, t);
+    effects.burst(e.lane, 10);
+    freestyleTaps++;
+    if (freestyleTaps % 5 === 0) showfx.pop();
   } else if (e.type === 'mistake') {
     hud.judgement(e.kind);
+    if (e.finaleLost) {
+      highway.setFreestyle(false);
+      hud.banner('SO CLOSE! THE BONUS GOT AWAY');
+    }
   } else if (e.type === 'riotStart') {
     player.sfx('riot');
     showfx.setRiot(true);
@@ -171,6 +203,60 @@ function handle(e) {
 
 const kick = (amount) => world.kick(settings.reduceFlashing ? amount * 0.3 : amount);
 
+// ---- Big moments: call-and-response solo, Big Rock Ending -------------------
+function bigMoments(t) {
+  if (solo) {
+    // Which part are we in? -1 before, then 0,1 = call,response of pair 0, ...
+    let step = -1;
+    solo.pairs.forEach((p, i) => {
+      if (t >= p.callStart) step = i * 2;
+      if (t >= p.responseStart) step = i * 2 + 1;
+    });
+    const over = t >= solo.end;
+    if (over) step = solo.pairs.length * 2;
+    if (step !== soloStep) {
+      soloStep = step;
+      const name = SOLOIST_NAME[solo.who] || 'GUITAR';
+      if (over) {
+        // Solo finished: medal, bonus, and for gold, the SHRED moment.
+        showfx.setSoloSpot(null);
+        const medal = perf.soloMedal(SOLO);
+        if (medal) {
+          perf.addBonus(SOLO.bonus[medal]);
+          hud.banner(`${medal.toUpperCase()} SOLO! +${SOLO.bonus[medal].toLocaleString('en-US')}`);
+          showfx.celebrate(medal !== 'bronze');
+          kick(medal === 'gold' ? 1 : 0.5);
+          if (medal === 'gold') {
+            band.shred?.(solo.who, t);
+            showfx.shred(solo.who);
+          }
+        } else {
+          hud.banner('THE SOLO GOT AWAY FROM US!');
+        }
+      } else if (step >= 0) {
+        showfx.setSoloSpot(solo.who);
+        if (step % 2 === 0) hud.banner(step === 0 ? `${name} SOLO! LISTEN…` : 'LISTEN…');
+        else hud.banner('YOUR TURN! COPY IT!');
+      }
+    }
+    // The soloist "plays" the call notes: flash the lane as each one passes.
+    const notes = perf.notes;
+    while (ghostCursor < notes.length && notes[ghostCursor].time <= t) {
+      const n = notes[ghostCursor++];
+      if (!n.ghost) continue;
+      highway.flash(n.lane, t);
+      effects.burst(n.lane, 6);
+      band.onEvent({ type: 'hit', lane: solo.lane, grade: 'great' }, t);
+    }
+  }
+  if (finale && !finaleStarted && t >= finale.start) {
+    finaleStarted = true;
+    highway.setFreestyle(true);
+    hud.banner('BIG ROCK ENDING! MASH THE PADS!');
+    band.onEvent({ type: 'riotStart' }, t); // everyone does their big move
+  }
+}
+
 // ---- Game states -----------------------------------------------------------
 async function startGame() {
   if (status === 'preparing') return;
@@ -179,8 +265,16 @@ async function startGame() {
   setStatus('Tuning up… preparing the recording.');
   $('startBtn').disabled = true;
 
-  perf = new Performance(notesForDifficulty(settings.difficulty), {
-    drain: ENERGY.drain[settings.difficulty], beatLength: SONG.beatLength,
+  const play = prepareSong(settings.difficulty);
+  solo = play.solo;
+  finale = play.finale;
+  soloStep = -1;
+  ghostCursor = 0;
+  finaleStarted = false;
+  freestyleTaps = 0;
+  highway.setFreestyle(false);
+  perf = new Performance(play.notes, {
+    drain: ENERGY.drain[settings.difficulty], beatLength: SONG.beatLength, finale,
   });
   highway.setRiot(false);
   lastChanceUntil = 0;
@@ -230,6 +324,7 @@ function resumeGame() {
 
 function quitGame() {
   status = 'menu';
+  highway.setFreestyle(false);
   player.stop();
   showfx.clear();
   band.setDefeated(false);
@@ -371,6 +466,9 @@ function frame(now) {
     }
     else if (t >= songEnd()) endGame();
   }
+
+  // 3b. The song's big moments (solo, Big Rock Ending).
+  if (status === 'playing') bigMoments(t);
 
   // 4. Animate the world.
   const songTime = t - LEAD;
@@ -537,6 +635,8 @@ window.__BURN_BRIGHT_TEST__ = {
       ...perf.counts, hasRecording: player.hasRecording, build: BUILD_LABEL,
       tapOffsetMs: settings.tapOffsetMs, practice: settings.practice, bandStyle: settings.bandStyle,
       songId: SONG.id, venue: stage.venue, songTitle: SONG.title,
+      solo: solo && { who: solo.who, start: solo.start, end: solo.end, pairs: solo.pairs.length },
+      soloHits: perf.soloHits, soloTotal: perf.soloTotal, finale, finaleBanked: perf.finaleBanked,
       riotMeter: perf.riotMeter, riotActive: perf.riotActive, riotUses: perf.riotUses, lastChance: lastChanceUntil > 0,
       nextRiotNote: perf.notes.find((n) => n.riot && !n.riotBroken && !n.hit && !n.miss && n.time > player.time)?.time ?? null,
       riotPhrases: new Set(perf.notes.filter((n) => n.riot).map((n) => n.riot)).size,

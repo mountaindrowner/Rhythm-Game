@@ -98,7 +98,9 @@ Each moment is a short **event** made of three parts: a band or crowd animation,
 
 ---
 
-## 6. Solo showdown (the bridge)
+## 6. Solo showdown (the bridge) — **built in v0.9 as call-and-response**
+
+> **As built (v0.9):** songs list their solo in `songs.js` (`solo: { section: 'BRIDGE', who }`). In that section every 4 bars split into a 2-bar **call** (see-through ghost notes the soloist plays, with a spotlight on them) and a 2-bar **response** (the same rhythm for you to copy). The medal comes from the share of response notes hit (60% bronze, 80% silver, 95% gold, +1,000 / 2,500 / 5,000). **Gold = SHRED:** the soloist floats off the stage for 5 seconds with flames under them and lightning from the truss. *You Won't Let Me Fall* → guitarist, *Trust God Anyway* → bassist, *You're Not My Plan B* has no solo (no bridge). The **Big Rock Ending** (§5 finales) is built too: `bigRockEnding: true` clears the last 4 bars; every pad tap scores (×multiplier) and is banked only by hitting the final gold bar (any pad). The original proposal follows.
 
 For about 12 bars the spotlight goes to **one** band member, rotating each song or chosen by whoever played best so far.
 

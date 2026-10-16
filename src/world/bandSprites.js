@@ -26,7 +26,7 @@
 // =============================================================================
 import * as THREE from 'three';
 import { WORLD, LANES } from '../config.js';
-import { DRUM_RISER } from './stage.js';
+import { DRUM_RISER, BAND_SPOTS } from './stage.js';
 import { createDirector, hasBlocks } from './animBlocks.js';
 
 const BAND_HEIGHT = 5.4;   // world units: how tall the tallest front-line musician is
@@ -40,6 +40,7 @@ const ACCENT_TIME = 0.6;   // seconds for the big-move animation
 // his kit.
 const DRIFT = { bassist: [0.55, 0], singer: [0.7, 0.6], guitarist: [0.35, 3.2], drummer: [0, 0] };
 const DRIFT_BEATS = 16; // one full wander (left, right and back) every 4 bars
+const SHRED_TIME = 5;   // seconds a gold-solo soloist floats
 const MISTAKE_TIME = 0.72; // seconds for the stumble-and-recover animation
 
 function pixelTexture(url) {
@@ -73,10 +74,10 @@ export function createSpriteBand(scene, art) {
 
   // Where each musician stands (feet position).
   const SPOTS = {
-    bassist:   { x: -5.0, y: TOP, z: Z0 - 2.3 },
-    singer:    { x: -1.5, y: TOP, z: Z0 - 1.3 },
-    guitarist: { x: 5.0,  y: TOP, z: Z0 - 2.3 },
-    drummer:   { x: DRUM_RISER.x, y: TOP + DRUM_RISER.h + drummerLift * PX, z: DRUM_RISER.z - 0.4 },
+    bassist:   { ...BAND_SPOTS.bassist, y: TOP },
+    singer:    { ...BAND_SPOTS.singer, y: TOP },
+    guitarist: { ...BAND_SPOTS.guitarist, y: TOP },
+    drummer:   { ...BAND_SPOTS.drummer, y: TOP + DRUM_RISER.h + drummerLift * PX },
   };
 
   const members = Object.entries(manifest.members).map(([name, info], i) => {
@@ -187,11 +188,19 @@ export function createSpriteBand(scene, art) {
     },
     /** Who sings lead in this song: 'singer', 'guitarist' or 'duet'. */
     setVocalist(v) { for (const m of members) m.director?.setVocalist(v); },
+    /**
+     * SHRED! (a gold-medal solo): the soloist floats up off the stage for 5
+     * seconds, wobbling with joy, then comes back down.
+     */
+    shred(name, t) {
+      const m = members.find((each) => each.name === name);
+      if (m) { m.shredStart = t; m.director?.celebrate(); }
+    },
     /** The song finished: the band cheers, then bows. */
     finale() { for (const m of members) m.director?.finale(); },
     reset() {
       defeated = false;
-      for (const m of members) { m.lastHit = m.lastMistake = -99; m.hitStrength = 0; m.director?.reset(); }
+      for (const m of members) { m.lastHit = m.lastMistake = m.shredStart = -99; m.hitStrength = 0; m.director?.reset(); }
     },
     setDefeated(v) { defeated = v; },
     setVisible(v) { group.visible = v; },
@@ -263,6 +272,13 @@ export function createSpriteBand(scene, art) {
         m.mesh.position.x = m.spot.x + drift;
         m.shadow.position.x = m.spot.x + drift;
         m.ring.position.x = m.spot.x + drift;
+        // SHRED: float up and down again over 5 seconds (see shred()).
+        const sinceShred = t - (m.shredStart ?? -99);
+        if (sinceShred >= 0 && sinceShred < SHRED_TIME) {
+          const k = sinceShred / SHRED_TIME;
+          y += Math.sin(Math.PI * k) * 2.2;
+          tilt += Math.sin(sinceShred * 9) * 0.12;
+        }
         m.mesh.position.y = m.spot.y + y;
         m.mesh.rotation.z = tilt;
         m.mesh.scale.set(sx, sy, 1);

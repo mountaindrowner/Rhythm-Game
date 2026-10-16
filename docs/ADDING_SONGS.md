@@ -27,6 +27,8 @@ You need Python 3 with numpy (`pip install numpy`) and the `ffmpeg` program.
 
 `--vocalist` is `singer` (her), `guitarist` (him) or `duet`. The band animates to match (see `docs/HOW_IT_WORKS.md`). `--venue` is one of the venues in `src/world/venues.js`.
 
+**Big moments (optional, in `songs.js`):** `solo: { section: 'BRIDGE', who: 'guitarist' }` turns that section into a call-and-response solo (`who` is `bassist`, `singer`, `guitarist` or `drummer`). `bigRockEnding: true` adds the Big Rock Ending; use it for songs that end on a big final hit, not a fade-out.
+
 ## How it hears the beat (`scripts/chart/`)
 
 | File | What it does |
