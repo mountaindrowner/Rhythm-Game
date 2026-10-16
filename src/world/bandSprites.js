@@ -33,6 +33,13 @@ const BAND_HEIGHT = 5.4;   // world units: how tall the tallest front-line music
 const Z0 = WORLD.stageZ;
 const TOP = WORLD.stageHeight;
 const ACCENT_TIME = 0.6;   // seconds for the big-move animation
+// How each musician wanders left and right while playing: [how far (world
+// units), timing offset]. The bassist and singer stand close together, so
+// they wander almost in step and never bump into each other; the guitarist
+// moves the other way and stays near his mic stand; the drummer is behind
+// his kit.
+const DRIFT = { bassist: [0.55, 0], singer: [0.7, 0.6], guitarist: [0.35, 3.2], drummer: [0, 0] };
+const DRIFT_BEATS = 16; // one full wander (left, right and back) every 4 bars
 const MISTAKE_TIME = 0.72; // seconds for the stumble-and-recover animation
 
 function pixelTexture(url) {
@@ -110,7 +117,7 @@ export function createSpriteBand(scene, art) {
     // fully drawn animation only needs a touch.
     const animated = director || info.anims.play?.frames > 1;
     return {
-      name, info, mesh, tex, mat, ring, spot, director,
+      name, info, mesh, tex, mat, ring, shadow, spot, director,
       motion: director ? 0.12 : animated ? 0.3 : 1,
       phase: i * 0.37, // so they don't all bob in perfect unison
       lastHit: -99, hitStrength: 0, lastMistake: -99,
@@ -246,6 +253,12 @@ export function createSpriteBand(scene, art) {
             y -= 0.2 * w * k;
           }
         }
+        // Wander: a slow drift left and right across the stage (see DRIFT).
+        const [far, offset] = DRIFT[m.name] ?? [0, 0];
+        const drift = defeated ? 0 : Math.sin((beat / DRIFT_BEATS) * Math.PI * 2 + offset) * far;
+        m.mesh.position.x = m.spot.x + drift;
+        m.shadow.position.x = m.spot.x + drift;
+        m.ring.position.x = m.spot.x + drift;
         m.mesh.position.y = m.spot.y + y;
         m.mesh.rotation.z = tilt;
         m.mesh.scale.set(sx, sy, 1);

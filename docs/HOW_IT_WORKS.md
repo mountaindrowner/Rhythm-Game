@@ -85,7 +85,7 @@ The world's coordinates:
 | `scene.js` | renderer, camera (widens on narrow phones), basic lights, fog for depth |
 | `stage.js` | stage platform, drum riser, LED wall (a canvas drawn as a texture), truss, speakers, 4 moving spotlights with visible beams, where the crowd stands (staggered rows that thin out toward you), floating haze; `setVenue()` re-dresses it |
 | `venues.js` | the venues: colors, LED screen style, a pixel-art backdrop painted on a canvas (city skyline, sunrise), and props (string lights, trees, flags) |
-| `crowd.js` | the pixel-art fans, all drawn as one object (*instancing*); they cheer harder as the music gets bigger |
+| `crowd.js` | the pixel-art fans, all drawn as one object (*instancing*); they sway side to side on the beat (each on their own timing, so it ripples) and cheer harder as the music gets bigger |
 | `band3d/`, `bandPixel.js` | the musicians (below) |
 | `showfx.js` | chorus effects: fire jets, lasers, confetti, crowd lights |
 | `highway.js` | road, lane strips, beat lines, hit line, targets, **note gems** and **hold trails** |
@@ -123,7 +123,7 @@ Reactions are layered on top:
 
 The singer's ponytail is a tiny physics simulation: a spring pushed around by her head's movement.
 
-**The pixel bands** (`bandSprites.js` + `bandArt.js`) use sprite sheets made with PixelLab (see `docs/ART_PIPELINE.md`). Each musician is a flat plane in the 3D world that shows one cell of their sheet. All sprites use the same pixel size. The drum kit is a separate sprite drawn in front of the drummer, and the guitarist's mic stand is a *prop* standing beside him.
+**The pixel bands** (`bandSprites.js` + `bandArt.js`) use sprite sheets made with PixelLab (see `docs/ART_PIPELINE.md`). Each musician is a flat plane in the 3D world that shows one cell of their sheet. They also wander slowly left and right across the stage (one full wander every 4 bars, see `DRIFT`): the bassist and singer move almost in step so they never bump, the guitarist stays near his mic, and the drummer stays at his kit. All sprites use the same pixel size. The drum kit is a separate sprite drawn in front of the drummer, and the guitarist's mic stand is a *prop* standing beside him.
 
 **The animation blocks** (`animBlocks.js`, used by the Retro band, the default). Each musician has a library of about 10 animations sorted into blocks: idle, groove, sing, accent, mistake, celebrate and bow. A small **choreographer** decides, every frame, which animation and which frame to show:
 

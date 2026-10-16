@@ -156,23 +156,27 @@ export function createStage(scene) {
   // wider than the one in front of it, like a real crowd fanning out.
   const fans = [];
   const rand = mulberry32(7);
-  // Row depths: tight together by the stage, further apart toward you.
-  const ROW_Z = [Z0 + 0.8, Z0 + 2.0, Z0 + 3.4, Z0 + 5.0, Z0 + 6.9, Z0 + 9.1];
+  // Row depths: a few rows close together by the stage, then rows further and
+  // further apart all the way back toward you (z = -3.6 is just past the far
+  // end of the note highway's sides), so the crowd has real depth and you can
+  // pick out individual people.
+  const ROW_Z = [Z0 + 0.8, Z0 + 2.2, Z0 + 3.8, Z0 + 5.6, Z0 + 7.6, Z0 + 9.8, Z0 + 11.8, Z0 + 13.4];
   let lookCycle = 0; // hands out fan sprites in turn so neighbours look different
   ROW_Z.forEach((z, r) => {
     const k = r / (ROW_Z.length - 1);              // 0 = by the stage, 1 = near you
-    const gap = 1.25 + k * 1.2;                    // space between fans in this row
+    const gap = 1.8 + k * 1.0;                     // space between fans in this row
+    const inner = 3.6 - k * 0.6;                   // closest a fan stands to the note highway
     const outer = 10.5 + k * 2.5;                  // how far out to the side the row goes
     const stagger = r % 2 ? gap / 2 : 0;           // back-row heads peek between front-row heads
     for (const side of [-1, 1]) {
-      for (let x = 3.6 + stagger + rand() * 0.3; x < outer; x += gap * (0.85 + rand() * 0.3)) {
-        if (rand() < k * 0.3) continue;            // a few gaps in the rows near you
+      for (let x = inner + stagger + rand() * 0.3; x < outer; x += gap * (0.85 + rand() * 0.3)) {
+        if (rand() < 0.35 - k * 0.2) continue;     // gaps in the crowd (most by the stage, so it isn't crammed)
         lookCycle += 1 + Math.floor(rand() * 3);   // skip 1-3 sprites each time
         fans.push({
           x: side * x,
-          z: z + (rand() - 0.5) * 0.5,             // not perfectly lined up
+          z: z + (rand() - 0.5) * 0.6,             // not perfectly lined up
           s: 0.85 + rand() * 0.3,          // size variation
-          phase: rand() * Math.PI * 2,     // so they don't all jump together
+          phase: rand() * Math.PI * 2,     // so they don't all jump (or sway) together
           jumpy: rand(),                   // how easily this fan gets hyped
           look: lookCycle,                 // which fan sprite (crowd.js picks)
         });

@@ -1,8 +1,9 @@
 # Next steps (handoff)
 
-_Last updated: v0.6._
+_Last updated: v0.6.1._
 
 ## Where things stand
+- **v0.6.1:** the crowd now stretches in 8 rows from the stage all the way back along the note highway (fewer people by the stage, big close fans beside the highway), and every fan sways on the beat. The pixel band wanders slowly left and right.
 - **v0.6: three songs and venues.** The menu has a song picker. *You Won't Let Me Fall* plays in **The Arena**, *You're Not My Plan B* on a **City Rooftop** at night, and *Trust God Anyway* on **Sunrise Hill**. All three are sung by her. Venues live in `src/world/venues.js`; outdoor ones use a raised banner screen so the backdrop shows behind the band.
 - **Chart maker (built):** `scripts/chart/` finds tempo, beats and downbeats (checked: 100% beat agreement with the first song's chart, and within 5 ms on test hits) and places notes with the same rhythm rules as the first chart. **Sections are an energy-based best guess.** If the owner shares where each song's verses and choruses start (from the lyrics), re-run with `--sections` (see `docs/ADDING_SONGS.md`).
 - **Tempo note:** both new songs read as about 167 BPM. They also fit 83 BPM (half speed). The faster grid matched the drums best and plays like the first song. If they feel too fast, re-chart with `--tempo 60-100`.

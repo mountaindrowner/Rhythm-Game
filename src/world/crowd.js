@@ -6,9 +6,9 @@
 // Each copy (instance) gets its own position, size, color tint and — via a
 // small shader tweak — its own animation frame from the shared sprite sheet.
 //
-// BEHAVIOUR: in calm parts of the song fans mostly stand and bob; as the music
-// gets bigger (and your combo grows) more of them break into the full
-// jump-and-cheer animation, timed to the beat.
+// BEHAVIOUR: in calm parts of the song fans mostly stand, bob and sway from
+// side to side; as the music gets bigger (and your combo grows) more of them
+// break into the full jump-and-cheer animation, timed to the beat.
 // =============================================================================
 import * as THREE from 'three';
 import sheet from '../../assets/art/crowd/crowd.json';
@@ -58,6 +58,7 @@ export function createCrowd(scene, fans) {
   const m = new THREE.Matrix4();
   const pos = new THREE.Vector3();
   const quat = new THREE.Quaternion();
+  const FORWARD = new THREE.Vector3(0, 0, 1); // tilting around this axis = leaning left/right
   const scl = new THREE.Vector3();
 
   function setCell(i, row, col) {
@@ -86,8 +87,13 @@ export function createCrowd(scene, fans) {
           // Standing: a small bob on the beat.
           lift = Math.max(0, Math.sin(b * Math.PI)) * 0.08 * intensity;
         }
+        // Sway: lean gently left, then right, one side every 2 beats (a bit
+        // more when the music is big). Each fan has its own timing (phase),
+        // so the sway ripples through the crowd instead of moving in lockstep.
+        const swing = Math.sin((beat / 2) * Math.PI + f.phase);
+        quat.setFromAxisAngle(FORWARD, swing * (0.05 + 0.05 * intensity));
         setCell(i, f.row, col);
-        pos.set(f.x, lift, f.z);
+        pos.set(f.x + swing * 0.08, lift, f.z);
         scl.set(f.s, f.s, 1);
         m.compose(pos, quat, scl);
         mesh.setMatrixAt(i, m);
