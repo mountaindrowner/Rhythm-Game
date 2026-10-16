@@ -44,7 +44,15 @@ Taps take a shortcut: `input.js` calls `perf.press(lane, t)` the instant your fi
 
 Try it: change `WINDOWS.perfect` in `config.js` to `0.08` and the game becomes much more forgiving. Run `npm test` to see which rules tests notice.
 
-## 4. The chart (`src/song/chart.js` + `charts/song_chart.json`)
+## 4. Songs and charts (`src/song/songs.js`, `src/song/chart.js`, `charts/`)
+
+**The set list** is `songs.js`: each song has a chart, an MP3 and a venue. `chart.js` keeps the **current song** in `SONG`. Picking a song on the menu calls `selectSong(id)`, which swaps what's in `SONG` and tells everyone who signed up with `onSongChange()`:
+
+- the audio player loads that recording (decoded songs are remembered, so switching back is instant),
+- the stage changes venue (`stage.setVenue`),
+- the bands learn who sings lead, the 3D band rebuilds its music cues, and the HUD shows the new title.
+
+New charts are made by the chart maker, `scripts/chart/make_chart.py`. It finds the beats in the MP3 and places the notes. See `docs/ADDING_SONGS.md`.
 
 Each note in the JSON looks like `{ "time": 12.35, "lane": 2, "tier": 1, "hold": 0, "role": "guitar-strum" }`.
 
@@ -52,7 +60,7 @@ Each note in the JSON looks like `{ "time": 12.35, "lane": 2, "tier": 1, "hold":
 - `sections` name the parts of the song (VERSE 1, CHORUS 1…). The stage lights use them.
 - `beats` are the real detected beat times. The scrolling beat lines and the band's groove follow them.
 
-You can open `charts/song_chart.csv` in a spreadsheet to look at the notes.
+You can open `charts/song_chart.csv` in a spreadsheet to look at the first song's notes. For chart-maker songs, open the picture next to the chart (for example `charts/trust_god_anyway.png`).
 
 ## 5. The 3D world (`src/world/`)
 
@@ -75,7 +83,8 @@ The world's coordinates:
 | File | What it builds |
 |---|---|
 | `scene.js` | renderer, camera (widens on narrow phones), basic lights, fog for depth |
-| `stage.js` | stage platform, drum riser, LED wall (a canvas drawn as a texture), truss, speakers, 4 moving spotlights with visible beams, where the crowd stands (staggered rows that thin out toward you), floating haze |
+| `stage.js` | stage platform, drum riser, LED wall (a canvas drawn as a texture), truss, speakers, 4 moving spotlights with visible beams, where the crowd stands (staggered rows that thin out toward you), floating haze; `setVenue()` re-dresses it |
+| `venues.js` | the venues: colors, LED screen style, a pixel-art backdrop painted on a canvas (city skyline, sunrise), and props (string lights, trees, flags) |
 | `crowd.js` | the pixel-art fans, all drawn as one object (*instancing*); they cheer harder as the music gets bigger |
 | `band3d/`, `bandPixel.js` | the musicians (below) |
 | `showfx.js` | chorus effects: fire jets, lasers, confetti, crowd lights |

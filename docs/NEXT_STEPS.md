@@ -1,8 +1,13 @@
 # Next steps (handoff)
 
-_Last updated: v0.5.1._
+_Last updated: v0.6._
 
 ## Where things stand
+- **v0.6: three songs and venues.** The menu has a song picker. *You Won't Let Me Fall* plays in **The Arena**, *You're Not My Plan B* on a **City Rooftop** at night, and *Trust God Anyway* on **Sunrise Hill**. All three are sung by her. Venues live in `src/world/venues.js`; outdoor ones use a raised banner screen so the backdrop shows behind the band.
+- **Chart maker (built):** `scripts/chart/` finds tempo, beats and downbeats (checked: 100% beat agreement with the first song's chart, and within 5 ms on test hits) and places notes with the same rhythm rules as the first chart. **Sections are an energy-based best guess.** If the owner shares where each song's verses and choruses start (from the lyrics), re-run with `--sections` (see `docs/ADDING_SONGS.md`).
+- **Tempo note:** both new songs read as about 167 BPM. They also fit 83 BPM (half speed). The faster grid matched the drums best and plays like the first song. If they feel too fast, re-chart with `--tempo 60-100`.
+- **First song's chart:** the chart maker suggests its beats are about 20 ms late. That's inside the Perfect window, but re-timing it (or re-charting it with the chart maker) would make all three songs consistent.
+- **Size:** with three MP3s embedded, the built page is about 19 MB. Fine on Wi-Fi; on mobile data the first load takes a while. Lower-bitrate MP3s would shrink it if needed.
 - **Names:** the band is **X-ROADS**; the game is called **Rhythm Riot** for now (the owner is still deciding).
 - **Live:** v0.5. The default band is now **Retro 16-bit** (64 px PixelLab art), which the owner chose. Players who had another look saved get Retro once (`LOOK_VERSION` in `settings.js`) and can switch back in Settings. *Pixel HD*, 3D models and Classic are still there.
 - **Animation blocks (built):** 41 Retro animations (16 frames each, all starting and ending on the standing "hub" pose) in `assets/art/pixellab-retro/`. The recipe is `animations.json`. The choreographer `src/world/animBlocks.js` picks grooves by section (calm verses, hype choruses), varies them by phrase, switches only on bar lines, plays mistakes instantly and accents on the next loop, and ends the song with celebrate then bow. Unit-tested in `tests/unit/animBlocks.test.js`.

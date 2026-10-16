@@ -2,6 +2,7 @@
 // checks the important things actually work:
 //   * the menu and settings screen work, with no errors
 //   * each difficulty loads the right number of notes
+//   * every song in the set list can be picked and played, in its own venue
 //   * the embedded recording decodes and the audio clock moves
 //   * tapping pads gets judged, pause freezes time, resume continues
 //   * every band look (Retro / HD pixel / 3D models / classic) can be selected
@@ -68,6 +69,27 @@ for (const [diff, count] of Object.entries(EXPECTED)) {
   await page.click('#pauseBtn');
   await page.click('#quitBtn');
 }
+
+// ---- Every song in the set list: pick it, play a few seconds, check venue --
+const songIds = await page.$$eval('[data-song]', (els) => els.map((e) => e.dataset.song));
+check(songIds.length >= 3, `song picker lists ${songIds.length} songs`);
+const VENUE = { you_wont_let_me_fall: 'arena', youre_not_my_plan_b: 'rooftop', trust_god_anyway: 'sunrise' };
+for (const id of songIds.slice(1)) {
+  await page.click(`[data-song="${id}"]`);
+  let s = await state();
+  check(s.songId === id && s.venue === VENUE[id], `${id}: picked, venue ${s.venue}`);
+  await page.click('#startBtn');
+  await waitFor('playing');
+  const a = (await state()).t;
+  await page.waitForTimeout(2500);
+  s = await state();
+  check(s.total > 250 && s.hasRecording && s.t - a > 2.1, `${id}: ${s.total} notes, recording plays (${(s.t - a).toFixed(2)} s in 2.5 s)`);
+  await snap(`02b-song-${id}`);
+  await page.click('#pauseBtn');
+  await page.click('#quitBtn');
+}
+await page.click(`[data-song="${songIds[0]}"]`);
+check((await state()).venue === 'arena', 'back to the first song: arena venue');
 
 await page.click('[data-diff="standard"]');
 await page.click('#startBtn');

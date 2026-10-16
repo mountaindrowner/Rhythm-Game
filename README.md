@@ -1,11 +1,15 @@
 # Rhythm Riot (working title), starring X-ROADS
 
-A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway toward you while the band **X-ROADS** plays *You Won't Let Me Fall* on a lit-up 3D stage. Tap the four pads (Bass, Vocals, Guitar, Drums) in time with the real recording.
+A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway toward you while the band **X-ROADS** plays on a lit-up 3D stage. Tap the four pads (Bass, Vocals, Guitar, Drums) in time with the real recording.
+
+**Set list:** *You Won't Let Me Fall* (The Arena), *You're Not My Plan B* (City Rooftop) and *Trust God Anyway* (Sunrise Hill).
 
 **▶ Play it now: https://mountaindrowner.github.io/Rhythm-Game/** (updates automatically on every push to `main`; add `?autoplay` to watch it play itself)
 
 **Features**
 
+- **Three songs, three venues:** pick a song on the menu and the stage changes with it: an indoor arena, a city rooftop at night (skyline, neon, string lights), or an open-air stage at sunrise (mountains, pine trees, festival flags).
+- **Chart maker:** `scripts/chart/make_chart.py` listens to any MP3, finds the tempo and every beat, and places notes for all four lanes and three difficulties. See [docs/ADDING_SONGS.md](docs/ADDING_SONGS.md).
 - **Retro 16-bit band (default):** chunky pixel-art musicians made with [PixelLab](https://pixellab.ai), each with a library of about 10 smooth, 16-frame animations: calm and hype grooves, variations, big moves, stumbles, a cheer and a bow. A choreographer switches moves on bar lines so it never looks choppy. The guitarist has his own mic and sings too. See [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
 - **More band looks in Settings:** *Pixel HD* (bigger, more detailed pixel band), *3D models* (blocky musicians with real joints whose strums and drum hits land exactly on the notes) or *Classic* (the original pixel art).
 - **3D venue:** spotlights, an X-ROADS LED wall, and a pixel-art crowd (fans seen from behind, in loose rows so you can pick out individuals, who jump and cheer as the music gets bigger), plus chorus effects (fire jets, lasers, confetti, crowd phone lights, strobe).
@@ -73,12 +77,14 @@ src/
   main.js             the conductor: builds everything, runs the game loop
   config.js           every tunable number (timing, scoring, camera, colors)
   settings.js         the player's saved preferences
-  song/chart.js       loads the note chart, section names and beats
+  song/songs.js       the set list: each song's chart, MP3 and venue
+  song/chart.js       the current song: notes, sections, beats; selectSong()
   audio/player.js     plays the recording; the game's master clock
   game/rules.js       the referee: judging, score, combo, energy
   game/input.js       touch + keyboard -> lane pressed / released
   world/scene.js      Three.js renderer, camera, lights
   world/stage.js      3D venue: stage, LED wall, truss, spotlights, crowd
+  world/venues.js     the venues: colors, pixel-art backdrops, props
   world/band3d/       the 3D musicians: rig.js (joints + IK), members.js (looks),
                       instruments.js (guitar, bass, mic, drum kit), index.js (animation)
   world/bandSprites.js the PixelLab sprite bands (Retro default, HD); art sets in bandArt.js
@@ -92,13 +98,13 @@ src/
   ui/hud.js           score/combo/energy text, judgement pop-ups, pads
   ui/calibration.js   the timing check screen
   ui/styles.css       look of menus and HUD
-assets/               the song and the sprite art (assets/art/pixellab-retro = Retro band + animations.json recipe)
-scripts/              build helpers (itch.io ZIP; PixelLab: animate.py, fetch_and_pack.py, pack_crowd.py)
-charts/               the note chart (JSON + CSV)
+assets/               the songs (assets/audio) and the sprite art (assets/art/pixellab-retro = Retro band + animations.json recipe)
+scripts/              build helpers (itch.io ZIP; chart/ = the chart maker; PixelLab: animate.py, fetch_and_pack.py, pack_crowd.py)
+charts/               the note charts (JSON) and their analysis pictures (PNG)
 tests/                automated checks
 docs/                 design blueprint, guides, reference images
 ```
 
 ## Status
 
-v0.5.1: a much livelier drummer (redone grooves, raised behind a smaller kit). v0.5: the animated Retro band is the default (41 animations in blocks, switched on bar lines), the guitarist's mic and backing vocals, a roomier crowd, and a per-frame smoothness test. v0.4: the X-ROADS / Rhythm Riot names, glass controls, the pixel-art crowd, a version badge, a retro band trial look and automatic smoothness. v0.3 added the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, every band look, the smoothness budget, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.
+v0.6: three songs with a song picker, a venue per song (Arena, City Rooftop, Sunrise Hill), and the chart maker that finds the beats in any MP3. v0.5.1: a much livelier drummer (redone grooves, raised behind a smaller kit). v0.5: the animated Retro band is the default (41 animations in blocks, switched on bar lines), the guitarist's mic and backing vocals, a roomier crowd, and a per-frame smoothness test. v0.4: the X-ROADS / Rhythm Riot names, glass controls, the pixel-art crowd, a version badge, a retro band trial look and automatic smoothness. v0.3 added the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, every band look, the smoothness budget, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.

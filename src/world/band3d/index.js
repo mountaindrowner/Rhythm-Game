@@ -16,7 +16,7 @@
 // =============================================================================
 import * as THREE from 'three';
 import { WORLD, LEAD } from '../../config.js';
-import { SONG } from '../../song/chart.js';
+import { onSongChange } from '../../song/chart.js';
 import { DRUM_RISER } from '../stage.js';
 import { DIMS, HIP_HEIGHT, solveTwoBone, approach, envelope } from './rig.js';
 import { buildBassist, buildSinger, buildGuitarist, buildDrummer } from './members.js';
@@ -26,16 +26,25 @@ const TOP = WORLD.stageHeight;
 const SCALE = 1.22;
 
 // ---- Music cue lists (song time, sorted) -----------------------------------
+// Refilled IN PLACE whenever the song changes, so the musicians (which keep
+// references to these arrays) always follow the current song.
 const byLane = [[], [], [], []];
 const byRole = {};
-for (const n of SONG.allNotes) {
-  byLane[n.lane].push(n.time);
-  (byRole[n.role] ||= []).push(n.time);
-}
-Object.values(byRole).forEach((l) => l.sort((a, b) => a - b));
-byLane.forEach((l) => l.sort((a, b) => a - b));
+const role = (name) => (byRole[name] ||= []);
+const phraseTimes = [];
 const dedupe = (list) => list.filter((v, i) => i === 0 || v - list[i - 1] > 0.02);
-byLane.forEach((l, i) => { byLane[i] = dedupe(l); });
+const refill = (list, values) => { list.length = 0; list.push(...values); };
+onSongChange((song) => {
+  byLane.forEach((l) => { l.length = 0; });
+  Object.values(byRole).forEach((l) => { l.length = 0; });
+  for (const n of song.allNotes) {
+    byLane[n.lane].push(n.time);
+    role(n.role).push(n.time);
+  }
+  Object.values(byRole).forEach((l) => l.sort((a, b) => a - b));
+  byLane.forEach((l) => refill(l, dedupe(l.sort((a, b) => a - b))));
+  refill(phraseTimes, dedupe([...role('vocal-phrase')]));
+});
 
 /** Index of the last time <= now (or -1), by binary search. */
 function lastIndex(times, now) {
@@ -232,7 +241,6 @@ export function createBand3D(scene) {
 
   // ---- Singer ---------------------------------------------------------------
   const vocalTimes = byLane[1];
-  const phraseTimes = dedupe([...(byRole['vocal-phrase'] || [])]);
   const GESTURES = [
     new THREE.Vector3(0.7, 0.25, 0.25),  // hand on hip
     new THREE.Vector3(1.05, 1.0, 0.75),  // reach out to the crowd
@@ -299,9 +307,9 @@ export function createBand3D(scene) {
   }
 
   // ---- Drummer --------------------------------------------------------------
-  const kick = byRole.kick || [];
-  const snareTimes = byRole.backbeat || [];
-  const hatTimes = byRole['hi-hat'] || [];
+  const kick = role('kick');
+  const snareTimes = role('backbeat');
+  const hatTimes = role('hi-hat');
   const stickTip = [new THREE.Vector3(), new THREE.Vector3()];
 
   function strike(piece, songTime, times) {

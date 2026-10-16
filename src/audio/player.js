@@ -21,9 +21,17 @@ export class SongPlayer {
     this.songUrl = songUrl;
     this.ctx = null;       // the AudioContext (created on first Start tap)
     this.buffer = null;    // decoded song, kept so Restart is instant
+    this.buffers = new Map(); // every song decoded so far, by URL
     this.source = null;    // the node currently playing the song
     this.begin = 0;        // ctx time at which game time = 0
     this.playing = false;
+  }
+
+  /** Pick which recording start() plays (decoded songs are remembered). */
+  setSong(songUrl) {
+    if (songUrl === this.songUrl) return;
+    this.songUrl = songUrl;
+    this.buffer = this.buffers.get(songUrl) || null;
   }
 
   /**
@@ -39,8 +47,12 @@ export class SongPlayer {
 
     // Step 2 — the slow part: turn the MP3 bytes into playable audio (once).
     if (!this.buffer) {
-      const bytes = await loadBytes(this.songUrl);
-      this.buffer = await this.ctx.decodeAudioData(bytes);
+      const url = this.songUrl;
+      const bytes = await loadBytes(url);
+      const buffer = await this.ctx.decodeAudioData(bytes);
+      this.buffers.set(url, buffer);
+      if (url !== this.songUrl) throw new Error('The song was changed while loading.');
+      this.buffer = buffer;
     }
     await unlocked;
 

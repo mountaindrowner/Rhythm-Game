@@ -177,6 +177,15 @@ html, body {
 .song-row span { color: var(--muted); }
 .song-card p { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
 .diffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* Song picker: one row per song (title on the left, venue + tempo on the right) */
+.songs { display: grid; gap: 6px; }
+.songs button {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  min-height: 48px; padding: 6px 12px; text-align: left;
+}
+.songs button strong { font-size: 14px; line-height: 1.15; }
+.songs button span { font: 800 10px var(--font); letter-spacing: 1px; opacity: 0.8; text-align: right; white-space: nowrap; }
+.how { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
 button {
   font: 900 14px var(--font);
   color: var(--cream);

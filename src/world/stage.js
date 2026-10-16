@@ -2,12 +2,16 @@
 // stage.js — the concert venue: stage platform, drum riser, LED wall, truss,
 // speakers, moving spotlights and the crowd.
 //
+// setVenue() dresses it as one of the places in venues.js (arena, rooftop,
+// sunrise...): colors, sky, LED screen size, backdrop and extra props.
+//
 // Everything here is built from simple shapes (boxes, planes, cones) so it is
 // cheap for phones to draw. update() runs every frame and makes the lights and
 // crowd react to the beat and to how intense the current song section is.
 // =============================================================================
 import * as THREE from 'three';
 import { WORLD } from '../config.js';
+import { VENUES, BACKDROP } from './venues.js';
 
 const Z0 = WORLD.stageZ;          // front edge of the stage
 const TOP = WORLD.stageHeight;    // stage floor height
@@ -37,9 +41,9 @@ export function createStage(scene) {
   const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.1, ...extra });
 
   // ---- Venue floor and stage platform --------------------------------------
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), std('#100d1d'));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), std('#100d1d'));
   floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, -0.01, -20);
+  floor.position.set(0, -0.01, -15);
   group.add(floor);
 
   const deck = new THREE.Mesh(new THREE.BoxGeometry(20, TOP, DEPTH), std('#2a1f3d', { roughness: 0.45 }));
@@ -69,8 +73,24 @@ export function createStage(scene) {
   ledTex.magFilter = THREE.NearestFilter; // keep pixels crisp
   ledTex.colorSpace = THREE.SRGBColorSpace;
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(17, 7.4), new THREE.MeshBasicMaterial({ map: ledTex, fog: false }));
-  wall.position.set(0, TOP + 5.6, Z0 - DEPTH + 0.2);
+  wall.position.set(0, TOP + 6.6, Z0 - DEPTH + 0.2);
   group.add(wall);
+
+  // ---- Backdrop: far-away scenery for outdoor venues (one big flat picture) --
+  const backdropCanvas = document.createElement('canvas');
+  backdropCanvas.width = BACKDROP.px;
+  backdropCanvas.height = BACKDROP.py;
+  const backdropTex = new THREE.CanvasTexture(backdropCanvas);
+  backdropTex.magFilter = THREE.NearestFilter; // chunky pixels, like the band
+  backdropTex.colorSpace = THREE.SRGBColorSpace;
+  const backdrop = new THREE.Mesh(
+    new THREE.PlaneGeometry(BACKDROP.width, BACKDROP.height),
+    new THREE.MeshBasicMaterial({ map: backdropTex, fog: false, depthWrite: false }),
+  );
+  backdrop.position.set(0, BACKDROP.bottom + BACKDROP.height / 2, BACKDROP.z);
+  backdrop.renderOrder = -1; // drawn first, behind everything
+  backdrop.visible = false;
+  group.add(backdrop);
 
   // ---- Truss (the metal frame holding the lights) ---------------------------
   const metal = std('#4a4f6b', { metalness: 0.6, roughness: 0.4 });
@@ -178,6 +198,54 @@ export function createStage(scene) {
   }));
   group.add(haze);
 
+  // ---- Venues ----------------------------------------------------------------
+  const hemi = scene.children.find((o) => o.isHemisphereLight);
+  const venueProps = {}; // built the first time a venue is used: { group, update }
+  let venueId = '';
+  let venue = VENUES.arena;
+
+  /** Dress the stage as one of the venues in venues.js. */
+  function setVenue(id) {
+    venue = VENUES[id] || VENUES.arena;
+    venueId = VENUES[id] ? id : 'arena';
+    scene.background = new THREE.Color(venue.sky);
+    scene.fog.color.set(venue.fog[0]);
+    scene.fog.near = venue.fog[1];
+    scene.fog.far = venue.fog[2];
+    if (hemi) {
+      hemi.color.set(venue.light[0]);
+      hemi.groundColor.set(venue.light[1]);
+      hemi.intensity = venue.light[2];
+    }
+    floor.material.color.set(venue.floor);
+    deck.material.color.set(venue.deck);
+    // Indoors: the giant LED wall. Outdoors: a smaller screen raised up high,
+    // so the scenery shows behind the band.
+    // Both sit just under the truss, with the band name near the top, so it
+    // shows above the drummer's head.
+    if (venue.screen === 'banner') {
+      wall.scale.setScalar(0.8);
+      wall.position.y = TOP + 7.55;
+    } else {
+      wall.scale.setScalar(1);
+      wall.position.y = TOP + 6.6;
+    }
+    backdrop.visible = !!venue.backdrop;
+    if (venue.backdrop) {
+      const g = backdropCanvas.getContext('2d');
+      g.clearRect(0, 0, BACKDROP.px, BACKDROP.py);
+      venue.backdrop(g);
+      backdropTex.needsUpdate = true;
+    }
+    for (const [key, p] of Object.entries(venueProps)) p.group.visible = key === venueId;
+    if (venue.props && !venueProps[venueId]) {
+      const propGroup = new THREE.Group();
+      group.add(propGroup);
+      venueProps[venueId] = { group: propGroup, ...venue.props(propGroup) };
+    }
+    lastLedKey = ''; // redraw the LED screen with this venue's subtitle
+  }
+
   // ---- Per-frame animation -------------------------------------------------
   const cA = new THREE.Color();
   const cB = new THREE.Color();
@@ -222,6 +290,7 @@ export function createStage(scene) {
 
     haze.rotation.y = Math.sin(time * 0.05) * 0.05;
     lastIntensity = intensity;
+    venueProps[venueId]?.update?.(time, beat);
 
     // Redraw the LED wall only when something visible changes (saves battery).
     const step = Math.floor(beat * 2);
@@ -229,19 +298,24 @@ export function createStage(scene) {
     const key = `${step}|${section}|${Math.round(hype * 4)}|${fireStep}`;
     if (key !== lastLedKey) {
       lastLedKey = key;
-      drawLed(ledCtx, step, intensity, main, accent, big ? fireStep : -1);
+      drawLed(ledCtx, step, intensity, main, accent, big ? fireStep : -1, venue.subtitle);
       ledTex.needsUpdate = true;
     }
   }
 
-  return { group, update, fans, get intensity() { return lastIntensity; } };
+  setVenue('arena');
+  return {
+    group, update, fans, setVenue,
+    get intensity() { return lastIntensity; },
+    get venue() { return venueId; },
+  };
 }
 
 /**
  * Pixel-art LED wall: animated equalizer bars + the band name.
  * During choruses (fire >= 0) the bars become flickering flames.
  */
-function drawLed(g, step, intensity, main, accent, fire) {
+function drawLed(g, step, intensity, main, accent, fire, subtitle) {
   const W = g.canvas.width;
   const H = g.canvas.height;
   g.fillStyle = '#0d0b1c';
@@ -274,10 +348,10 @@ function drawLed(g, step, intensity, main, accent, fire) {
   }
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  drawBandLogo(g, W / 2, 26, main);
+  drawBandLogo(g, W / 2, 17, main);
   g.font = 'bold 9px monospace';
   g.fillStyle = '#ffc86b';
-  g.fillText('LIVE  ·  RHYTHM RIOT TOUR', W / 2, 46);
+  g.fillText(subtitle, W / 2, 36);
 }
 
 /**

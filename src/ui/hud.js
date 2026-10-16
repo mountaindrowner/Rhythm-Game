@@ -6,7 +6,7 @@
 // canvas. Text is much crisper as HTML than inside a 3D scene.
 // =============================================================================
 import { LANES, BEAT, LEAD } from '../config.js';
-import { SONG } from '../song/chart.js';
+import { SONG, onSongChange } from '../song/chart.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -31,7 +31,7 @@ export function createHud() {
     return el;
   });
 
-  $('hudTitle').textContent = SONG.title.toUpperCase();
+  onSongChange((song) => { $('hudTitle').textContent = song.title.toUpperCase(); });
   const el = {
     score: $('score'), combo: $('combo'), life: $('lifeFill'), section: $('sectionName'),
     clock: $('clock'), progress: $('progressFill'), judgement: $('judgement'),

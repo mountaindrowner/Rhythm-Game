@@ -8,6 +8,7 @@
 
 const DEFAULTS = {
   difficulty: 'casual',
+  songId: '',          // which song is picked ('' = the first one)
   tapOffsetMs: 0,      // how late your taps arrive (+) or early (−); see calibration
   bandStyle: 'retro',  // 'retro' or 'hd' PixelLab sprites, '3d' models, or 'pixel' (classic)
   practice: false,     // true = no game over when energy runs out

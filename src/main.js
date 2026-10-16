@@ -15,7 +15,10 @@
 //                          |-> failing -> failed   (energy ran out)
 // =============================================================================
 import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY } from './config.js';
-import { SONG, SONG_END, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition } from './song/chart.js';
+import {
+  SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition,
+} from './song/chart.js';
+import { VENUES } from './world/venues.js';
 import { settings, updateSettings } from './settings.js';
 import { SongPlayer } from './audio/player.js';
 import { Performance } from './game/rules.js';
@@ -36,7 +39,6 @@ import { createCalibration } from './ui/calibration.js';
 
 // These imports become embedded data inside the final index.html (see
 // vite.config.js), so the published game never has to download a file.
-import songUrl from '../assets/audio/you_wont_let_me_fall.mp3';
 import atlasUrl from '../assets/art/burn_bright_clean_atlas.png';
 
 const $ = (id) => document.getElementById(id);
@@ -50,15 +52,21 @@ const bands = {
   '3d': createBand3D(world.scene),
   pixel: createBandPixel(world.scene, atlasUrl),
 };
-// Tell the bands who sings lead in this song (her, him, or both).
-for (const b of Object.values(bands)) b.setVocalist?.(SONG.vocalist);
 const highway = createHighway(world.scene);
 const effects = createEffects(world.scene);
 const showfx = createShowFx(world.scene, stage.fans, $('flash'));
 const crowd = createCrowd(world.scene, stage.fans);
 const perfMonitor = createPerfMonitor(world);
 const hud = createHud();
-const player = new SongPlayer(songUrl);
+const player = new SongPlayer(SONG.audio);
+
+// When a different song is picked: its recording, its venue, and who sings
+// lead (her, him, or both) so the band animates to match.
+onSongChange((song) => {
+  player.setSong(song.audio);
+  stage.setVenue(song.venue);
+  for (const b of Object.values(bands)) b.setVocalist?.(song.vocalist);
+});
 
 let band = bands.retro;
 let status = 'menu';
@@ -277,7 +285,7 @@ function frame(now) {
     if (AUTOPLAY) autoplay(t);
     for (const e of perf.update(t, offset())) handle(e);
     if (!settings.practice && perf.failed) failGame();
-    else if (t >= SONG_END) endGame();
+    else if (t >= songEnd()) endGame();
   }
 
   // 4. Animate the world.
@@ -317,8 +325,28 @@ document.title = GAME_TITLE.replace(/\b(\w)(\w*)/g, (_, a, b) => a + b.toLowerCa
 for (const el of document.querySelectorAll('.version')) {
   el.textContent = `${BUILD_LABEL}${BUILD_DATE ? ` · ${BUILD_DATE}` : ''}`;
 }
-$('menuSongTitle').textContent = SONG.title;
-$('menuBpm').textContent = `~${SONG.bpm} BPM`;
+// Song picker: one button per song in the set list (song/songs.js).
+const songButtons = SONGS.map((entry) => {
+  const b = document.createElement('button');
+  b.dataset.song = entry.id;
+  b.setAttribute('role', 'radio');
+  b.innerHTML = `<strong>${entry.chart.title}</strong>`
+    + `<span>${(VENUES[entry.venue] || VENUES.arena).name} · ${Math.round(entry.chart.estimated_bpm)} BPM</span>`;
+  b.addEventListener('click', () => pickSong(entry.id));
+  $('songList').append(b);
+  return b;
+});
+function pickSong(id) {
+  if (status !== 'menu') return;
+  selectSong(id);
+  updateSettings({ songId: SONG.id });
+  songButtons.forEach((b) => {
+    const on = b.dataset.song === SONG.id;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-checked', on);
+  });
+}
+pickSong(settings.songId);
 
 const diffButtons = [...document.querySelectorAll('[data-diff]')];
 function selectDifficulty(d) {
@@ -411,11 +439,13 @@ window.__BURN_BRIGHT_TEST__ = {
       score: perf.score, combo: perf.combo, energy: perf.energy, judged: perf.judged,
       ...perf.counts, hasRecording: player.hasRecording, build: BUILD_LABEL,
       tapOffsetMs: settings.tapOffsetMs, practice: settings.practice, bandStyle: settings.bandStyle,
+      songId: SONG.id, venue: stage.venue, songTitle: SONG.title,
       drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
       perf: { ...perfMonitor.stats },
     };
   },
   start: startGame,
+  pickSong,
   pause: pauseGame,
   resume: resumeGame,
   press: (lane) => input.down(lane),

@@ -20,7 +20,7 @@
 import * as THREE from 'three';
 import { WORLD, LANES, LEAD } from '../config.js';
 import { DRUM_RISER } from './stage.js';
-import { SONG } from '../song/chart.js';
+import { onSongChange } from '../song/chart.js';
 
 const COLS = 7;
 const ROWS = 4;
@@ -50,9 +50,13 @@ export function createBandPixel(scene, atlasUrl) {
   atlas.repeat.set(1 / COLS, 1 / ROWS);
 
   // Every musician's music cues (from ALL difficulty tiers), as song times.
+  // Refilled whenever a different song is picked.
   const cueTimes = [[], [], [], []];
-  for (const n of SONG.allNotes) cueTimes[n.lane].push(n.time);
-  cueTimes.forEach((list) => list.sort((a, b) => a - b));
+  onSongChange((song) => {
+    cueTimes.forEach((list) => { list.length = 0; });
+    for (const n of song.allNotes) cueTimes[n.lane].push(n.time);
+    cueTimes.forEach((list) => list.sort((a, b) => a - b));
+  });
 
   const shadowMat = new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.45, depthWrite: false });
 

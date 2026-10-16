@@ -1,29 +1,61 @@
 // =============================================================================
-// chart.js — the song's "sheet music" for the game.
+// chart.js — the current song's "sheet music" for the game.
 //
-// charts/song_chart.json lists every note: when it happens (seconds from the
-// start of the MP3), which lane, and which difficulty it first appears in
-// (tier 0 = Casual, 1 = Standard, 2 = Expert). It also has section names
-// (VERSE 1, CHORUS 1...) and the times of every detected beat.
+// Each song's chart (charts/*.json, listed in songs.js) has every note: when
+// it happens (seconds from the start of the MP3), which lane, and which
+// difficulty it first appears in (tier 0 = Casual, 1 = Standard, 2 =
+// Expert). It also has section names (VERSE 1, CHORUS 1...) and the times of
+// every beat.
+//
+// SONG always holds the song that's picked right now. selectSong() swaps it,
+// and anything that pre-computes from the notes (the 3D band, the HUD title,
+// the venue...) registers with onSongChange() to hear about it.
 //
 // Two clocks to keep straight:
 //   songTime = seconds since the MP3 started
 //   gameTime = seconds since you pressed Start = songTime + LEAD (count-in)
 // =============================================================================
-import chart from '../../charts/song_chart.json';
-import { LEAD, BEAT } from '../config.js';
+import { LEAD } from '../config.js';
+import { SONGS } from './songs.js';
 
-export const SONG = {
-  title: chart.title,
-  duration: chart.duration,
-  bpm: chart.estimated_bpm,
-  // Who sings lead: 'singer' (her), 'guitarist' (him) or 'duet' (both).
-  // The band animates to match (see world/animBlocks.js).
-  vocalist: chart.vocalist || 'singer',
-  sections: chart.sections,
-  beats: chart.beats,
-  allNotes: chart.notes,
-};
+export { SONGS };
+
+/** The song that's picked right now (its fields are swapped by selectSong). */
+export const SONG = {};
+const listeners = [];
+
+/** Run fn(SONG) now and every time the song changes. */
+export function onSongChange(fn) {
+  listeners.push(fn);
+  if (SONG.id) fn(SONG);
+}
+
+/** Make the song with this id the current one (unknown ids pick the first song). */
+export function selectSong(id) {
+  const entry = SONGS.find((s) => s.id === id) || SONGS[0];
+  if (entry.id === SONG.id) return SONG;
+  const chart = entry.chart;
+  const beats = chart.beats;
+  Object.assign(SONG, {
+    id: entry.id,
+    title: chart.title,
+    audio: entry.audio,
+    venue: entry.venue || chart.venue || 'arena',
+    duration: chart.duration,
+    bpm: Math.round(chart.estimated_bpm),
+    // Seconds per beat (the middle of all the gaps, so one odd gap can't skew it).
+    beatLength: [...beats.slice(1).map((b, i) => b - beats[i])].sort((a, b) => a - b)[beats.length >> 1] || 0.4,
+    // Who sings lead: 'singer' (her), 'guitarist' (him) or 'duet' (both).
+    // The band animates to match (see world/animBlocks.js).
+    vocalist: chart.vocalist || 'singer',
+    sections: chart.sections,
+    beats,
+    allNotes: chart.notes,
+  });
+  for (const fn of listeners) fn(SONG);
+  return SONG;
+}
+selectSong(SONGS[0].id);
 
 export const DIFFICULTIES = {
   casual:   { label: 'CASUAL',   maxTier: 0 },
@@ -31,8 +63,8 @@ export const DIFFICULTIES = {
   expert:   { label: 'EXPERT',   maxTier: 2 },
 };
 
-// When the results screen appears (game time).
-export const SONG_END = LEAD + SONG.duration + 0.28;
+/** When the results screen appears (game time) for the current song. */
+export const songEnd = () => LEAD + SONG.duration + 0.28;
 
 /**
  * Build the list of notes to play for one difficulty.
@@ -72,9 +104,9 @@ export function sectionAt(songTime) {
  */
 export function beatPosition(songTime) {
   const beats = SONG.beats;
-  if (songTime <= beats[0]) return (songTime - beats[0]) / BEAT;
+  if (songTime <= beats[0]) return (songTime - beats[0]) / SONG.beatLength;
   const last = beats.length - 1;
-  if (songTime >= beats[last]) return last + (songTime - beats[last]) / BEAT;
+  if (songTime >= beats[last]) return last + (songTime - beats[last]) / SONG.beatLength;
   // Binary search for the two beats around songTime.
   let a = 0;
   let b = last;
