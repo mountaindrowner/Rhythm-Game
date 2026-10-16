@@ -8,9 +8,29 @@
 // listen to those events to draw sparks, animate the band, update the HUD.
 // Keeping the rules separate makes them easy to test (see tests/unit/).
 // =============================================================================
-import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN } from '../config.js';
+import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS } from '../config.js';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/** The streak multiplier (×1–×4) after `streak` hits in a row. */
+export const multiplierFor = (streak) => Math.min(SCORE.maxMultiplier, 1 + Math.floor(streak / SCORE.streakPerStep));
+
+/** The score of a perfect run: every note PERFECT, every long note held. */
+export function perfectScore(notes) {
+  let total = 0;
+  notes.forEach((n, i) => {
+    const mult = multiplierFor(i + 1);
+    total += SCORE.perfect.base * mult + (n.hold > 0 ? SCORE.holdBonus * mult : 0);
+  });
+  return total;
+}
+
+/** 0-5 stars for a score, and whether they're gold (Expert full combo + 5 stars). */
+export function starsFor(score, best, { expert = false, fullCombo = false } = {}) {
+  const share = best ? score / best : 0;
+  const stars = STARS.filter((need) => share >= need).length;
+  return { stars, gold: expert && fullCombo && stars === 5, share };
+}
 
 export class Performance {
   /**
@@ -26,6 +46,10 @@ export class Performance {
     this.maxCombo = 0;
     this.energy = ENERGY.start;
     this.counts = { perfect: 0, great: 0, good: 0, miss: 0, wrong: 0 };
+    this.offsets = [];  // how early (-) or late (+) each hit was, in seconds
+    this.early = 0;     // GREAT/GOOD hits that were early...
+    this.late = 0;      // ...or late (shown as EARLY / LATE)
+    this.bonusFactor = 1; // Riot Mode doubles this
     this.judged = 0;
     this.holding = [null, null, null, null];  // hold note being sustained per lane
     this.lastMistake = [-99, -99, -99, -99];
@@ -59,18 +83,21 @@ export class Performance {
     }
 
     const grade = bestDelta < WINDOWS.perfect ? 'perfect' : bestDelta < WINDOWS.great ? 'great' : 'good';
+    const error = now - best.time; // how far off this hit was: negative = early, positive = late
+    const timing = grade === 'perfect' ? '' : error < 0 ? 'early' : 'late';
+    if (timing) this[timing]++;
+    this.offsets.push(error);
     best.hit = true;
     this.combo++;
     this.maxCombo = Math.max(this.maxCombo, this.combo);
     this.counts[grade]++;
-    const s = SCORE[grade];
-    this.score += s.base + Math.min(s.maxBonus, this.combo * s.perCombo);
+    this.score += SCORE[grade].base * this.multiplier;
     this.energy = clamp(this.energy + ENERGY[grade], 0, 100);
     this.judged++;
     if (best.hold > 0) this.holding[lane] = best;
     else best.done = true;
     return {
-      type: 'hit', lane, grade, note: best,
+      type: 'hit', lane, grade, note: best, timing,
       combo: this.combo,
       milestone: this.combo % SCORE.comboMilestone === 0,
     };
@@ -126,9 +153,21 @@ export class Performance {
     }
   }
 
+  /** The score multiplier right now: the streak's ×1–×4 (×2 more in Riot Mode). */
+  get multiplier() {
+    return multiplierFor(this.combo) * this.bonusFactor;
+  }
+
+  /** The middle of all hit offsets (seconds, + = late), or 0 with too few hits. */
+  get typicalOffset() {
+    if (this.offsets.length < 20) return 0;
+    const sorted = [...this.offsets].sort((a, b) => a - b);
+    return sorted[sorted.length >> 1];
+  }
+
   completeHold(n) {
     n.done = true;
-    this.score += SCORE.holdBonus;
+    this.score += SCORE.holdBonus * this.multiplier;
     this.energy = clamp(this.energy + ENERGY.holdComplete, 0, 100);
     return { type: 'holdComplete', lane: n.lane };
   }

@@ -2,18 +2,58 @@
 // Each test builds a tiny chart by hand and checks the rules' decisions.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Performance } from '../../src/game/rules.js';
+import { Performance, multiplierFor, perfectScore, starsFor } from '../../src/game/rules.js';
 import { LEAD, ENERGY } from '../../src/config.js';
 
 const note = (time, lane, hold = 0) => ({ time: LEAD + time, lane, hold, hit: false, miss: false, done: false });
 
-test('a tap right on time is PERFECT and scores 300 + combo bonus', () => {
+test('a tap right on time is PERFECT and scores 100 × the multiplier', () => {
   const p = new Performance([note(1, 0)]);
   const e = p.press(0, LEAD + 1.01);
   assert.equal(e.type, 'hit');
   assert.equal(e.grade, 'perfect');
-  assert.equal(p.score, 302); // 300 + min(200, combo 1 × 2)
+  assert.equal(e.timing, '');   // PERFECT hits don't say early or late
+  assert.equal(p.score, 100);   // 100 × ×1
   assert.equal(p.combo, 1);
+});
+
+test('the multiplier climbs ×1 → ×4 every 10 hits in a row, and a miss resets it', () => {
+  assert.deepEqual([0, 9, 10, 19, 20, 30, 99].map(multiplierFor), [1, 1, 2, 2, 3, 4, 4]);
+  const notes = Array.from({ length: 12 }, (_, i) => note(1 + i * 0.5, 0));
+  const p = new Performance(notes);
+  for (let i = 0; i < 11; i++) p.press(0, LEAD + 1 + i * 0.5);
+  assert.equal(p.multiplier, 2);
+  // hits 1-9 at ×1, hit 10 at ×2 (the streak reaches 10), hit 11 at ×2
+  assert.equal(p.score, 9 * 100 + 2 * 200);
+  p.update(LEAD + 1 + 11 * 0.5 + 0.3); // the 12th note goes by: a miss
+  assert.equal(p.multiplier, 1);
+});
+
+test('GREAT and GOOD hits say whether they were EARLY or LATE', () => {
+  const p = new Performance([note(1, 0), note(2, 0)]);
+  assert.equal(p.press(0, LEAD + 1 - 0.07).timing, 'early');
+  assert.equal(p.press(0, LEAD + 2 + 0.07).timing, 'late');
+  assert.equal(p.early, 1);
+  assert.equal(p.late, 1);
+});
+
+test('consistently late taps show up as a typical offset (for the timing tip)', () => {
+  const notes = Array.from({ length: 30 }, (_, i) => note(1 + i * 0.5, i % 4));
+  const p = new Performance(notes);
+  notes.forEach((n) => p.press(n.lane, n.time + 0.04));
+  assert.ok(Math.abs(p.typicalOffset - 0.04) < 0.001);
+});
+
+test('stars come from the share of a perfect run; gold needs an Expert full combo', () => {
+  const notes = Array.from({ length: 40 }, (_, i) => note(1 + i * 0.5, 0));
+  const best = perfectScore(notes);
+  // notes 1-9 at ×1, 10-19 at ×2, 20-29 at ×3, 30-40 at ×4
+  assert.equal(best, 9 * 100 + 10 * 200 + 10 * 300 + 11 * 400);
+  assert.equal(starsFor(0, best).stars, 0);
+  assert.equal(starsFor(best * 0.5, best).stars, 3);
+  assert.equal(starsFor(best, best).stars, 5);
+  assert.equal(starsFor(best, best, { expert: false, fullCombo: true }).gold, false);
+  assert.equal(starsFor(best, best, { expert: true, fullCombo: true }).gold, true);
 });
 
 test('timing windows: 60 ms = GREAT, 120 ms = GOOD, 200 ms = no hit', () => {
@@ -61,7 +101,7 @@ test('hold notes: holding to the end earns the bonus', () => {
   const scoreAfterHead = p.score;
   const events = p.update(LEAD + 2);
   assert.equal(events[0].type, 'holdComplete');
-  assert.equal(p.score, scoreAfterHead + 150);
+  assert.equal(p.score, scoreAfterHead + 50); // hold bonus 50 × ×1
 });
 
 test('hold notes: letting go early is HOLD LOST', () => {

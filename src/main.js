@@ -19,9 +19,10 @@ import {
   SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition,
 } from './song/chart.js';
 import { VENUES } from './world/venues.js';
+import { getBest, recordResult, starText } from './progress.js';
 import { settings, updateSettings } from './settings.js';
 import { SongPlayer } from './audio/player.js';
-import { Performance } from './game/rules.js';
+import { Performance, perfectScore, starsFor } from './game/rules.js';
 import { Input } from './game/input.js';
 import { createWorld } from './world/scene.js';
 import { createStage } from './world/stage.js';
@@ -117,7 +118,7 @@ function handle(e) {
   if (e.type === 'hit') {
     highway.flash(e.lane, t);
     effects.burst(e.lane, e.grade === 'perfect' ? 26 : 14);
-    hud.judgement(e.grade);
+    hud.judgement(e.grade, e.timing);
     if (e.grade === 'perfect') kick(0.25);
     if (e.milestone) {
       hype = 1;
@@ -219,7 +220,7 @@ function failGame() {
     const reached = Math.max(0, failedAt - LEAD);
     const pct = Math.round((reached / SONG.duration) * 100);
     showResults("SHOW'S OVER", `The crowd ran out of energy at ${clock(reached)} (${pct}% of the song). `
-      + 'Hit notes to keep the energy up — or turn on Practice mode in Settings.');
+      + 'Hit notes to keep the energy up — or turn on Practice mode in Settings.', false);
   }, 1700);
 }
 
@@ -232,11 +233,43 @@ function endGame() {
   showResults(perf.headline, settings.practice ? 'Practice mode was on.' : '');
 }
 
-function showResults(headline, note) {
+function showResults(headline, note, finished = true) {
   $('headline').textContent = headline;
   $('resultNote').textContent = note;
   $('resultNote').hidden = !note;
   $('finalScore').textContent = perf.score.toLocaleString('en-US');
+
+  // Stars, and saving your best (only for a finished song).
+  const fullCombo = perf.counts.miss === 0 && perf.counts.wrong === 0 && perf.counts.good + perf.counts.great + perf.counts.perfect === perf.total;
+  const rating = starsFor(perf.score, perfectScore(perf.notes), { expert: settings.difficulty === 'expert', fullCombo });
+  const stars = finished ? rating.stars : 0;
+  $('stars').textContent = starText(stars);
+  $('stars').classList.toggle('gold', finished && rating.gold);
+  let isNewBest = false;
+  if (finished) {
+    ({ isNewBest } = recordResult(SONG.id, settings.difficulty, {
+      score: perf.score, stars, gold: rating.gold, accuracy: perf.accuracy, fullCombo,
+    }));
+  }
+  $('newBest').hidden = !isNewBest;
+  $('newBest').textContent = rating.gold && finished ? 'GOLD STARS! NEW BEST!' : 'NEW BEST!';
+  refreshSongBests();
+
+  // Timing tip: if your taps were steadily early or late, offer to fix it.
+  $('rEarlyLate').textContent = `${perf.early} / ${perf.late}`;
+  const driftMs = Math.round(perf.typicalOffset * 1000 / 5) * 5;
+  const tip = Math.abs(driftMs) >= 25;
+  $('timingTip').hidden = !tip;
+  if (tip) {
+    $('timingTipText').textContent = `Your taps were usually about ${Math.abs(driftMs)} ms ${driftMs > 0 ? 'late' : 'early'}. `
+      + 'That can be your phone or headphones, not you.';
+    $('timingTipBtn').onclick = () => {
+      setOffset(settings.tapOffsetMs + driftMs);
+      $('timingTipText').textContent = `Timing adjusted to ${settings.tapOffsetMs > 0 ? '+' : ''}${settings.tapOffsetMs} ms. Play again to try it!`;
+      $('timingTipBtn').hidden = true;
+    };
+    $('timingTipBtn').hidden = false;
+  }
   $('rPerfect').textContent = perf.counts.perfect;
   $('rGreat').textContent = perf.counts.great;
   $('rGood').textContent = perf.counts.good;
@@ -330,12 +363,23 @@ const songButtons = SONGS.map((entry) => {
   const b = document.createElement('button');
   b.dataset.song = entry.id;
   b.setAttribute('role', 'radio');
-  b.innerHTML = `<strong>${entry.chart.title}</strong>`
-    + `<span>${(VENUES[entry.venue] || VENUES.arena).name} · ${Math.round(entry.chart.estimated_bpm)} BPM</span>`;
+  b.innerHTML = `<strong>${entry.chart.title}</strong><span class="song-side">`
+    + `<span>${(VENUES[entry.venue] || VENUES.arena).name} · ${Math.round(entry.chart.estimated_bpm)} BPM</span>`
+    + '<span class="best"></span></span>';
   b.addEventListener('click', () => pickSong(entry.id));
   $('songList').append(b);
   return b;
 });
+/** Show your best stars (for the chosen difficulty) on each song button. */
+function refreshSongBests() {
+  for (const b of songButtons) {
+    const best = getBest(b.dataset.song, settings.difficulty);
+    const el = b.querySelector('.best');
+    el.textContent = best ? `${starText(best.stars)}  ${best.score.toLocaleString('en-US')}` : 'NOT PLAYED YET';
+    el.classList.toggle('gold', !!best?.gold);
+  }
+}
+
 function pickSong(id) {
   if (status !== 'menu') return;
   selectSong(id);
@@ -356,6 +400,7 @@ function selectDifficulty(d) {
     b.classList.toggle('selected', on);
     b.setAttribute('aria-checked', on);
   });
+  refreshSongBests();
 }
 diffButtons.forEach((b) => b.addEventListener('click', () => selectDifficulty(b.dataset.diff)));
 selectDifficulty(settings.difficulty);
@@ -445,6 +490,7 @@ window.__BURN_BRIGHT_TEST__ = {
     };
   },
   start: startGame,
+  finish: () => endGame(), // tests only: jump to the results screen
   pickSong,
   pause: pauseGame,
   resume: resumeGame,

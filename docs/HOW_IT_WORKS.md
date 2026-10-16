@@ -18,7 +18,7 @@ Two kinds of time appear in the code:
 
 | Name | Meaning |
 |---|---|
-| `songTime` | seconds since the MP3 started (what `charts/song_chart.json` uses) |
+| `songTime` | seconds since the MP3 started (what the charts in `charts/` use) |
 | `t` (game time) | seconds since you pressed Start = `songTime + LEAD` (LEAD is the 4-beat count-in) |
 
 ## 2. The game loop (`src/main.js`)
@@ -39,8 +39,11 @@ Taps take a shortcut: `input.js` calls `perf.press(lane, t)` the instant your fi
 
 - **Judging:** when you press a lane, find the closest unhit note in that lane. If it's within 45 ms it's PERFECT, within 97 ms GREAT, within 175 ms GOOD. With no note nearby it's a WRONG NOTE.
 - **Misses:** in `update()`, any note more than 174 ms past the line without a hit is a MISS.
-- **Holds:** hitting a long note's head starts a hold. Releasing early is HOLD LOST; holding to the end gives +150.
-- **Score, combo, energy:** all the numbers come from `src/config.js`.
+- **Holds:** hitting a long note's head starts a hold. Releasing early is HOLD LOST; holding to the end gives a bonus.
+- **Score:** each hit is worth its grade's points (PERFECT 100, GREAT 70, GOOD 40) × the **multiplier**. The multiplier is ×1, then ×2 after 10 hits in a row, ×3 after 20 and ×4 after 30, shown as a badge by the combo. A miss resets it.
+- **EARLY / LATE:** every hit records how far off it was. GREAT and GOOD say EARLY or LATE under the judgement. The results screen counts them; if your taps were usually more than about 25 ms off, it offers to fix your timing setting.
+- **Stars:** your score as a share of a perfect run (`perfectScore()`): 8% = 1 star … 75% = 5 stars. **Gold stars** = an Expert full combo with 5 stars. Your best for every song and difficulty is saved by `src/progress.js` and shown in the song picker.
+- All the numbers come from `src/config.js` (`SCORE`, `STARS`, `ENERGY`).
 
 Try it: change `WINDOWS.perfect` in `config.js` to `0.08` and the game becomes much more forgiving. Run `npm test` to see which rules tests notice.
 
@@ -60,7 +63,7 @@ Each note in the JSON looks like `{ "time": 12.35, "lane": 2, "tier": 1, "hold":
 - `sections` name the parts of the song (VERSE 1, CHORUS 1…). The stage lights use them.
 - `beats` are the real detected beat times. The scrolling beat lines and the band's groove follow them.
 
-You can open `charts/song_chart.csv` in a spreadsheet to look at the first song's notes. For chart-maker songs, open the picture next to the chart (for example `charts/trust_god_anyway.png`).
+To see a chart at a glance, open the picture next to it (for example `charts/trust_god_anyway.png`). `charts/song_chart.json` and `.csv` are the original chart from the handover, kept for reference only.
 
 ## 5. The 3D world (`src/world/`)
 
@@ -139,7 +142,7 @@ The singer's ponytail is a tiny physics simulation: a spring pushed around by he
 
 Why it looks smooth: every animation starts and ends on the same standing pose (the *hub*), and switches only happen where a loop restarts, which is on that pose. Loops are tied to the song's beats (a 2-beat loop restarts every second beat), so the band always moves in time. The "random" choices come from a hash of the bar number, so the same moment of the song always gets the same move, which makes problems easy to reproduce. `tests/unit/animBlocks.test.js` checks all of these rules.
 
-**Who sings?** Each chart says who sings lead (`"vocalist"` in `charts/song_chart.json`: `singer`, `guitarist` or `duet`). In her songs the guitarist sings backing vocals at his mic in some chorus phrases. In his songs he sings through every vocal section. In duets they share. The **HD band** has no blocks, so it uses the older three rows: *play* loops every 2 beats, *accent* plays on big moments and *mistake* plays on misses.
+**Who sings?** Each chart says who sings lead (`"vocalist"` in each chart in `charts/`: `singer`, `guitarist` or `duet`). In her songs the guitarist sings backing vocals at his mic in some chorus phrases. In his songs he sings through every vocal section. In duets they share. The **HD band** has no blocks, so it uses the older three rows: *play* loops every 2 beats, *accent* plays on big moments and *mistake* plays on misses.
 
 **The classic pixel band** (`bandPixel.js`) is the original 2D art, kept as an option in Settings.
 

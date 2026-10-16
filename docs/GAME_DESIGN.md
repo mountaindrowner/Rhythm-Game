@@ -138,8 +138,16 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 
 ---
 
-## 9. Questions for you
-1. Should Riot Mode activate by tapping **all four pads at once**, or with a separate big button?
+## 9. Decisions (owner, after the research in `RESEARCH_RHYTHM_GAMES.md`)
+- **Riot Mode:** filled by gold **Riot phrases**, triggered by a **swipe up**, and it **can save you from a game over**. Accepted: keep earning during it, a ×1–×4 multiplier that Riot doubles to ×8.
+- **Small things:** EARLY/LATE hints, an early/late count with a timing fix on the results screen, and stars per song with **gold stars as the top reward on Expert** (built in v0.7).
+- **Solos:** **call-and-response** (a band member plays a lick, you copy it), in songs that have a solo spot.
+- **Finale:** a **Big Rock Ending** when the song's ending suits it.
+- **Failure is funny**, never sad.
+- **Difficulty:** Standard and Expert were too hard on a phone; v0.7 made every difficulty gentler.
+
+## 10. Earlier questions (still open)
+1. ~~Riot Mode trigger~~ (decided: swipe up)
 2. Should solos rotate between band members, or always go to whoever has played best?
 3. How rare should the rare moments be? Rare is special, but it can be frustrating if nobody ever sees them.
 4. Are there any ridiculous moments that feel off-brand for X-ROADS (a Christian rock band) and should be cut?

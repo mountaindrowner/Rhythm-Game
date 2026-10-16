@@ -186,6 +186,31 @@ html, body {
 .songs button strong { font-size: 14px; line-height: 1.15; }
 .songs button span { font: 800 10px var(--font); letter-spacing: 1px; opacity: 0.8; text-align: right; white-space: nowrap; }
 .how { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+.songs .song-side { display: grid; justify-items: end; gap: 2px; }
+.songs .best { font: 900 12px var(--font); letter-spacing: 1px; color: var(--gold); }
+.songs button.selected .best { color: #5a3a00; }
+.best.gold, .stars.gold { color: #ffd700; text-shadow: 0 0 10px #ffcf40; }
+
+/* Multiplier badge next to the combo: ×1 … ×4 (×8 in Riot Mode) */
+.mult {
+  display: inline-block; min-width: 2.2em; margin-right: 6px; padding: 1px 6px;
+  border-radius: 8px; background: rgba(255, 190, 59, 0.18); border: 1px solid rgba(255, 190, 59, 0.6);
+  color: var(--gold); font-weight: 900; text-align: center;
+}
+.mult.up { animation: pop-mult 0.35s ease-out; }
+.mult[data-level="2"] { background: rgba(75, 189, 255, 0.25); border-color: #4bbdff; color: #bfe8ff; }
+.mult[data-level="3"] { background: rgba(255, 91, 209, 0.25); border-color: #ff5bd1; color: #ffd1f3; }
+.mult[data-level="4"] { background: rgba(255, 106, 61, 0.35); border-color: #ff6a3d; color: #fff2d1; box-shadow: 0 0 12px #ff6a3d; }
+@keyframes pop-mult { 0% { transform: scale(1.7); } 100% { transform: scale(1); } }
+/* EARLY / LATE under the judgement */
+#judgement small { display: block; font-size: 13px; letter-spacing: 3px; margin-top: 2px; opacity: 0.9; }
+
+/* Results: stars, new best, timing tip */
+.stars { font-size: 34px; letter-spacing: 4px; color: var(--gold); line-height: 1; }
+.new-best { margin: 0; font-weight: 900; letter-spacing: 3px; color: #63ff79; animation: pop-mult 0.5s ease-out; }
+.timing-tip { border: 1px dashed rgba(255, 190, 59, 0.6); border-radius: 14px; padding: 8px 10px; }
+.timing-tip p { margin: 0 0 6px; font-size: 12px; color: var(--cream); line-height: 1.4; }
+.timing-tip button { width: 100%; min-height: 40px; font-size: 13px; }
 button {
   font: 900 14px var(--font);
   color: var(--cream);

@@ -1,0 +1,46 @@
+[
+ {
+  "time": 0,
+  "name": "OPENING"
+ },
+ {
+  "time": 13,
+  "name": "VERSE 1"
+ },
+ {
+  "time": 28,
+  "name": "BUILD"
+ },
+ {
+  "time": 34,
+  "name": "CHORUS 1"
+ },
+ {
+  "time": 54,
+  "name": "REFRAIN"
+ },
+ {
+  "time": 63,
+  "name": "VERSE 2"
+ },
+ {
+  "time": 79,
+  "name": "BUILD 2"
+ },
+ {
+  "time": 85,
+  "name": "CHORUS 2"
+ },
+ {
+  "time": 107,
+  "name": "BRIDGE"
+ },
+ {
+  "time": 120,
+  "name": "FINAL CHORUS"
+ },
+ {
+  "time": 134,
+  "name": "OUTRO"
+ }
+]

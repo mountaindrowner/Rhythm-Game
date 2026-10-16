@@ -10,7 +10,7 @@
 //   3. Import the chart and MP3 below and add an entry to SONGS.
 // The venue names are in world/venues.js.
 // =============================================================================
-import ywlmfChart from '../../charts/song_chart.json';
+import ywlmfChart from '../../charts/you_wont_let_me_fall.json';
 import ywlmfAudio from '../../assets/audio/you_wont_let_me_fall.mp3';
 import planBChart from '../../charts/youre_not_my_plan_b.json';
 import planBAudio from '../../assets/audio/youre_not_my_plan_b.mp3';

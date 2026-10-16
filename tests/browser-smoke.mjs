@@ -21,7 +21,7 @@ const file = resolve(process.argv[2] || 'dist/index.html');
 const shots = process.argv[3];
 if (shots) mkdirSync(shots, { recursive: true });
 
-const EXPECTED = { casual: 331, standard: 697, expert: 1091 };
+const EXPECTED = { casual: 197, standard: 355, expert: 640 };
 let failures = 0;
 const check = (ok, message) => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${message}`);

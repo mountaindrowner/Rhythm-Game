@@ -32,8 +32,10 @@ import listen as L
 LANES = {"bass": 0, "vocals": 1, "guitar": 2, "drums": 3}
 
 # Notes per second of music for each difficulty, counting all its layers.
-# (The first song has 2.2 / 4.7 / 7.3.)
-DENSITY = [2.1, 4.4, 6.9]
+# The first song's original chart had 2.2 / 4.7 / 7.3, which play testing on
+# a phone showed was too hard for Standard and Expert (two thumbs on glass
+# aren't a guitar controller), so these are gentler.
+DENSITY = [1.5, 2.7, 4.4]
 # Share of the notes each lane gets (drums carry the beat).
 SHARE = {"drums": 0.38, "guitar": 0.27, "bass": 0.19, "vocals": 0.16}
 # How busy each kind of section is, compared with the song's average.
@@ -41,14 +43,15 @@ SECTION_WEIGHT = {"OPENING": 0.55, "VERSE": 0.85, "BUILD": 1.0, "CHORUS": 1.15, 
                   "BRIDGE": 0.8, "FINAL CHORUS": 1.25, "OUTRO": 0.65}
 # Rules per difficulty: finest grid allowed (0 downbeat .. 4 sixteenth),
 # minimum gap between notes in the same lane (in beats), most lanes at once,
-# and minimum gap between ANY two notes (beats) unless they're a chord.
+# the finest grid position a two-lane chord may sit on, and minimum gap
+# between ANY two notes (beats) unless they're a chord.
 # These match how the first song's chart plays: Casual and Standard stay on
 # the beat (Standard adds two-lane chords instead of faster rhythms), and
 # Expert adds half-beats, never anything faster.
 RULES = [
-    {"finest": 2, "lane_gap": 2.0, "chord": 1, "any_gap": 1.0},   # Casual
-    {"finest": 2, "lane_gap": 1.0, "chord": 2, "any_gap": 1.0},   # Standard
-    {"finest": 3, "lane_gap": 0.5, "chord": 2, "any_gap": 0.5},   # Expert
+    {"finest": 2, "lane_gap": 2.0, "chord": 1, "chord_finest": 0, "any_gap": 1.0},  # Casual
+    {"finest": 2, "lane_gap": 1.0, "chord": 2, "chord_finest": 1, "any_gap": 1.0},  # Standard: chords on beats 1 and 3 only
+    {"finest": 3, "lane_gap": 0.5, "chord": 2, "chord_finest": 2, "any_gap": 0.5},  # Expert
 ]
 POSITION_BONUS = [1.5, 1.35, 1.25, 1.0, 0.8]  # downbeat, beat 3, other beats, half-beat, quarter-beat
 MIN_STRENGTH = 0.12  # don't put notes on (near) silence
@@ -194,8 +197,8 @@ def place_notes(beats, first_downbeat, sections, H, P, song_end):
         if hold and near(by_lane[lane], t + (hold + 0.5) * beat_len / 2, (hold + 0.5) * beat_len / 2 + 0.01):
             return False  # a long note needs its lane free until it ends
         i, j = bisect_left(times, t - 0.01), bisect_left(times, t + 0.01)
-        if j - i >= rules["chord"]:
-            return False
+        if j - i >= rules["chord"] or (j > i and c["level"] > rules["chord_finest"]):
+            return False  # too many lanes at once, or a chord on a weak beat
         if rules["any_gap"]:
             gap = rules["any_gap"] * beat_len
             k = bisect_left(times, t - gap + eps)

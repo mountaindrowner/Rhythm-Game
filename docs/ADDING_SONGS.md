@@ -6,7 +6,7 @@ The game can turn any song into a playable chart. `scripts/chart/make_chart.py` 
 
 | Song | Tempo | Venue | Chart |
 |---|---|---|---|
-| You Won't Let Me Fall | 152 BPM | The Arena (indoors, giant LED wall) | `charts/song_chart.json` (the original, made before the chart maker) |
+| You Won't Let Me Fall | 153 BPM | The Arena (indoors, giant LED wall) | `charts/you_wont_let_me_fall.json` (chart maker, with the original hand-named sections from `charts/you_wont_let_me_fall.sections.json`) |
 | You're Not My Plan B | 167 BPM | City Rooftop (night skyline, neon, string lights) | `charts/youre_not_my_plan_b.json` (chart maker) |
 | Trust God Anyway | 167 BPM | Sunrise Hill (open-air stage, mountains, festival flags) | `charts/trust_god_anyway.json` (chart maker) |
 
@@ -33,7 +33,7 @@ You need Python 3 with numpy (`pip install numpy`) and the `ffmpeg` program.
 |---|---|
 | `listen.py` | The "ears". It decodes the MP3 and makes a spectrogram (how loud every pitch is, about 86 times a second). It splits **smooth** sounds (voice, chords, bass) from **spiky** ones (drums). It finds **onsets** (moments new sound starts), the **tempo** (how the onsets repeat), every **beat** (a chain of onsets as close to the tempo as possible), and **beat 1** of each bar (kick on 1, snare on 2 and 4, chord changes on 1). |
 | `sections.py` | An **energy map**: each 4-bar block is CALM, MEDIUM or BIG compared with the rest of the song. Big parts are choruses, the part before a chorus is a build, and so on. |
-| `notes.py` | Places notes on a grid made from the beats. Each lane listens to its own part of the sound: drums to the spiky sound, bass to the smooth sound below 250 Hz, guitar to 250 Hz–2 kHz, vocals to 1–3.5 kHz. Casual and Standard stay on the beat (Standard adds two-lane chords), and Expert adds half-beats, matching how the first song's chart plays. |
+| `notes.py` | Places notes on a grid made from the beats. Each lane listens to its own part of the sound: drums to the spiky sound, bass to the smooth sound below 250 Hz, guitar to 250 Hz–2 kHz, vocals to 1–3.5 kHz. Casual and Standard stay on the beat (Standard adds two-lane chords on beats 1 and 3), and Expert adds half-beats. **Density** (since v0.7, after phone play testing): about 1.4 / 2.4 / 4.3 taps per second for Casual / Standard / Expert, down from the original chart's 2.2 / 4.7 / 7.3. |
 | `picture.py` | Draws the analysis picture (sections, onset curve, beats, notes). |
 | `test_listen.py` | Checks with made-up drum hits at known times: `python3 scripts/chart/test_listen.py`. |
 

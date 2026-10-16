@@ -28,7 +28,7 @@
         <div class="hud-right">
           <div class="score-label">SCORE</div>
           <div id="score">0</div>
-          <div class="combo"><span id="combo">0</span>× COMBO</div>
+          <div class="combo"><span id="mult" class="mult">×1</span><span id="combo">0</span> COMBO</div>
         </div>
         <button id="pauseBtn" class="icon-btn" aria-label="Pause">❚❚</button>
       </header>
@@ -120,7 +120,9 @@
         <div class="panel">
           <h2 id="headline">HEADLINER!</h2>
           <p id="resultNote" class="result-note" hidden></p>
+          <div id="stars" class="stars" aria-label="Stars"></div>
           <div id="finalScore" class="big-number">0</div>
+          <p id="newBest" class="new-best" hidden>NEW BEST!</p>
           <dl class="stats">
             <dt>Perfect</dt><dd id="rPerfect">0</dd>
             <dt>Great</dt><dd id="rGreat">0</dd>
@@ -129,7 +131,12 @@
             <dt>Wrong taps</dt><dd id="rWrong">0</dd>
             <dt>Max combo</dt><dd id="rCombo">0</dd>
             <dt>Weighted accuracy</dt><dd id="rAccuracy">0%</dd>
+            <dt>Early / late</dt><dd id="rEarlyLate">0 / 0</dd>
           </dl>
+          <div id="timingTip" class="timing-tip" hidden>
+            <p id="timingTipText"></p>
+            <button id="timingTipBtn">◎ FIX MY TIMING</button>
+          </div>
           <button id="againBtn" class="primary">↻ PLAY AGAIN</button>
           <button id="menuBtn">☰ MAIN MENU</button>
           <p class="version"></p>

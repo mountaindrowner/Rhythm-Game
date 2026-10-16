@@ -35,7 +35,7 @@ export function createHud() {
   const el = {
     score: $('score'), combo: $('combo'), life: $('lifeFill'), section: $('sectionName'),
     clock: $('clock'), progress: $('progressFill'), judgement: $('judgement'),
-    countIn: $('countIn'), banner: $('banner'),
+    countIn: $('countIn'), banner: $('banner'), mult: $('mult'),
   };
   let shown = {}; // cache so we only touch the page when something changes
 
@@ -56,9 +56,15 @@ export function createHud() {
 
   return {
     /** Show feedback for a rules.js event. */
-    judgement(key) {
+    /** timing = 'early' / 'late' / '' (shown small under GREAT and GOOD). */
+    judgement(key, timing = '') {
       const [message, color] = GRADE_TEXT[key];
       popup(el.judgement, message, color);
+      if (timing) {
+        const small = document.createElement('small');
+        small.textContent = timing.toUpperCase();
+        el.judgement.append(small);
+      }
     },
     banner(message) { popup(el.banner, message, '#ffbe3b'); },
 
@@ -67,6 +73,12 @@ export function createHud() {
       const songTime = Math.max(0, t - LEAD);
       set('score', el.score, perf.score.toLocaleString('en-US'), text);
       set('combo', el.combo, perf.combo, text);
+      set('mult', el.mult, perf.multiplier, (n, v) => {
+        const rising = v > (Number(n.dataset.level) || 1);
+        n.textContent = `×${v}`;
+        n.dataset.level = Math.min(4, v);
+        if (rising) { n.classList.remove('up'); void n.offsetWidth; n.classList.add('up'); }
+      });
       set('life', el.life, Math.round(perf.energy), (n, v) => { n.style.width = `${v}%`; });
       set('section', el.section, section, text);
       const secs = Math.floor(songTime);

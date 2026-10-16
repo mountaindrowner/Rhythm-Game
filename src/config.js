@@ -45,14 +45,25 @@ export const WINDOWS = {
 };
 
 // ---- Scoring ---------------------------------------------------------------
-// Points = base + a bonus that grows with your combo (up to a cap).
+// Points = the grade's base points × your MULTIPLIER. The multiplier grows
+// with your streak like Guitar Hero's: ×1, then ×2 after 10 hits in a row,
+// ×3 after 20 and ×4 after 30 (shown as a badge next to the combo). A miss
+// drops it back to ×1.
 export const SCORE = {
-  perfect: { base: 300, perCombo: 2, maxBonus: 200 },
-  great:   { base: 180, perCombo: 1, maxBonus: 130 },
-  good:    { base: 90,  perCombo: 1, maxBonus: 80 },
-  holdBonus: 150,      // finishing a long note
+  perfect: { base: 100 },
+  great:   { base: 70 },
+  good:    { base: 40 },
+  holdBonus: 50,       // finishing a long note (also multiplied)
+  streakPerStep: 10,   // hits in a row for each step up
+  maxMultiplier: 4,
   comboMilestone: 25,  // "crowd on fire" every 25 hits in a row
 };
+
+// ---- Stars (results screen and song picker) --------------------------------
+// Stars come from your score as a share of a "perfect run" (every note
+// PERFECT, never dropping the streak). Gold stars: an Expert full combo
+// that also earns 5 stars.
+export const STARS = [0.08, 0.2, 0.38, 0.55, 0.75]; // share needed for 1, 2, 3, 4, 5 stars
 
 // ---- Energy (life meter, 0–100) -------------------------------------------
 // The original game stacked several small penalties on top of each other.
