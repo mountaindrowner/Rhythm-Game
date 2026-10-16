@@ -2,7 +2,7 @@
 
 Mobile-first rhythm game (Vite + Three.js). The band is **X-ROADS** ("Crossroads"). **Rhythm Riot** is a working title for the game. The old names "Burn Bright" and "The Pixel Riot" are retired; they only survive in internal identifiers such as the settings storage key and the test hook. The owner is learning to code through this project, so explain changes in plain language and keep code commented for a beginner.
 
-**Read first:** `docs/NEXT_STEPS.md` (current status and plan), `docs/GAME_DESIGN.md` (gameplay, Riot Mode, ridiculous moments), then `docs/HOW_IT_WORKS.md` (code tour), `docs/ADDING_SONGS.md` (chart maker, set list, venues) and `docs/ART_PIPELINE.md` (PixelLab art). The full design vision is in `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md`.
+**Read first:** `docs/NEXT_STEPS.md` (current status and plan), `docs/GAME_DESIGN.md` (gameplay, Riot Mode, ridiculous moments), then `docs/HOW_IT_WORKS.md` (code tour), `docs/ADDING_SONGS.md` (chart maker, set list, venues), `docs/RESEARCH_RHYTHM_GAMES.md` (how other rhythm games do it) and `docs/ART_PIPELINE.md` (PixelLab art). The full design vision is in `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md`.
 
 ## Branches
 - `main`: the live 3D remake. Every push runs tests and publishes to https://mountaindrowner.github.io/Rhythm-Game/

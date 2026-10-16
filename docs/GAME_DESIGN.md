@@ -1,5 +1,7 @@
 # Rhythm Riot: game design (working draft)
 
+> **Research note (v0.6.1):** `docs/RESEARCH_RHYTHM_GAMES.md` compares this plan with Guitar Hero, Rock Band, Fortnite Festival, Rhythm Heaven and others, and suggests changes (Riot *phrases*, a swipe-up or button trigger, a visible ×1–×4 multiplier, EARLY/LATE hints, stars per song). Those suggestions are waiting on the owner's approval.
+
 **Rhythm Riot** (working title) stars **X-ROADS**, a four-piece rock band. This doc fleshes out how the game should *play*: the core loop, **Riot Mode**, and the **ridiculous moments** that make it memorable. It's a proposal to react to. Nothing here is built yet unless it says **(built)**.
 
 ---
