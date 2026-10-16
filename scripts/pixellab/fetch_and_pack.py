@@ -25,6 +25,7 @@ import io
 import json
 import os
 import sys
+import time
 import urllib.request
 import zipfile
 
@@ -36,10 +37,19 @@ API = "https://api.pixellab.ai/mcp"
 ANIMS = ["play", "accent", "mistake"]  # rows after the idle row, in this order
 
 
-def fetch(url, key):
+def fetch(url, key, attempts=4):
+    """Download with a few retries: flaky connections happen."""
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return r.read()
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return r.read()
+        except OSError as err:
+            if attempt == attempts:
+                raise
+            wait = 2 ** attempt
+            print(f"  network error ({err}); retrying in {wait}s")
+            time.sleep(wait)
 
 
 def lowest_opaque_row(img):

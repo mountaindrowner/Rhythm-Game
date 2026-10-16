@@ -63,5 +63,11 @@ export function createWorld(canvas) {
     camera.lookAt(lookTarget);
   }
 
-  return { renderer, scene, camera, resize, kick, updateCamera };
+  /** Used by perf.js to trade a little sharpness for smoothness on slow phones. */
+  function setPixelRatio(r) {
+    renderer.setPixelRatio(r);
+    resize();
+  }
+
+  return { renderer, scene, camera, resize, kick, updateCamera, setPixelRatio };
 }

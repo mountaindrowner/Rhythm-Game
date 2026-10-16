@@ -1,13 +1,15 @@
 # Next steps (handoff)
 
-_Last updated: v0.3 plus the retro-look exploration._
+_Last updated: v0.4._
 
 ## Where things stand
-- **Live:** v0.3. The default band is the "HD" PixelLab band (128 px); the 3D-models and classic looks are in Settings.
-- **Chosen new look: Retro 16-bit** (64 px, chunky SNES-style pixels). All four musicians plus a matching drum kit (#5 of 16 candidates) are generated in PixelLab; their IDs are in `assets/art/pixellab-retro/source.json`. They have **no animations yet**. The owner was about to give final approval from preview screenshots (band lineup, in-game, close-up).
-- `bandHD.js` already sizes any art style automatically (one shared pixel size, set from the tallest musician), so switching looks only needs new assets.
+- **Names:** the band is **X-ROADS**; the game is called **Rhythm Riot** for now (the owner is still deciding).
+- **Live:** v0.4. The default band is still the "HD" PixelLab band (128 px). Settings → Band look also offers **Retro 16-bit**, 3D models and Classic.
+- **Retro 16-bit** (64 px): the owner likes it and is **trying it in-game before approving**. It has no drawn animations yet; `bandSprites.js` adds code-driven bob, sway, bounce and wobble so it still moves. Its IDs are in `assets/art/pixellab-retro/source.json`. **Don't build its animation library until the owner approves.**
+- **New in v0.4:** glass UI, a PixelLab crowd (8 back-view fans with cheer animations, one instanced draw call, `crowd.js`), a version badge on every menu, `perf.js` (automatic resolution + `?fps`), and `docs/GAME_DESIGN.md` (Riot Mode, solos, ridiculous moments; waiting on the owner's feedback to the questions in §9).
+- `bandSprites.js` already sizes any art style automatically (one shared pixel size, set from the tallest musician), so switching looks only needs new assets.
 
-## To preview the retro band in-game
+## To repack the retro band (the art is already committed)
 ```bash
 export PIXELLAB_API_KEY=...   # set as an environment secret, not in chat
 python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro/source.json --allow-missing
@@ -18,10 +20,10 @@ npm run dev                   # open ?autoplay&view=stage
 ## Plan 1: lots of smooth animations ("animation blocks")
 The goal: fluid, never choppy. Approach:
 1. **More frames:** 16 per animation (PixelLab `animate_character`, v3 or pixminimax; about 2 generations per 64 px animation).
-2. **Locked to the music:** loops last a whole number of beats (for example, 16 frames per 2 beats). The play-loop timing in `bandHD.js` already works this way.
+2. **Locked to the music:** loops last a whole number of beats (for example, 16 frames per 2 beats). The play-loop timing in `bandSprites.js` already works this way.
 3. **Seamless switches:** every animation starts and ends on the same neutral (idle) pose. Use PixelLab's custom start/end frame options so loops close cleanly. Switch animations only on bar lines.
 4. **Animation blocks per musician:** grooves (verse / chorus intensity), 3–4 playing variations (pick a different one each bar), big moves for combo milestones, 2–3 different stumbles, and specials (intro, bridge mood, final chorus, bow or celebration).
-5. **A recipe list:** one data file listing every animation (name, block, prompt, frames, beats). A script generates whatever's missing and then packs. `bandHD.js` grows into a small state machine that picks animations from the blocks.
+5. **A recipe list:** one data file listing every animation (name, block, prompt, frames, beats). A script generates whatever's missing and then packs. `bandSprites.js` grows into a small state machine that picks animations from the blocks.
 
 ## Plan 2: ridiculous moments (the owner wants the game to be absurd and hilarious)
 Ideas to build as special one-off animations plus stage effects:

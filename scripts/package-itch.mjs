@@ -5,8 +5,8 @@ import { zipSync } from 'fflate';
 
 const html = readFileSync('dist/index.html');
 const zip = zipSync({ 'index.html': html }, { level: 9 });
-writeFileSync('dist/burn-bright-itch.zip', zip);
+writeFileSync('dist/rhythm-riot-itch.zip', zip);
 
 const mb = (n) => (n / 1024 / 1024).toFixed(1) + ' MB';
 console.log(`dist/index.html          ${mb(statSync('dist/index.html').size)}`);
-console.log(`dist/burn-bright-itch.zip ${mb(zip.length)}  <- upload this to itch.io`);
+console.log(`dist/rhythm-riot-itch.zip ${mb(zip.length)}  <- upload this to itch.io`);

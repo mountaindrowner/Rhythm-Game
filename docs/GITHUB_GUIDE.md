@@ -34,7 +34,7 @@ On github.com:
 - **See history:** click "commits" to see every snapshot and exactly what changed.
 - **Compare branches:** `https://github.com/mountaindrowner/Rhythm-Game/compare/original...main`
 - **See test and build results:** the **Actions** tab. A green ✓ means tests passed; a red ✗ means something broke, and you can click it to see what.
-- **Download the itch.io ZIP:** Actions → the latest run → "Artifacts" → `burn-bright-itch`.
+- **Download the itch.io ZIP:** Actions → the latest run → "Artifacts" → `rhythm-riot-itch`.
 
 On your own computer (optional):
 

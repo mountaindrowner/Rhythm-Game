@@ -1,0 +1,131 @@
+{
+  "members": {
+    "bassist": {
+      "lane": 0,
+      "file": "bassist.png",
+      "cell": [
+        64,
+        64
+      ],
+      "columns": 1,
+      "rows": 4,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 1
+        },
+        "play": {
+          "row": 1,
+          "frames": 1
+        },
+        "accent": {
+          "row": 2,
+          "frames": 1
+        },
+        "mistake": {
+          "row": 3,
+          "frames": 1
+        }
+      },
+      "footY": 63,
+      "height": 62
+    },
+    "singer": {
+      "lane": 1,
+      "file": "singer.png",
+      "cell": [
+        64,
+        64
+      ],
+      "columns": 1,
+      "rows": 4,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 1
+        },
+        "play": {
+          "row": 1,
+          "frames": 1
+        },
+        "accent": {
+          "row": 2,
+          "frames": 1
+        },
+        "mistake": {
+          "row": 3,
+          "frames": 1
+        }
+      },
+      "footY": 63,
+      "height": 63
+    },
+    "guitarist": {
+      "lane": 2,
+      "file": "guitarist.png",
+      "cell": [
+        64,
+        64
+      ],
+      "columns": 1,
+      "rows": 4,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 1
+        },
+        "play": {
+          "row": 1,
+          "frames": 1
+        },
+        "accent": {
+          "row": 2,
+          "frames": 1
+        },
+        "mistake": {
+          "row": 3,
+          "frames": 1
+        }
+      },
+      "footY": 63,
+      "height": 62
+    },
+    "drummer": {
+      "lane": 3,
+      "file": "drummer.png",
+      "cell": [
+        64,
+        64
+      ],
+      "columns": 1,
+      "rows": 4,
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 1
+        },
+        "play": {
+          "row": 1,
+          "frames": 1
+        },
+        "accent": {
+          "row": 2,
+          "frames": 1
+        },
+        "mistake": {
+          "row": 3,
+          "frames": 1
+        }
+      },
+      "footY": 63,
+      "height": 62
+    }
+  },
+  "drumkit": {
+    "file": "drumkit.png",
+    "size": [
+      62,
+      58
+    ]
+  }
+}

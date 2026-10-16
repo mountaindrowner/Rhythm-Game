@@ -1,8 +1,8 @@
 {
-  "name": "burn-bright-3d",
+  "name": "rhythm-riot",
   "private": true,
-  "version": "0.3.0",
-  "description": "Burn Bright: The Pixel Riot — a 3D (Three.js) mobile rhythm game",
+  "version": "0.4.0",
+  "description": "Rhythm Riot (working title) starring X-ROADS: a 3D (Three.js) mobile rhythm game",
   "type": "module",
   "scripts": {
     "dev": "vite",

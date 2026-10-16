@@ -1,0 +1,37 @@
+{
+  "_about": "Concert fans seen from behind (PixelLab v3, 64 px, 16-bit style). Each has a north-facing 'cheer' animation. Pack with: python3 scripts/pixellab/pack_crowd.py",
+  "fans": {
+    "fan_hoodie": {
+      "character_id": "2723e2ea-86d7-4933-a2c6-ed46e3ffe368",
+      "description": "teenage girl with long blonde hair, purple hoodie, jeans, sneakers"
+    },
+    "fan_flannel": {
+      "character_id": "01070ab0-274d-430e-9dc0-9b2c64f03644",
+      "description": "young man with a backwards red cap, red plaid flannel shirt, khaki pants"
+    },
+    "fan_afro": {
+      "character_id": "bcb52599-f359-4a49-afa0-0a9ad116c3b7",
+      "description": "tall young man with a big afro, yellow band t-shirt, black jeans"
+    },
+    "fan_pink": {
+      "character_id": "43ba7ed4-fdeb-4e54-a616-8a5122652ef6",
+      "description": "young woman with short pink hair, light-blue denim jacket, black pants"
+    },
+    "fan_leather": {
+      "character_id": "8b383e81-127f-4932-8908-d693e5900644",
+      "description": "middle-aged man with grey hair and grey beard, black leather jacket, jeans"
+    },
+    "fan_beanie": {
+      "character_id": "e03de8b8-8868-483f-8216-6b47fb79b89d",
+      "description": "teenage boy with a blue beanie, red-and-white striped long-sleeve shirt, cargo shorts"
+    },
+    "fan_curly": {
+      "character_id": "36f5fd3e-a5d2-4b13-9c17-d30e953a1b0e",
+      "description": "woman with curly dark hair, orange t-shirt, green cargo pants, holding a glow stick"
+    },
+    "fan_phone": {
+      "character_id": "30a0cdbf-a82a-4736-8733-d68e19df713c",
+      "description": "young man in a grey hoodie holding up a phone, dark jeans"
+    }
+  }
+}

@@ -160,7 +160,7 @@ export function createShowFx(scene, fans, flashEl) {
       lightMat.opacity = lightLevel * 0.9;
       lightFans.forEach((f, i) => {
         lightPos[i * 3] = f.x + Math.sin(time * 1.5 + f.phase) * 0.35;
-        lightPos[i * 3 + 1] = 2.3 * f.s + Math.sin(time * 3 + f.phase) * 0.08;
+        lightPos[i * 3 + 1] = 2.7 * f.s + Math.sin(time * 3 + f.phase) * 0.08; // held-up phones
         lightPos[i * 3 + 2] = f.z;
       });
       lightGeo.attributes.position.needsUpdate = true;

@@ -7,7 +7,6 @@
 // crowd react to the beat and to how intense the current song section is.
 // =============================================================================
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { WORLD } from '../config.js';
 
 const Z0 = WORLD.stageZ;          // front edge of the stage
@@ -130,32 +129,24 @@ export function createStage(scene) {
     spots.push({ light, cone, x, phase: i * 1.7 });
   });
 
-  // ---- Crowd: hundreds of simple figures drawn in one go (instancing) -------
+  // ---- Where the crowd stands (drawn by crowd.js; used by showfx.js too) ----
+  // Fans stand on both sides of the highway, between you and the stage.
+  // Sorted far-to-near so nearer fans are drawn in front.
   const crowdCount = 140;
-  // One "fan" = a capsule body + a sphere head, merged into a single shape.
-  const torso = new THREE.CapsuleGeometry(0.3, 0.7, 3, 8).translate(0, 0.65, 0);
-  const head = new THREE.SphereGeometry(0.22, 10, 8).translate(0, 1.5, 0);
-  const body = mergeGeometries([torso, head]);
-  const crowd = new THREE.InstancedMesh(body, std('#ffffff', { roughness: 0.9 }), crowdCount);
   const fans = [];
   const rand = mulberry32(7);
   for (let i = 0; i < crowdCount; i++) {
     const side = i % 2 ? 1 : -1;
     fans.push({
-      x: side * (3.2 + rand() * 7),
-      z: -7 - rand() * (Math.abs(Z0) - 8),
-      s: 0.75 + rand() * 0.3,
-      phase: rand() * Math.PI * 2,
-      jumpy: rand(),
+      x: side * (3.4 + rand() * 7.5),
+      z: -10 - rand() * (Math.abs(Z0) - 10.6), // a pit in front of the stage
+      s: 0.85 + rand() * 0.3,          // size variation
+      phase: rand() * Math.PI * 2,     // so they don't all jump together
+      jumpy: rand(),                   // how easily this fan gets hyped
+      look: Math.floor(rand() * 1000), // which fan sprite (crowd.js picks)
     });
   }
-  const shades = ['#2b1f45', '#22193a', '#33224f', '#1d1631'].map((c) => new THREE.Color(c));
-  for (let i = 0; i < crowdCount; i++) crowd.setColorAt(i, shades[i % shades.length]);
-  group.add(crowd);
-  const m = new THREE.Matrix4();
-  const q = new THREE.Quaternion();
-  const scl = new THREE.Vector3();
-  const pos = new THREE.Vector3();
+  fans.sort((a, b) => a.z - b.z);
 
   // ---- Floating haze specks for atmosphere ---------------------------------
   const hazeCount = 160;
@@ -179,6 +170,7 @@ export function createStage(scene) {
   const WHITE = new THREE.Color('#ffffff');
   const DIM = new THREE.Color('#2a2440');
   let lastLedKey = '';
+  let lastIntensity = 0.5;
 
   /**
    * @param {number} time       seconds (any steadily increasing clock)
@@ -214,18 +206,8 @@ export function createStage(scene) {
       lamp.material.color.copy(on ? (i % 2 ? cA : cB) : DIM);
     });
 
-    // Crowd bounces on the beat; bigger sections = bigger jumps.
-    for (let i = 0; i < crowdCount; i++) {
-      const f = fans[i];
-      const jump = Math.max(0, Math.sin((beat + f.phase / Math.PI) * Math.PI)) * (0.05 + intensity * 0.22 * (0.5 + f.jumpy));
-      pos.set(f.x, jump, f.z);
-      scl.set(f.s, f.s, f.s);
-      m.compose(pos, q, scl);
-      crowd.setMatrixAt(i, m);
-    }
-    crowd.instanceMatrix.needsUpdate = true;
-
     haze.rotation.y = Math.sin(time * 0.05) * 0.05;
+    lastIntensity = intensity;
 
     // Redraw the LED wall only when something visible changes (saves battery).
     const step = Math.floor(beat * 2);
@@ -238,7 +220,7 @@ export function createStage(scene) {
     }
   }
 
-  return { group, update, fans };
+  return { group, update, fans, get intensity() { return lastIntensity; } };
 }
 
 /**
@@ -278,14 +260,54 @@ function drawLed(g, step, intensity, main, accent, fire) {
   }
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = 'bold 22px monospace';
-  g.fillStyle = '#2a1238';
-  g.fillText('BURN BRIGHT', W / 2 + 2, 24 + 2);
-  g.fillStyle = '#fff2d1';
-  g.fillText('BURN BRIGHT', W / 2, 24);
-  g.font = 'bold 10px monospace';
+  drawBandLogo(g, W / 2, 26, main);
+  g.font = 'bold 9px monospace';
   g.fillStyle = '#ffc86b';
-  g.fillText('THE PIXEL RIOT', W / 2, 42);
+  g.fillText('LIVE  ·  RHYTHM RIOT TOUR', W / 2, 46);
+}
+
+/**
+ * The X-ROADS logo in chunky pixels: a big crossed "X" (two roads meeting at
+ * a crossroads) in the current light color, then "ROADS".
+ */
+function drawBandLogo(g, cx, cy, color) {
+  g.font = 'bold 24px monospace';
+  g.textBaseline = 'middle';
+  const roads = 'ROADS';
+  const roadsW = g.measureText(roads).width;
+  const xSize = 22;
+  const dashW = 7;  // the "-" in X-ROADS
+  const gap = 4;
+  const left = cx - (xSize + gap + dashW + gap + roadsW) / 2;
+  // The X: two thick diagonal "roads" with dashed center lines.
+  const drawRoad = (x1, y1, x2, y2) => {
+    g.strokeStyle = '#1a0f24';
+    g.lineWidth = 9;
+    g.beginPath(); g.moveTo(x1 + 1, y1 + 2); g.lineTo(x2 + 1, y2 + 2); g.stroke();
+    g.strokeStyle = color;
+    g.lineWidth = 7;
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    g.strokeStyle = '#fff2d1';
+    g.lineWidth = 1;
+    g.setLineDash([2, 2]);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    g.setLineDash([]);
+  };
+  drawRoad(left, cy - xSize / 2, left + xSize, cy + xSize / 2);
+  drawRoad(left + xSize, cy - xSize / 2, left, cy + xSize / 2);
+  // The dash, as a little road segment
+  const dashX = left + xSize + gap;
+  g.fillStyle = '#1a0f24';
+  g.fillRect(dashX + 1, cy - 1, dashW, 4);
+  g.fillStyle = '#fff2d1';
+  g.fillRect(dashX, cy - 2, dashW, 4);
+  const textX = dashX + dashW + gap;
+  g.textAlign = 'left';
+  g.fillStyle = '#2a1238';
+  g.fillText(roads, textX + 2, cy + 2);
+  g.fillStyle = '#fff2d1';
+  g.fillText(roads, textX, cy);
+  g.textAlign = 'center';
 }
 
 function hash(n) {

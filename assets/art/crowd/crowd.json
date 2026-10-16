@@ -1,0 +1,45 @@
+{
+  "file": "crowd.png",
+  "cell": [
+    92,
+    92
+  ],
+  "columns": 9,
+  "rows": 8,
+  "fans": [
+    {
+      "name": "fan_hoodie",
+      "frames": 9
+    },
+    {
+      "name": "fan_flannel",
+      "frames": 9
+    },
+    {
+      "name": "fan_afro",
+      "frames": 9
+    },
+    {
+      "name": "fan_pink",
+      "frames": 9
+    },
+    {
+      "name": "fan_leather",
+      "frames": 9
+    },
+    {
+      "name": "fan_beanie",
+      "frames": 9
+    },
+    {
+      "name": "fan_curly",
+      "frames": 9
+    },
+    {
+      "name": "fan_phone",
+      "frames": 9
+    }
+  ],
+  "footY": 77,
+  "height": 62
+}

@@ -113,7 +113,7 @@ Reactions are layered on top:
 
 The singer's ponytail is a tiny physics simulation: a spring pushed around by her head's movement.
 
-**The HD pixel band** (`bandHD.js`, the default) uses sprite sheets made with PixelLab (see `docs/ART_PIPELINE.md`). Each musician is a flat plane in the 3D world that shows one cell of their sheet. The *play* row loops 8 frames every 2 beats using the song's real beat clock. The *accent* row plays on big moments and the *mistake* row plays on misses. All sprites use the same pixel size, and the drum kit is a separate sprite drawn in front of the drummer.
+**The HD pixel band** (`bandSprites.js` + `bandArt.js`, the default) uses sprite sheets made with PixelLab (see `docs/ART_PIPELINE.md`). Each musician is a flat plane in the 3D world that shows one cell of their sheet. The *play* row loops 8 frames every 2 beats using the song's real beat clock. The *accent* row plays on big moments and the *mistake* row plays on misses. All sprites use the same pixel size, and the drum kit is a separate sprite drawn in front of the drummer.
 
 **The classic pixel band** (`bandPixel.js`) is the original 2D art, kept as an option in Settings.
 

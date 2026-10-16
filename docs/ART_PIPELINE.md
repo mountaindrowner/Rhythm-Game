@@ -43,7 +43,7 @@ PixelLab  ──spritesheet──▶  scripts/pixellab/fetch_and_pack.py  ──
                                                                       singer.png, guitarist.png, drummer.png
                                                                       drumkit.png
                                                                       band.json    (cell size, rows, where the feet are)
-                                                                ──▶  src/world/bandHD.js (shows them on stage)
+                                                                ──▶  src/world/bandSprites.js (shows them on stage)
 ```
 
 To re-download, for example after regenerating an animation in PixelLab:
@@ -59,7 +59,7 @@ The script expects each character to have animations named `<member>_play`, `<me
 
 ## Quality checklist (from the blueprint)
 
-- [x] The same pixel size for every musician and the kit (`PX` in `bandHD.js`)
+- [x] The same pixel size for every musician and the kit (`PX` in `bandSprites.js`)
 - [x] Feet anchored to the stage on every frame (PixelLab's centred pivot plus `footY`)
 - [x] The drummer clean-shaven, the singer in a full-length sleeved band tee
 - [x] Real pose changes (strums, mic moves, stick strikes), not just swaying

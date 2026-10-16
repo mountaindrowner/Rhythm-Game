@@ -1,18 +1,23 @@
-# Burn Bright: The Pixel Riot — 3D
+# Rhythm Riot (working title), starring X-ROADS
 
-A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway toward you while The Pixel Riot play *You Won't Let Me Fall* on a lit-up 3D stage. Tap the four pads (Bass, Vocals, Guitar, Drums) in time with the real recording.
+A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway toward you while the band **X-ROADS** plays *You Won't Let Me Fall* on a lit-up 3D stage. Tap the four pads (Bass, Vocals, Guitar, Drums) in time with the real recording.
 
 **▶ Play it now: https://mountaindrowner.github.io/Rhythm-Game/** (updates automatically on every push to `main`; add `?autoplay` to watch it play itself)
 
 **Features**
 
 - **HD pixel band (default):** hand-animated pixel-art musicians made with [PixelLab](https://pixellab.ai), standing on the 3D stage. Their playing loops lock to the song's beat, and they do a big move on combo milestones and stumble when you miss. See [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
-- **More band looks in Settings:** *3D models* (blocky musicians with real joints whose strums and drum hits land exactly on the notes) or *Classic* (the original pixel art).
-- **3D venue:** spotlights, LED wall, crowd, and chorus effects (fire jets, lasers, confetti, crowd phone lights, strobe).
+- **More band looks in Settings:** *Retro 16-bit* (chunky pixel band, being trialled), *3D models* (blocky musicians with real joints whose strums and drum hits land exactly on the notes) or *Classic* (the original pixel art).
+- **3D venue:** spotlights, an X-ROADS LED wall, and a pixel-art crowd (fans seen from behind who jump and cheer as the music gets bigger), plus chorus effects (fire jets, lasers, confetti, crowd phone lights, strobe).
+- **Glass controls:** see-through, frosted pads and buttons that glow in each lane's color.
+- **Version badge:** every menu shows the version and git commit (for example `v0.4.0 · 75f09ea`), so you always know which build you're playing.
+- **Smoothness:** the game watches its own frame rate and lowers the rendering resolution on slow phones to stay smooth. Add `?fps` to the address to see the numbers.
 - **Game over:** run out of energy and the show stops. *Practice mode* turns it off, and easier difficulties drain less energy per miss.
 - **Timing check:** tap along to clicks to measure your phone and headphone delay, then apply it automatically.
 - **Accessibility:** a *Reduce flashing* setting softens strobes and camera shake.
 
+> **Game plan:** [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) (Riot Mode, solos, ridiculous moments). **What's next:** [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
+>
 > **New here? Start with [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)** for a guided tour of the code, and [docs/GITHUB_GUIDE.md](docs/GITHUB_GUIDE.md) for how branches, commits and GitHub Actions fit together.
 
 ## Branches
@@ -37,6 +42,7 @@ Developer extras (add to the page address):
 
 - `?autoplay`: the game plays itself perfectly, so you can watch the band and the effects.
 - `?view=stage`: a close-up camera on the band, for checking animation.
+- `?fps`: shows frames per second, frame time, resolution and draw calls.
 - Both together: `http://localhost:5173/?autoplay&view=stage`
 
 ## Build it for itch.io
@@ -48,7 +54,7 @@ npm run build
 This makes two files:
 
 - `dist/index.html`: the whole game in **one file** (code, song, art and chart embedded). Double-click it to play offline.
-- `dist/burn-bright-itch.zip`: upload this to itch.io as an HTML5 game (viewport about 400×800, mobile friendly on).
+- `dist/rhythm-riot-itch.zip`: upload this to itch.io as an HTML5 game (viewport about 400×800, mobile friendly on).
 
 ## Test it
 
@@ -75,16 +81,18 @@ src/
   world/stage.js      3D venue: stage, LED wall, truss, spotlights, crowd
   world/band3d/       the 3D musicians: rig.js (joints + IK), members.js (looks),
                       instruments.js (guitar, bass, mic, drum kit), index.js (animation)
-  world/bandHD.js     the HD pixel band (PixelLab sprites), the default look
+  world/bandSprites.js the PixelLab sprite bands (HD default, Retro); art sets in bandArt.js
   world/bandPixel.js  the original pixel-art band (optional look)
   world/showfx.js     chorus effects: pyro, lasers, confetti, crowd lights, strobe
+  world/crowd.js      the pixel-art crowd (one instanced draw call)
+  perf.js             frame-rate watcher + automatic resolution (?fps)
   world/highway.js    lanes, beat lines, 3D note gems, hold trails
   world/effects.js    spark bursts
   ui/hud.js           score/combo/energy text, judgement pop-ups, pads
   ui/calibration.js   the timing check screen
   ui/styles.css       look of menus and HUD
 assets/               the song and the sprite art (assets/art/pixellab = HD band)
-scripts/              build helpers (itch.io ZIP, PixelLab download + packing)
+scripts/              build helpers (itch.io ZIP, PixelLab download + packing: fetch_and_pack.py, pack_crowd.py)
 charts/               the note chart (JSON + CSV)
 tests/                automated checks
 docs/                 design blueprint, guides, reference images
@@ -92,4 +100,4 @@ docs/                 design blueprint, guides, reference images
 
 ## Status
 
-v0.3 adds the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, both band looks, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.
+v0.4: the X-ROADS / Rhythm Riot names, glass controls, the pixel-art crowd, a version badge, a retro band trial look and automatic smoothness. v0.3 added the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, both band looks, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.

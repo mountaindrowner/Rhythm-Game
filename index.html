@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0b18" />
-    <title>Burn Bright 3D</title>
+    <title>Rhythm Riot</title>
     <link rel="stylesheet" href="/src/ui/styles.css" />
   </head>
   <body>
@@ -43,8 +43,8 @@
       <section id="menu" class="overlay">
         <div class="panel">
           <div class="chip" id="buildLabel"></div>
-          <h1 class="logo"><span>BURN</span><span>BRIGHT</span></h1>
-          <p class="tagline">THE PIXEL RIOT · LIVE IN 3D</p>
+          <h1 class="logo"><span>RHYTHM</span><span>RIOT</span></h1>
+          <p class="tagline">STARRING <b class="xroads">X-ROADS</b></p>
           <div class="song-card">
             <div class="song-row"><strong id="menuSongTitle"></strong><span id="menuBpm"></span></div>
             <p>Tap the four pads as the notes hit the line. Hold for long notes. Keys: D F J K.</p>
@@ -61,6 +61,7 @@
             <button id="calibrateBtn">◎ TIMING CHECK</button>
           </div>
           <p class="fine" id="menuFine"></p>
+          <p class="version"></p>
         </div>
       </section>
 
@@ -71,6 +72,7 @@
             <span>BAND LOOK</span>
             <div class="seg" role="radiogroup" aria-label="Band look">
               <button data-band="hd">PIXEL HD</button>
+              <button data-band="retro">RETRO 16-BIT</button>
               <button data-band="3d">3D MODELS</button>
               <button data-band="pixel">CLASSIC</button>
             </div>
@@ -90,6 +92,7 @@
             <button id="calibrateBtn2">◎ TIMING CHECK</button>
           </div>
           <button id="settingsDone" class="primary">✓ DONE</button>
+          <p class="version"></p>
         </div>
       </section>
 
@@ -111,6 +114,7 @@
           <button id="resumeBtn" class="primary">▶ RESUME</button>
           <button id="restartBtn">↻ RESTART SONG</button>
           <button id="quitBtn">☰ MAIN MENU</button>
+          <p class="version"></p>
         </div>
       </section>
 
@@ -130,6 +134,7 @@
           </dl>
           <button id="againBtn" class="primary">↻ PLAY AGAIN</button>
           <button id="menuBtn">☰ MAIN MENU</button>
+          <p class="version"></p>
         </div>
       </section>
     </main>

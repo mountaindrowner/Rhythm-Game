@@ -9,7 +9,7 @@
 const DEFAULTS = {
   difficulty: 'casual',
   tapOffsetMs: 0,      // how late your taps arrive (+) or early (−); see calibration
-  bandStyle: 'hd',     // 'hd' PixelLab sprites, '3d' models, or 'pixel' (classic)
+  bandStyle: 'hd',     // 'hd' or 'retro' PixelLab sprites, '3d' models, or 'pixel' (classic)
   practice: false,     // true = no game over when energy runs out
   reduceFlashing: false,
 };

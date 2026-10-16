@@ -14,7 +14,7 @@
 //                          |-> results   (song finished)
 //                          |-> failing -> failed   (energy ran out)
 // =============================================================================
-import { BUILD_LABEL, LEAD, BEAT, ENERGY } from './config.js';
+import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY } from './config.js';
 import { SONG, SONG_END, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition } from './song/chart.js';
 import { settings, updateSettings } from './settings.js';
 import { SongPlayer } from './audio/player.js';
@@ -23,11 +23,14 @@ import { Input } from './game/input.js';
 import { createWorld } from './world/scene.js';
 import { createStage } from './world/stage.js';
 import { createBandPixel } from './world/bandPixel.js';
-import { createBandHD } from './world/bandHD.js';
+import { createSpriteBand } from './world/bandSprites.js';
+import { HD_ART, RETRO_ART } from './world/bandArt.js';
 import { createBand3D } from './world/band3d/index.js';
 import { createHighway } from './world/highway.js';
 import { createEffects } from './world/effects.js';
 import { createShowFx } from './world/showfx.js';
+import { createCrowd } from './world/crowd.js';
+import { createPerfMonitor } from './perf.js';
 import { createHud } from './ui/hud.js';
 import { createCalibration } from './ui/calibration.js';
 
@@ -42,13 +45,16 @@ const $ = (id) => document.getElementById(id);
 const world = createWorld($('world'));
 const stage = createStage(world.scene);
 const bands = {
-  hd: createBandHD(world.scene),
+  hd: createSpriteBand(world.scene, HD_ART),
+  retro: createSpriteBand(world.scene, RETRO_ART),
   '3d': createBand3D(world.scene),
   pixel: createBandPixel(world.scene, atlasUrl),
 };
 const highway = createHighway(world.scene);
 const effects = createEffects(world.scene);
 const showfx = createShowFx(world.scene, stage.fans, $('flash'));
+const crowd = createCrowd(world.scene, stage.fans);
+const perfMonitor = createPerfMonitor(world);
 const hud = createHud();
 const player = new SongPlayer(songUrl);
 
@@ -250,8 +256,10 @@ let lastFrame = performance.now();
 let menuClock = 0;
 
 function frame(now) {
-  const dt = Math.min(0.05, (now - lastFrame) / 1000);
+  const frameMs = now - lastFrame;
+  const dt = Math.min(0.05, frameMs / 1000);
   lastFrame = now;
+  perfMonitor.frame(frameMs);
   const live = status === 'playing' || status === 'paused' || status === 'failing';
 
   // 1. The master clock. In menus we fake a clock so the stage keeps moving.
@@ -282,6 +290,7 @@ function frame(now) {
   const stageTime = status === 'failing' ? failedAt : now / 1000;
   stage.update(stageTime, beat, status === 'failing' ? 'OPENING' : section, hype);
   showfx.update(now / 1000, beat, section, live && status !== 'failing', dt);
+  crowd.update(beat, status === 'failing' ? 0 : stage.intensity);
   band.update(live ? t : menuClock, live ? beat : menuClock / BEAT, live && songTime > -0.2, dt, musicEnergy);
   highway.update(t, (lane) => input.isHeld(lane));
   effects.update(dt);
@@ -296,7 +305,12 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // ---- Menu wiring -----------------------------------------------------------
-$('buildLabel').textContent = `THE PIXEL RIOT · ${BUILD_LABEL}`;
+$('buildLabel').textContent = `${BAND_NAME} · LIVE`;
+document.title = GAME_TITLE.replace(/\b(\w)(\w*)/g, (_, a, b) => a + b.toLowerCase());
+// Version badge on every screen, so you always know which build you're playing.
+for (const el of document.querySelectorAll('.version')) {
+  el.textContent = `${BUILD_LABEL}${BUILD_DATE ? ` · ${BUILD_DATE}` : ''}`;
+}
 $('menuSongTitle').textContent = SONG.title;
 $('menuBpm').textContent = `~${SONG.bpm} BPM`;
 

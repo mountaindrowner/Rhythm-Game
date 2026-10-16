@@ -6,8 +6,17 @@
 // here does any work; other files import these values.
 // =============================================================================
 
+// ---- Names ------------------------------------------------------------------
+export const GAME_TITLE = 'RHYTHM RIOT';   // working title of the game
+export const BAND_NAME = 'X-ROADS';        // the band ("Crossroads")
+
 // ---- Version shown on the menu so you can tell which build is live. --------
-export const BUILD_LABEL = '3D · v0.3';
+// The numbers come from package.json and git at build time (vite.config.js).
+/* global __APP_VERSION__, __GIT_COMMIT__, __BUILD_DATE__ */
+export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+export const COMMIT = typeof __GIT_COMMIT__ !== 'undefined' ? __GIT_COMMIT__ : 'local';
+export const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '';
+export const BUILD_LABEL = `v${VERSION} · ${COMMIT}`;
 
 // ---- Music timing -----------------------------------------------------------
 export const BPM = 152;                 // estimated tempo of the song
