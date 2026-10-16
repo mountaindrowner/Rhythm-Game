@@ -1,4 +1,4 @@
-# How Burn Bright 3D works
+# How Rhythm Riot works
 
 This is a guided tour, in the order that makes the most sense to learn it. Every source file also starts with a plain-English comment explaining its job.
 
@@ -75,7 +75,8 @@ The world's coordinates:
 | File | What it builds |
 |---|---|
 | `scene.js` | renderer, camera (widens on narrow phones), basic lights, fog for depth |
-| `stage.js` | stage platform, drum riser, LED wall (a canvas drawn as a texture), truss, speakers, 4 moving spotlights with visible beams, 140 crowd members drawn as one object (*instancing*), floating haze |
+| `stage.js` | stage platform, drum riser, LED wall (a canvas drawn as a texture), truss, speakers, 4 moving spotlights with visible beams, where the crowd stands (staggered rows that thin out toward you), floating haze |
+| `crowd.js` | the pixel-art fans, all drawn as one object (*instancing*); they cheer harder as the music gets bigger |
 | `band3d/`, `bandPixel.js` | the musicians (below) |
 | `showfx.js` | chorus effects: fire jets, lasers, confetti, crowd lights |
 | `highway.js` | road, lane strips, beat lines, hit line, targets, **note gems** and **hold trails** |
@@ -113,7 +114,23 @@ Reactions are layered on top:
 
 The singer's ponytail is a tiny physics simulation: a spring pushed around by her head's movement.
 
-**The HD pixel band** (`bandSprites.js` + `bandArt.js`, the default) uses sprite sheets made with PixelLab (see `docs/ART_PIPELINE.md`). Each musician is a flat plane in the 3D world that shows one cell of their sheet. The *play* row loops 8 frames every 2 beats using the song's real beat clock. The *accent* row plays on big moments and the *mistake* row plays on misses. All sprites use the same pixel size, and the drum kit is a separate sprite drawn in front of the drummer.
+**The pixel bands** (`bandSprites.js` + `bandArt.js`) use sprite sheets made with PixelLab (see `docs/ART_PIPELINE.md`). Each musician is a flat plane in the 3D world that shows one cell of their sheet. All sprites use the same pixel size. The drum kit is a separate sprite drawn in front of the drummer, and the guitarist's mic stand is a *prop* standing beside him.
+
+**The animation blocks** (`animBlocks.js`, used by the Retro band, the default). Each musician has a library of about 10 animations sorted into blocks: idle, groove, sing, accent, mistake, celebrate and bow. A small **choreographer** decides, every frame, which animation and which frame to show:
+
+| When | What the choreographer does |
+|---|---|
+| In the menus | the idle loop |
+| Verses / choruses | a *calm* / *hype* groove; about one phrase in three it swaps in a variation (the singer points, the drummer twirls a stick...). Grooves change **only on bar lines** (every 4 beats) |
+| You miss their note | a mistake starts **immediately**, stretched to finish exactly where the next loop starts |
+| Every 25 in a row, or a finished long note | an accent, which waits for the current loop to end (under a second) |
+| Every 100 in a row | the whole band celebrates |
+| End of the song | celebrate, then bow |
+| Game over | frozen mid-stumble |
+
+Why it looks smooth: every animation starts and ends on the same standing pose (the *hub*), and switches only happen where a loop restarts, which is on that pose. Loops are tied to the song's beats (a 2-beat loop restarts every second beat), so the band always moves in time. The "random" choices come from a hash of the bar number, so the same moment of the song always gets the same move, which makes problems easy to reproduce. `tests/unit/animBlocks.test.js` checks all of these rules.
+
+**Who sings?** Each chart says who sings lead (`"vocalist"` in `charts/song_chart.json`: `singer`, `guitarist` or `duet`). In her songs the guitarist sings backing vocals at his mic in some chorus phrases. In his songs he sings through every vocal section. In duets they share. The **HD band** has no blocks, so it uses the older three rows: *play* loops every 2 beats, *accent* plays on big moments and *mistake* plays on misses.
 
 **The classic pixel band** (`bandPixel.js`) is the original 2D art, kept as an option in Settings.
 

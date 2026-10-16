@@ -60,7 +60,7 @@ const perfMonitor = createPerfMonitor(world);
 const hud = createHud();
 const player = new SongPlayer(songUrl);
 
-let band = bands.hd;
+let band = bands.retro;
 let status = 'menu';
 let perf = new Performance([]);
 let hype = 0;          // extra stage excitement from combos (0..1), fades over time
@@ -342,7 +342,7 @@ function refreshMenuNote() {
 // ---- Settings screen -------------------------------------------------------
 const bandButtons = [...document.querySelectorAll('[data-band]')];
 function selectBand(style) {
-  updateSettings({ bandStyle: bands[style] ? style : 'hd' });
+  updateSettings({ bandStyle: bands[style] ? style : 'retro' });
   for (const [key, b] of Object.entries(bands)) b.setVisible(key === settings.bandStyle);
   band = bands[settings.bandStyle];
   bandButtons.forEach((b) => b.classList.toggle('selected', b.dataset.band === settings.bandStyle));

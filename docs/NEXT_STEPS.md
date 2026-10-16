@@ -1,32 +1,30 @@
 # Next steps (handoff)
 
-_Last updated: v0.4._
+_Last updated: v0.5._
 
 ## Where things stand
 - **Names:** the band is **X-ROADS**; the game is called **Rhythm Riot** for now (the owner is still deciding).
-- **Live:** v0.4. The default band is still the "HD" PixelLab band (128 px). Settings → Band look also offers **Retro 16-bit**, 3D models and Classic.
-- **Retro 16-bit** (64 px): the owner likes it and is **trying it in-game before approving**. It has no drawn animations yet; `bandSprites.js` adds code-driven bob, sway, bounce and wobble so it still moves. Its IDs are in `assets/art/pixellab-retro/source.json`. **Don't build its animation library until the owner approves.**
-- **New in v0.4:** glass UI, a PixelLab crowd (8 back-view fans with cheer animations, one instanced draw call, `crowd.js`), a version badge on every menu, `perf.js` (automatic resolution + `?fps`), and `docs/GAME_DESIGN.md` (Riot Mode, solos, ridiculous moments; waiting on the owner's feedback to the questions in §9).
-- `bandSprites.js` already sizes any art style automatically (one shared pixel size, set from the tallest musician), so switching looks only needs new assets.
+- **Live:** v0.5. The default band is now **Retro 16-bit** (64 px PixelLab art), which the owner chose. Players who had another look saved get Retro once (`LOOK_VERSION` in `settings.js`) and can switch back in Settings. *Pixel HD*, 3D models and Classic are still there.
+- **Animation blocks (built):** 41 Retro animations (16 frames each, all starting and ending on the standing "hub" pose) in `assets/art/pixellab-retro/`. The recipe is `animations.json`. The choreographer `src/world/animBlocks.js` picks grooves by section (calm verses, hype choruses), varies them by phrase, switches only on bar lines, plays mistakes instantly and accents on the next loop, and ends the song with celebrate then bow. Unit-tested in `tests/unit/animBlocks.test.js`.
+- **Vocals:** the guitarist has a mic stand (a PixelLab prop) and a `sing` animation. Each chart names its lead vocalist (`"vocalist"`: `singer`, `guitarist` or `duet`). The current song is `singer`, so he sings backing vocals in some chorus phrases. **Waiting on the owner:** which upcoming songs are hers, his, or duets.
+- **Crowd:** six staggered rows, packed by the stage and thinning toward the camera, with sprites handed out so neighbours look different (`stage.js`).
+- **Smoothness test (built):** `?fps` and the browser test report the game's own work per frame. It is about 0.3 ms update + 1.7 ms render call, well under a phone's 16.7 ms. Headless Chrome's fps (about 10) is meaningless because it renders in software. **Still to do: check `?fps` on a real iPhone.**
+- `GAME_DESIGN.md` §9 still has 5 open questions for the owner (Riot Mode trigger, solo rotation, how rare rare moments are, anything off-brand, the band's inside jokes).
 
-## To repack the retro band (the art is already committed)
-```bash
-export PIXELLAB_API_KEY=...   # set as an environment secret, not in chat
-python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro/source.json --allow-missing
-npm run dev                   # open ?autoplay&view=stage
-```
-(`--allow-missing` uses the idle pose wherever animations don't exist yet.)
+## Adding more animations
+1. Add entries to `assets/art/pixellab-retro/animations.json` (name, block, energy, beats, prompt).
+2. With `PIXELLAB_API_KEY` set as an environment secret:
+   ```bash
+   python3 scripts/pixellab/animate.py assets/art/pixellab-retro
+   python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro/source.json
+   ```
+3. Check the result at `?autoplay&view=stage`, then run the tests. New grooves join their block automatically. Brand-new *blocks* need a rule in `animBlocks.js`.
 
-## Plan 1: lots of smooth animations ("animation blocks")
-The goal: fluid, never choppy. Approach:
-1. **More frames:** 16 per animation (PixelLab `animate_character`, v3 or pixminimax; about 2 generations per 64 px animation).
-2. **Locked to the music:** loops last a whole number of beats (for example, 16 frames per 2 beats). The play-loop timing in `bandSprites.js` already works this way.
-3. **Seamless switches:** every animation starts and ends on the same neutral (idle) pose. Use PixelLab's custom start/end frame options so loops close cleanly. Switch animations only on bar lines.
-4. **Animation blocks per musician:** grooves (verse / chorus intensity), 3–4 playing variations (pick a different one each bar), big moves for combo milestones, 2–3 different stumbles, and specials (intro, bridge mood, final chorus, bow or celebration).
-5. **A recipe list:** one data file listing every animation (name, block, prompt, frames, beats). A script generates whatever's missing and then packs. `bandSprites.js` grows into a small state machine that picks animations from the blocks.
+## Plan 1: Riot Mode (next big gameplay step)
+From `GAME_DESIGN.md` §3: a Riot meter filled by gold Riot notes, held notes and Perfect streaks; tap all four pads to unleash 8 bars of double score, no energy loss, maximum effects, and one ridiculous moment. Add a visible ×1 to ×4 multiplier badge at the same time.
 
 ## Plan 2: ridiculous moments (the owner wants the game to be absurd and hilarious)
-Ideas to build as special one-off animations plus stage effects:
+Ideas to build as special one-off animations plus stage effects. Each can be a new block in the recipe (for example `block: "moment"`) that the choreographer plays like a celebrate:
 - **SHRED SOLO:** at a big combo, the guitarist solos so hard he levitates, the guitar catches fire, and the camera zooms in.
 - **Mad science:** the bassist's lab-coat pocket explodes in green smoke and he comes out with an afro.
 - **Stick launch:** the drummer drums so hard a stick flies into the crowd and a fan throws back a baguette.
@@ -36,6 +34,8 @@ Ideas to build as special one-off animations plus stage effects:
 Each needs: a PixelLab animation (or a few), a trigger (a combo, a song section, or a random chance), and a showfx effect.
 
 ## Other open items
-- **Test on a real iPhone** (audio, touch, frame rate).
+- **Test on a real iPhone** (audio, touch, frame rate with `?fps`).
+- **Different stages and backgrounds** (the owner's idea for later): the venue is all in `stage.js`, so a second venue could be a new function chosen per song.
+- **Animation-maker note:** `animate.py` sends the packed hub cell as the end frame. The packed cells are now larger than 64 px (animations widen the canvas). If PixelLab ever rejects that size, crop the hub to the character's 64 px canvas first.
 - **Musically accurate note chart:** the current chart was generated automatically from the audio. A note editor would help fix it.
 - **Rotate the PixelLab key:** an earlier key was pasted into chat. Make a new one and store it only as an environment secret.

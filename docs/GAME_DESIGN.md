@@ -109,7 +109,7 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 
 ## 7. Making it smooth (rules for the art and the code)
 
-**Animation**
+**Animation** *(built in v0.5 for the Retro band: `animBlocks.js`)*
 - **16 frames** per loop, each loop lasting a whole number of beats (for example, 16 frames over 2 beats ≈ 20 fps of real motion at 152 BPM).
 - Every animation starts and ends on the same **neutral hub pose**, so any animation can follow any other without a jump.
 - Switch animations only **on bar lines**, the way a real band changes moves.
@@ -129,7 +129,7 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 ## 8. Suggested build order
 
 1. **Riot meter + Riot Mode + a multiplier badge.** This changes how the game plays the most.
-2. **The animation-block system** (the hub pose, switching on bar lines) and the first 16-frame library for the chosen band look.
+2. ~~**The animation-block system** (the hub pose, switching on bar lines) and the first 16-frame library for the chosen band look.~~ **(built in v0.5)**
 3. **Solo showdown** with SHRED SOLO as the first gold moment.
 4. **More moments:** MAD SCIENCE, STICK LAUNCH, INFLATABLE DUCK, CROWD SURF.
 5. **Finales**, the comedy fail, and collectibles (a "moments seen" list on the results screen).

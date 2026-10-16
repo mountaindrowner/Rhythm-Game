@@ -9,16 +9,25 @@
 const DEFAULTS = {
   difficulty: 'casual',
   tapOffsetMs: 0,      // how late your taps arrive (+) or early (−); see calibration
-  bandStyle: 'hd',     // 'hd' or 'retro' PixelLab sprites, '3d' models, or 'pixel' (classic)
+  bandStyle: 'retro',  // 'retro' or 'hd' PixelLab sprites, '3d' models, or 'pixel' (classic)
   practice: false,     // true = no game over when energy runs out
   reduceFlashing: false,
 };
 
 const KEY = 'burnbright.settings.v1';
 
+// Bump this when a new default look ships, so returning players see it once
+// (they can still switch back in Settings).
+const LOOK_VERSION = 2; // 2 = the animated Retro band (v0.5)
+
 function read() {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    if ((saved.lookVersion || 1) < LOOK_VERSION) {
+      delete saved.bandStyle; // use the new default look
+      saved.lookVersion = LOOK_VERSION;
+    }
+    return { ...DEFAULTS, ...saved };
   } catch {
     return { ...DEFAULTS };
   }

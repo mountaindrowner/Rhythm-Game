@@ -4,120 +4,375 @@
       "lane": 0,
       "file": "bassist.png",
       "cell": [
-        64,
-        64
+        96,
+        96
       ],
-      "columns": 1,
-      "rows": 4,
+      "columns": 16,
+      "rows": 11,
       "anims": {
-        "idle": {
+        "hub": {
           "row": 0,
           "frames": 1
         },
-        "play": {
+        "idle": {
           "row": 1,
-          "frames": 1
+          "frames": 16,
+          "block": "idle",
+          "loop": true,
+          "beats": 4
+        },
+        "calm": {
+          "row": 2,
+          "frames": 16,
+          "block": "groove",
+          "energy": "calm",
+          "loop": true,
+          "beats": 2
+        },
+        "hype": {
+          "row": 3,
+          "frames": 16,
+          "block": "groove",
+          "energy": "hype",
+          "loop": true,
+          "beats": 2
+        },
+        "step": {
+          "row": 4,
+          "frames": 16,
+          "block": "groove",
+          "energy": "any",
+          "loop": true,
+          "beats": 2
+        },
+        "slap": {
+          "row": 5,
+          "frames": 16,
+          "block": "groove",
+          "energy": "hype",
+          "loop": true,
+          "beats": 2
         },
         "accent": {
-          "row": 2,
-          "frames": 1
+          "row": 6,
+          "frames": 16,
+          "block": "accent",
+          "loop": false,
+          "beats": 4
         },
-        "mistake": {
-          "row": 3,
-          "frames": 1
+        "mistake_a": {
+          "row": 7,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "mistake_b": {
+          "row": 8,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "celebrate": {
+          "row": 9,
+          "frames": 16,
+          "block": "celebrate",
+          "loop": false,
+          "beats": 4
+        },
+        "bow": {
+          "row": 10,
+          "frames": 16,
+          "block": "bow",
+          "loop": false,
+          "beats": 4
         }
       },
-      "footY": 63,
+      "footY": 79,
       "height": 62
     },
     "singer": {
       "lane": 1,
       "file": "singer.png",
       "cell": [
-        64,
-        64
+        76,
+        96
       ],
-      "columns": 1,
-      "rows": 4,
+      "columns": 16,
+      "rows": 11,
       "anims": {
-        "idle": {
+        "hub": {
           "row": 0,
           "frames": 1
         },
-        "play": {
+        "idle": {
           "row": 1,
-          "frames": 1
+          "frames": 16,
+          "block": "idle",
+          "loop": true,
+          "beats": 4
+        },
+        "calm": {
+          "row": 2,
+          "frames": 16,
+          "block": "groove",
+          "energy": "calm",
+          "loop": true,
+          "beats": 2
+        },
+        "hype": {
+          "row": 3,
+          "frames": 16,
+          "block": "groove",
+          "energy": "hype",
+          "loop": true,
+          "beats": 2
+        },
+        "point": {
+          "row": 4,
+          "frames": 16,
+          "block": "groove",
+          "energy": "any",
+          "loop": true,
+          "beats": 2
+        },
+        "heart": {
+          "row": 5,
+          "frames": 16,
+          "block": "groove",
+          "energy": "calm",
+          "loop": true,
+          "beats": 2
         },
         "accent": {
-          "row": 2,
-          "frames": 1
+          "row": 6,
+          "frames": 16,
+          "block": "accent",
+          "loop": false,
+          "beats": 4
         },
-        "mistake": {
-          "row": 3,
-          "frames": 1
+        "mistake_a": {
+          "row": 7,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "mistake_b": {
+          "row": 8,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "celebrate": {
+          "row": 9,
+          "frames": 16,
+          "block": "celebrate",
+          "loop": false,
+          "beats": 4
+        },
+        "bow": {
+          "row": 10,
+          "frames": 16,
+          "block": "bow",
+          "loop": false,
+          "beats": 4
         }
       },
-      "footY": 63,
+      "footY": 79,
       "height": 63
     },
     "guitarist": {
       "lane": 2,
       "file": "guitarist.png",
       "cell": [
-        64,
-        64
+        96,
+        100
       ],
-      "columns": 1,
-      "rows": 4,
+      "columns": 16,
+      "rows": 12,
       "anims": {
-        "idle": {
+        "hub": {
           "row": 0,
           "frames": 1
         },
-        "play": {
+        "idle": {
           "row": 1,
-          "frames": 1
+          "frames": 16,
+          "block": "idle",
+          "loop": true,
+          "beats": 4
+        },
+        "calm": {
+          "row": 2,
+          "frames": 16,
+          "block": "groove",
+          "energy": "calm",
+          "loop": true,
+          "beats": 2
+        },
+        "hype": {
+          "row": 3,
+          "frames": 16,
+          "block": "groove",
+          "energy": "hype",
+          "loop": true,
+          "beats": 2
+        },
+        "riff": {
+          "row": 4,
+          "frames": 16,
+          "block": "groove",
+          "energy": "any",
+          "loop": true,
+          "beats": 2
+        },
+        "windmill": {
+          "row": 5,
+          "frames": 16,
+          "block": "groove",
+          "energy": "hype",
+          "loop": true,
+          "beats": 2
+        },
+        "sing": {
+          "row": 6,
+          "frames": 16,
+          "block": "sing",
+          "loop": true,
+          "beats": 2
         },
         "accent": {
-          "row": 2,
-          "frames": 1
+          "row": 7,
+          "frames": 16,
+          "block": "accent",
+          "loop": false,
+          "beats": 4
         },
-        "mistake": {
-          "row": 3,
-          "frames": 1
+        "mistake_a": {
+          "row": 8,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "mistake_b": {
+          "row": 9,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "celebrate": {
+          "row": 10,
+          "frames": 16,
+          "block": "celebrate",
+          "loop": false,
+          "beats": 4
+        },
+        "bow": {
+          "row": 11,
+          "frames": 16,
+          "block": "bow",
+          "loop": false,
+          "beats": 4
         }
       },
-      "footY": 63,
+      "footY": 81,
       "height": 62
     },
     "drummer": {
       "lane": 3,
       "file": "drummer.png",
       "cell": [
-        64,
-        64
+        80,
+        100
       ],
-      "columns": 1,
-      "rows": 4,
+      "columns": 16,
+      "rows": 11,
       "anims": {
-        "idle": {
+        "hub": {
           "row": 0,
           "frames": 1
         },
-        "play": {
+        "idle": {
           "row": 1,
-          "frames": 1
+          "frames": 16,
+          "block": "idle",
+          "loop": true,
+          "beats": 4
+        },
+        "calm": {
+          "row": 2,
+          "frames": 16,
+          "block": "groove",
+          "energy": "calm",
+          "loop": true,
+          "beats": 2
+        },
+        "hype": {
+          "row": 3,
+          "frames": 16,
+          "block": "groove",
+          "energy": "hype",
+          "loop": true,
+          "beats": 2
+        },
+        "fill": {
+          "row": 4,
+          "frames": 16,
+          "block": "groove",
+          "energy": "any",
+          "loop": true,
+          "beats": 2
+        },
+        "twirl": {
+          "row": 5,
+          "frames": 16,
+          "block": "groove",
+          "energy": "calm",
+          "loop": true,
+          "beats": 2
         },
         "accent": {
-          "row": 2,
-          "frames": 1
+          "row": 6,
+          "frames": 16,
+          "block": "accent",
+          "loop": false,
+          "beats": 4
         },
-        "mistake": {
-          "row": 3,
-          "frames": 1
+        "mistake_a": {
+          "row": 7,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "mistake_b": {
+          "row": 8,
+          "frames": 16,
+          "block": "mistake",
+          "loop": false,
+          "beats": 2
+        },
+        "celebrate": {
+          "row": 9,
+          "frames": 16,
+          "block": "celebrate",
+          "loop": false,
+          "beats": 4
+        },
+        "bow": {
+          "row": 10,
+          "frames": 16,
+          "block": "bow",
+          "loop": false,
+          "beats": 4
         }
       },
-      "footY": 63,
+      "footY": 81,
       "height": 62
     }
   },

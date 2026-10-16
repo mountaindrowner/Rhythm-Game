@@ -4,7 +4,7 @@
 //   * each difficulty loads the right number of notes
 //   * the embedded recording decodes and the audio clock moves
 //   * tapping pads gets judged, pause freezes time, resume continues
-//   * every band look (HD pixel / retro / 3D models / classic) can be selected
+//   * every band look (Retro / HD pixel / 3D models / classic) can be selected
 //   * the game's per-frame work stays inside a smoothness budget
 //   * running out of energy ends the show (game over)
 //   * the timing check measures taps and sets the tap offset
@@ -133,9 +133,9 @@ check(s.status === 'playing' && s.t > p1 + 0.8, 'resume continues the song');
 await page.click('#pauseBtn');
 await page.click('#quitBtn');
 
-// ---- Band looks: HD pixel (default), 3D models, classic pixel art -----------
-check((await state()).bandStyle === 'hd', 'the HD pixel band is the default look');
-for (const look of ['retro', '3d', 'pixel', 'hd']) {
+// ---- Band looks: Retro (default), HD pixel, 3D models, classic pixel art ----
+check((await state()).bandStyle === 'retro', 'the animated Retro band is the default look');
+for (const look of ['hd', '3d', 'pixel', 'retro']) {
   await page.click('#settingsBtn');
   await page.click(`[data-band="${look}"]`);
   check((await state()).bandStyle === look, `band look switches to ${look}`);
