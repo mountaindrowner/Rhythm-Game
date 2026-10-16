@@ -17,6 +17,9 @@ export const SONG = {
   title: chart.title,
   duration: chart.duration,
   bpm: chart.estimated_bpm,
+  // Who sings lead: 'singer' (her), 'guitarist' (him) or 'duet' (both).
+  // The band animates to match (see world/animBlocks.js).
+  vocalist: chart.vocalist || 'singer',
   sections: chart.sections,
   beats: chart.beats,
   allNotes: chart.notes,

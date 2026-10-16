@@ -50,8 +50,8 @@ export function createCrowd(scene, fans) {
   const rows = sheet.rows;
   fans.forEach((f, i) => {
     f.row = f.look % rows;
-    const depth = Math.min(1, Math.max(0, (-f.z - 10) / 7));
-    color.setRGB(1, 1, 1).multiplyScalar(0.85 - depth * 0.35);
+    const depth = Math.min(1, Math.max(0, (-f.z - 7) / 10)); // 0 near you, 1 by the stage
+    color.setRGB(1, 1, 1).multiplyScalar(0.9 - depth * 0.3);
     mesh.setColorAt(i, color);
   });
 

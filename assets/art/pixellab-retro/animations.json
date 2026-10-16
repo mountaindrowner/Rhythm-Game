@@ -1,0 +1,67 @@
+{
+  "_about": "The Retro band's animation library (the 'recipe'). scripts/pixellab/animate.py generates any that are missing in PixelLab; fetch_and_pack.py packs them. Every animation starts AND ends on the musician's standing pose (the 'hub'), so any animation can follow any other with no jump. block: which group the game picks from. energy: calm = verses, hype = choruses (any = both). beats: how many beats one loop lasts (loops), or how long a one-shot plays.",
+  "frames": 16,
+  "members": {
+    "bassist": {
+      "holding": "holding his dark green electric bass guitar",
+      "anims": [
+        { "name": "idle",       "block": "idle",     "loop": true,  "beats": 4, "prompt": "standing relaxed, breathing gently, small head nod" },
+        { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "playing the bass to a steady beat: right hand plucks the strings, gentle head nod, small knee bounce" },
+        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "playing the bass energetically, head banging and bouncing hard on each beat" },
+        { "name": "step",       "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "prompt": "plucking the bass while stepping side to side and bobbing his head" },
+        { "name": "slap",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "slapping the bass strings hard with his thumb while leaning back" },
+        { "name": "accent",     "block": "accent",   "loop": false, "beats": 4, "prompt": "lifts the bass neck high in the air, leans back and does a little hop, then returns" },
+        { "name": "mistake_a",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "flinches at a wrong note, his glasses slip down his nose and he pushes them back up" },
+        { "name": "mistake_b",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "fumbles, hunches over the bass and grimaces, then shakes it off" },
+        { "name": "celebrate",  "block": "celebrate","loop": false, "beats": 4, "prompt": "jumps and cheers, holding the bass up high in triumph, then lands" },
+        { "name": "bow",        "block": "bow",      "loop": false, "beats": 4, "prompt": "takes a deep bow to the crowd, then stands back up" }
+      ]
+    },
+    "singer": {
+      "holding": "holding a handheld microphone",
+      "anims": [
+        { "name": "idle",       "block": "idle",     "loop": true,  "beats": 4, "prompt": "standing relaxed, breathing gently, ponytail swaying a little" },
+        { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "singing into the microphone near her mouth, swaying gently side to side" },
+        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "singing powerfully into the microphone, bouncing on each beat, ponytail swinging" },
+        { "name": "point",      "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "prompt": "singing into the microphone while pointing out at the crowd with her free hand" },
+        { "name": "heart",      "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "singing softly into the microphone with her free hand pressed over her heart" },
+        { "name": "accent",     "block": "accent",   "loop": false, "beats": 4, "prompt": "belts a big note, leans back and raises her free arm high, then returns" },
+        { "name": "mistake_a",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "winces, lowers the microphone and shakes her head, then lifts it back up" },
+        { "name": "mistake_b",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "stumbles slightly, catches her balance with her arms out, then recovers" },
+        { "name": "celebrate",  "block": "celebrate","loop": false, "beats": 4, "prompt": "jumps and cheers with the microphone raised high, then lands" },
+        { "name": "bow",        "block": "bow",      "loop": false, "beats": 4, "prompt": "takes a deep bow to the crowd, then stands back up" }
+      ]
+    },
+    "guitarist": {
+      "holding": "holding his dark red electric guitar",
+      "anims": [
+        { "name": "idle",       "block": "idle",     "loop": true,  "beats": 4, "prompt": "standing relaxed, breathing gently, small head nod" },
+        { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "strumming the guitar steadily down and up, nodding his head" },
+        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "strumming the guitar hard, head banging on each beat" },
+        { "name": "riff",       "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "prompt": "playing a fast riff while stepping forward with one foot and back" },
+        { "name": "windmill",   "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "strumming the guitar with a big windmill swing of his right arm" },
+        { "name": "sing",       "block": "sing",     "loop": true,  "beats": 2, "prompt": "leans his face forward a little to sing into a microphone just in front of his mouth while strumming the guitar" },
+        { "name": "accent",     "block": "accent",   "loop": false, "beats": 4, "prompt": "raises the guitar neck high and jumps, then lands" },
+        { "name": "mistake_a",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "stops strumming, grimaces at the guitar, then shakes it off" },
+        { "name": "mistake_b",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "flinches and shakes his strumming hand like it stings, then resumes" },
+        { "name": "celebrate",  "block": "celebrate","loop": false, "beats": 4, "prompt": "jumps and cheers, holding the guitar up high in triumph, then lands" },
+        { "name": "bow",        "block": "bow",      "loop": false, "beats": 4, "prompt": "takes a deep bow to the crowd, then stands back up" }
+      ]
+    },
+    "drummer": {
+      "holding": "holding two wooden drumsticks",
+      "anims": [
+        { "name": "idle",       "block": "idle",     "loop": true,  "beats": 4, "prompt": "standing relaxed, breathing gently, tapping one stick against his leg" },
+        { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "drumming steadily: the right and left sticks alternately strike down in front of his waist, head nodding" },
+        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "drumming hard and fast with big arm swings, head banging" },
+        { "name": "fill",       "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "prompt": "drum fill: both sticks strike rapidly from his left to his right in front of his waist" },
+        { "name": "twirl",      "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "drumming with his left stick while twirling the right stick in his fingers" },
+        { "name": "accent",     "block": "accent",   "loop": false, "beats": 4, "prompt": "raises both sticks high above his head, then smashes them down together" },
+        { "name": "mistake_a",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "drops one stick, fumbles and catches it, then resumes" },
+        { "name": "mistake_b",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "loses the beat, freezes and looks embarrassed, then resumes" },
+        { "name": "celebrate",  "block": "celebrate","loop": false, "beats": 4, "prompt": "throws both arms up with the sticks and cheers, then lowers them" },
+        { "name": "bow",        "block": "bow",      "loop": false, "beats": 4, "prompt": "takes a deep bow to the crowd, then stands back up" }
+      ]
+    }
+  }
+}

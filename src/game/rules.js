@@ -71,6 +71,7 @@ export class Performance {
     else best.done = true;
     return {
       type: 'hit', lane, grade, note: best,
+      combo: this.combo,
       milestone: this.combo % SCORE.comboMilestone === 0,
     };
   }

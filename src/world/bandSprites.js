@@ -3,14 +3,18 @@
 // docs/ART_PIPELINE.md), standing on the 3D stage. One function builds ANY
 // sprite band; bandArt.js lists the art sets (HD, Retro, ...).
 //
-// Each musician has a sprite sheet with one row per animation:
-//   idle (1 frame) · play (loop) · accent (big move) · mistake
-// A flat plane in the 3D world shows one cell of that sheet at a time.
+// Each musician has a sprite sheet with one row per animation. A flat plane
+// in the 3D world shows one cell of that sheet at a time.
 //
-// TIMING: the "play" loop is driven by the song's real beats (one loop every
-// 2 beats), so the band always moves in time with the music. "accent" plays
-// on big moments (every 25-hit combo, finished long notes) and "mistake" plays
-// when you miss that musician's note.
+// TWO KINDS OF ART SET:
+//   * With an ANIMATION LIBRARY (Retro): dozens of animations sorted into
+//     blocks (idle, groove, sing, accent, mistake, celebrate, bow). The
+//     choreographer in animBlocks.js picks what each musician does.
+//   * Classic sets (HD): just play (loop) · accent (big move) · mistake.
+//     "play" loops every 2 beats, "accent" plays on big moments (every
+//     25-hit combo, finished long notes), "mistake" when you miss.
+// Either way the loops are driven by the song's real beats, so the band
+// always moves in time with the music.
 //
 // EXTRA MOTION: on top of the drawn frames, the code bobs, sways, bounces and
 // wobbles each sprite. Art sets that don't have animations yet (a single
@@ -23,6 +27,7 @@
 import * as THREE from 'three';
 import { WORLD, LANES } from '../config.js';
 import { DRUM_RISER } from './stage.js';
+import { createDirector, hasBlocks } from './animBlocks.js';
 
 const BAND_HEIGHT = 5.4;   // world units: how tall the tallest front-line musician is
 const Z0 = WORLD.stageZ;
@@ -97,11 +102,14 @@ export function createSpriteBand(scene, art) {
     ring.position.set(spot.x, spot.y + 0.03, spot.z + 0.2);
     group.add(ring);
 
-    // Static art (no play animation yet) gets lots of code-driven motion.
-    const animated = info.anims.play.frames > 1;
+    // A full animation library gets a choreographer; classic sets don't.
+    const director = hasBlocks(info) ? createDirector(info, name, i + 1) : null;
+    // Static art (no play animation yet) gets lots of code-driven motion;
+    // fully drawn animation only needs a touch.
+    const animated = director || info.anims.play?.frames > 1;
     return {
-      name, info, mesh, tex, mat, ring, spot, animated,
-      motion: animated ? 0.3 : 1,
+      name, info, mesh, tex, mat, ring, spot, director,
+      motion: director ? 0.12 : animated ? 0.3 : 1,
       phase: i * 0.37, // so they don't all bob in perfect unison
       lastHit: -99, hitStrength: 0, lastMistake: -99,
     };
@@ -114,6 +122,23 @@ export function createSpriteBand(scene, art) {
   const kit = new THREE.Mesh(kitGeo, new THREE.MeshBasicMaterial({ map: pixelTexture(urls.drumkit), alphaTest: 0.5 }));
   kit.position.set(DRUM_RISER.x, TOP + DRUM_RISER.h, DRUM_RISER.z);
   group.add(kit);
+
+  // Props: extra objects on stage that belong to a musician, like the
+  // guitarist's mic stand (so he can sing too). Each is scaled so the mic
+  // sits at mouth height for its owner.
+  for (const [name, prop] of Object.entries(manifest.props || {})) {
+    const owner = SPOTS[prop.for];
+    const ownerInfo = manifest.members[prop.for];
+    if (!owner || !ownerInfo || !urls[name]) continue;
+    const s = ((ownerInfo.height * 0.93) / prop.size[1]) * PX;
+    const geo = new THREE.PlaneGeometry(prop.size[0] * s, prop.size[1] * s);
+    geo.translate(0, (prop.size[1] * s) / 2, 0); // base on the floor
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: pixelTexture(urls[name]), alphaTest: 0.5 }));
+    // Just in front of the musician, toward the middle of the stage, with
+    // the mic pointing back at his face.
+    mesh.position.set(owner.x - 1.25, owner.y, owner.z + 0.35);
+    group.add(mesh);
+  }
 
   let defeated = false;
   const byLane = [];
@@ -130,33 +155,55 @@ export function createSpriteBand(scene, art) {
       const m = byLane[e.lane];
       if (e.type === 'hit' && e.milestone) {
         for (const each of members) { each.lastHit = t; each.hitStrength = 1; }
+        // Every 100 in a row the whole band cheers; other milestones get a big move.
+        for (const each of members) {
+          if (e.combo % 100 === 0) each.director?.celebrate();
+          else each.director?.accent(true);
+        }
       } else if (e.type === 'hit' || e.type === 'holdComplete') {
         m.lastHit = t;
         m.hitStrength = e.type === 'holdComplete' ? 0.7 : e.grade === 'perfect' ? 0.35 : 0.2;
+        if (e.type === 'holdComplete') m.director?.accent();
       }
-      if (e.type === 'mistake') m.lastMistake = t;
+      if (e.type === 'mistake') {
+        m.lastMistake = t;
+        m.director?.mistake();
+      }
     },
+    /** Who sings lead in this song: 'singer', 'guitarist' or 'duet'. */
+    setVocalist(v) { for (const m of members) m.director?.setVocalist(v); },
+    /** The song finished: the band cheers, then bows. */
+    finale() { for (const m of members) m.director?.finale(); },
     reset() {
       defeated = false;
-      for (const m of members) { m.lastHit = m.lastMistake = -99; m.hitStrength = 0; }
+      for (const m of members) { m.lastHit = m.lastMistake = -99; m.hitStrength = 0; m.director?.reset(); }
     },
     setDefeated(v) { defeated = v; },
     setVisible(v) { group.visible = v; },
 
     /**
-     * @param {number} t     game time (or a menu clock)
-     * @param {number} beat  beat position
+     * @param {number} t       game time (or a menu clock)
+     * @param {number} beat    beat position
+     * @param {boolean} live   a song is playing
+     * @param {number} dt
+     * @param {number} energy  0..1 how big this part of the song is
+     * @param {string} section current section name (VERSE 1, CHORUS 2...)
      */
-    update(t, beat) {
+    update(t, beat, live = false, dt = 0, energy = 0, section = '') {
       if (!group.visible) return;
+      const ctx = { live, energy: energy >= 0.7 ? 'hype' : 'calm', section, defeated };
       for (const m of members) {
         const sinceMiss = t - m.lastMistake;
         const sinceHit = t - m.lastHit;
         const missing = sinceMiss >= 0 && sinceMiss < MISTAKE_TIME;
-        const accenting = m.hitStrength >= 0.7 && sinceHit >= 0 && sinceHit < ACCENT_TIME;
+        // Classic sets fake the big move in code; libraries have it drawn.
+        const accenting = !m.director && m.hitStrength >= 0.7 && sinceHit >= 0 && sinceHit < ACCENT_TIME;
 
         // 1. Which drawn frame to show
-        if (defeated) show(m, 'mistake', 3); // slumped
+        if (m.director) {
+          const pick = m.director.update(beat, ctx);
+          show(m, pick.anim, pick.frame);
+        } else if (defeated) show(m, 'mistake', 3); // slumped
         else if (missing) show(m, 'mistake', Math.floor((sinceMiss / MISTAKE_TIME) * m.info.anims.mistake.frames));
         else if (accenting) show(m, 'accent', Math.floor((sinceHit / ACCENT_TIME) * m.info.anims.accent.frames));
         else show(m, 'play', Math.floor((((beat / 2) % 1) + 1) % 1 * m.info.anims.play.frames));

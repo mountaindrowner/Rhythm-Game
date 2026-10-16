@@ -5,6 +5,7 @@
 //   * the embedded recording decodes and the audio clock moves
 //   * tapping pads gets judged, pause freezes time, resume continues
 //   * every band look (HD pixel / retro / 3D models / classic) can be selected
+//   * the game's per-frame work stays inside a smoothness budget
 //   * running out of energy ends the show (game over)
 //   * the timing check measures taps and sets the tap offset
 //   * the page never downloads anything from the internet
@@ -110,6 +111,14 @@ const hits = await page.evaluate(async () => {
 });
 check(hits > 0, `rapid tapping scored ${hits} hits`);
 await snap('06-hits');
+
+// Smoothness test: how long the game's own work takes per frame. Headless
+// Chrome draws with a slow software renderer, so only the UPDATE half (our
+// JavaScript: notes, band, crowd, effects) is held to a budget here; the
+// render half and the fps are printed for information.
+const work = (await state()).perf;
+check(work.updateMs < 6, `smoothness: update ${work.updateMs.toFixed(2)} ms per frame (budget 6 ms); `
+  + `render call ${work.renderMs.toFixed(2)} ms, ${work.fps.toFixed(0)} fps in software rendering`);
 
 await page.click('#pauseBtn');
 const p0 = (await state()).t;

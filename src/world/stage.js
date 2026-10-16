@@ -130,22 +130,36 @@ export function createStage(scene) {
   });
 
   // ---- Where the crowd stands (drawn by crowd.js; used by showfx.js too) ----
-  // Fans stand on both sides of the highway, between you and the stage.
-  // Sorted far-to-near so nearer fans are drawn in front.
-  const crowdCount = 140;
+  // Fans stand on both sides of the highway, between you and the stage, in
+  // loose ROWS: packed tight against the stage barrier, then thinning out
+  // toward you so you can pick out individual people. Each row is a little
+  // wider than the one in front of it, like a real crowd fanning out.
   const fans = [];
   const rand = mulberry32(7);
-  for (let i = 0; i < crowdCount; i++) {
-    const side = i % 2 ? 1 : -1;
-    fans.push({
-      x: side * (3.4 + rand() * 7.5),
-      z: -10 - rand() * (Math.abs(Z0) - 10.6), // a pit in front of the stage
-      s: 0.85 + rand() * 0.3,          // size variation
-      phase: rand() * Math.PI * 2,     // so they don't all jump together
-      jumpy: rand(),                   // how easily this fan gets hyped
-      look: Math.floor(rand() * 1000), // which fan sprite (crowd.js picks)
-    });
-  }
+  // Row depths: tight together by the stage, further apart toward you.
+  const ROW_Z = [Z0 + 0.8, Z0 + 2.0, Z0 + 3.4, Z0 + 5.0, Z0 + 6.9, Z0 + 9.1];
+  let lookCycle = 0; // hands out fan sprites in turn so neighbours look different
+  ROW_Z.forEach((z, r) => {
+    const k = r / (ROW_Z.length - 1);              // 0 = by the stage, 1 = near you
+    const gap = 1.25 + k * 1.2;                    // space between fans in this row
+    const outer = 10.5 + k * 2.5;                  // how far out to the side the row goes
+    const stagger = r % 2 ? gap / 2 : 0;           // back-row heads peek between front-row heads
+    for (const side of [-1, 1]) {
+      for (let x = 3.6 + stagger + rand() * 0.3; x < outer; x += gap * (0.85 + rand() * 0.3)) {
+        if (rand() < k * 0.3) continue;            // a few gaps in the rows near you
+        lookCycle += 1 + Math.floor(rand() * 3);   // skip 1-3 sprites each time
+        fans.push({
+          x: side * x,
+          z: z + (rand() - 0.5) * 0.5,             // not perfectly lined up
+          s: 0.85 + rand() * 0.3,          // size variation
+          phase: rand() * Math.PI * 2,     // so they don't all jump together
+          jumpy: rand(),                   // how easily this fan gets hyped
+          look: lookCycle,                 // which fan sprite (crowd.js picks)
+        });
+      }
+    }
+  });
+  // Sorted far-to-near so nearer fans are drawn in front.
   fans.sort((a, b) => a.z - b.z);
 
   // ---- Floating haze specks for atmosphere ---------------------------------

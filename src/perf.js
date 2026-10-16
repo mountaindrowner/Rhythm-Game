@@ -7,6 +7,12 @@
 // at a slightly lower resolution (fewer pixels to draw). When there's spare
 // time again, it raises the resolution back up.
 //
+// It also measures the game's own WORK per frame (the "smoothness test"):
+//   update = time spent moving everything (notes, band, crowd, effects)
+//   render = time spent handing the picture to the graphics chip
+// A phone has about 16.7 ms per frame at 60 fps, and the browser needs some
+// of that too, so our work should stay well under ~8 ms.
+//
 // Add ?fps to the page address to see the numbers in the corner.
 // =============================================================================
 const TARGET_MS = 1000 / 58;   // aim for ~60 fps
@@ -20,6 +26,11 @@ export function createPerfMonitor(world) {
   let frames = 0;
   let worst = 0;
   let calmSeconds = 0;
+  // Work measurements (summed over one second, then averaged).
+  let updateMs = 0;
+  let renderMs = 0;
+  let worstWork = 0;
+  const stats = { fps: 0, updateMs: 0, renderMs: 0, worstWorkMs: 0 };
 
   const show = new URLSearchParams(location.search).has('fps');
   let label = null;
@@ -31,6 +42,14 @@ export function createPerfMonitor(world) {
   }
 
   return {
+    /** The latest one-second averages (also shown by ?fps and used by tests). */
+    stats,
+    /** Call once per frame with how long the update and the render call took. */
+    work(update, render) {
+      updateMs += update;
+      renderMs += render;
+      worstWork = Math.max(worstWork, update + render);
+    },
     /** Call once per frame with the real frame time in milliseconds. */
     frame(ms) {
       windowMs += ms;
@@ -53,14 +72,20 @@ export function createPerfMonitor(world) {
       } else {
         calmSeconds = 0;
       }
+      stats.fps = 1000 / avg;
+      stats.updateMs = updateMs / frames;
+      stats.renderMs = renderMs / frames;
+      stats.worstWorkMs = worstWork;
       if (label) {
         const info = world.renderer.info.render;
         label.textContent = `${Math.round(1000 / avg)} fps  avg ${avg.toFixed(1)}ms  worst ${worst.toFixed(1)}ms\n`
+          + `work: update ${stats.updateMs.toFixed(1)}ms  render ${stats.renderMs.toFixed(1)}ms  worst ${worstWork.toFixed(1)}ms\n`
           + `res x${ratio.toFixed(2)}  draws ${info.calls}`;
       }
       windowMs = 0;
       frames = 0;
       worst = 0;
+      updateMs = renderMs = worstWork = 0;
     },
   };
 }

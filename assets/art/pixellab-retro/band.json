@@ -127,5 +127,15 @@
       62,
       58
     ]
+  },
+  "props": {
+    "micstand": {
+      "file": "micstand.png",
+      "size": [
+        32,
+        62
+      ],
+      "for": "guitarist"
+    }
   }
 }

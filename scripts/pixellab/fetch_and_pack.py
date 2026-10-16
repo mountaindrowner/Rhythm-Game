@@ -16,7 +16,9 @@ Writes  assets/art/pixellab/<member>.png  (only the frames the game uses)
         assets/art/pixellab/drumkit.png
         assets/art/pixellab/band.json     (frame layout + where the feet are)
 
-Each output sheet is one row per animation: idle, play, accent, mistake.
+Each output sheet is one row per animation: the standing pose ("hub"), then
+either every animation in <folder>/animations.json (the recipe) if it exists,
+or the classic three: play, accent, mistake.
 Every cell is the same size and every animation keeps PixelLab's cell-centred
 pivot, so frames line up without any per-frame offsets.
 """
@@ -65,7 +67,7 @@ def sprite_height(img):
     return bbox[3] - bbox[1] if bbox else img.height
 
 
-def pack_member(name, zip_bytes, out_dir, allow_missing):
+def pack_member(name, zip_bytes, out_dir, allow_missing, recipe=None):
     z = zipfile.ZipFile(io.BytesIO(zip_bytes))
     meta_name = next(n for n in z.namelist() if n.endswith(".json"))
     meta = json.loads(z.read(meta_name))["spritesheet"]
@@ -75,14 +77,19 @@ def pack_member(name, zip_bytes, out_dir, allow_missing):
     def cell(row, col):
         return sheet.crop((col * cw, row * ch, (col + 1) * cw, (row + 1) * ch))
 
-    rows = {"idle": [cell(0, 0)]}  # row 0, column 0 = facing the viewer
-    for anim in ANIMS:
+    rows = {"hub": [cell(0, 0)]}  # row 0, column 0 = the standing pose, facing the viewer
+    extra = {}  # per-animation info copied from the recipe (block, loop, beats...)
+    wanted = ANIMS
+    if recipe:
+        wanted = [a["name"] for a in recipe["anims"]]
+        extra = {a["name"]: {k: v for k, v in a.items() if k not in ("name", "prompt")} for a in recipe["anims"]}
+    for anim in wanted:
         info = next((r for r in meta["rows"] if r.get("animation") == f"{name}_{anim}"), None)
         if info is None:
             if not allow_missing:
                 sys.exit(f"{name}: animation '{name}_{anim}' not found in PixelLab sheet")
-            print(f"  {name}: no '{anim}' animation yet, using the idle pose")
-            rows[anim] = [rows["idle"][0]]
+            print(f"  {name}: no '{anim}' animation yet, using the standing pose")
+            rows[anim] = [rows["hub"][0]]
             continue
         # Column 0 is PixelLab's reference pose; the animation proper is 1..N-1.
         rows[anim] = [cell(info["row"], c) for c in range(1, info["frame_count"])]
@@ -93,11 +100,24 @@ def pack_member(name, zip_bytes, out_dir, allow_missing):
     for r, (anim, frames) in enumerate(rows.items()):
         for c, f in enumerate(frames):
             out.alpha_composite(f, (c * cw, r * ch))
-        layout[anim] = {"row": r, "frames": len(frames)}
+        layout[anim] = {"row": r, "frames": len(frames), **extra.get(anim, {})}
     out.save(os.path.join(out_dir, f"{name}.png"), optimize=True)
+    # Older art sets call the standing pose "idle"; keep that name working.
+    if "idle" not in layout:
+        layout["idle"] = layout["hub"]
     return {"file": f"{name}.png", "cell": [cw, ch], "columns": cols, "rows": len(rows),
-            "anims": layout, "footY": lowest_opaque_row(rows["idle"][0]),
-            "height": sprite_height(rows["idle"][0])}
+            "anims": layout, "footY": lowest_opaque_row(rows["hub"][0]),
+            "height": sprite_height(rows["hub"][0])}
+
+
+def pack_object(object_id, name, out_dir, key):
+    """Download a one-direction PixelLab object and save it trimmed to its pixels."""
+    z = zipfile.ZipFile(io.BytesIO(fetch(f"{API}/objects/{object_id}/spritesheet", key)))
+    png = next(n for n in z.namelist() if n.endswith(".png"))
+    img = Image.open(io.BytesIO(z.read(png))).convert("RGBA")
+    img = img.crop(img.getchannel("A").getbbox())
+    img.save(os.path.join(out_dir, f"{name}.png"), optimize=True)
+    return {"file": f"{name}.png", "size": list(img.size)}
 
 
 def main():
@@ -112,20 +132,22 @@ def main():
     if not key:
         sys.exit("Set PIXELLAB_API_KEY first (see the docstring).")
     src = json.load(open(args.source))
+    recipe_path = os.path.join(os.path.dirname(os.path.abspath(args.source)), "animations.json")
+    recipe = json.load(open(recipe_path)) if os.path.exists(recipe_path) else None
     manifest = {"members": {}, "drumkit": None}
     for name, m in src["members"].items():
         print("fetching", name)
         zip_bytes = fetch(f"{API}/characters/{m['character_id']}/spritesheet", key)
-        manifest["members"][name] = {"lane": m["lane"], **pack_member(name, zip_bytes, out_dir, args.allow_missing)}
+        member_recipe = recipe["members"].get(name) if recipe else None
+        manifest["members"][name] = {"lane": m["lane"], **pack_member(name, zip_bytes, out_dir, args.allow_missing, member_recipe)}
 
     print("fetching drum kit")
-    z = zipfile.ZipFile(io.BytesIO(fetch(f"{API}/objects/{src['drumkit']['object_id']}/spritesheet", key)))
-    png = next(n for n in z.namelist() if n.endswith(".png"))
-    kit = Image.open(io.BytesIO(z.read(png))).convert("RGBA")
-    bbox = kit.getchannel("A").getbbox()
-    kit = kit.crop(bbox)
-    kit.save(os.path.join(out_dir, "drumkit.png"), optimize=True)
-    manifest["drumkit"] = {"file": "drumkit.png", "size": list(kit.size)}
+    manifest["drumkit"] = pack_object(src["drumkit"]["object_id"], "drumkit", out_dir, key)
+    # Props: extra stage objects, e.g. the guitarist's mic stand.
+    for name, prop in src.get("props", {}).items():
+        print("fetching prop", name)
+        manifest.setdefault("props", {})[name] = {**pack_object(prop["object_id"], name, out_dir, key),
+                                                  **{k: v for k, v in prop.items() if k != "object_id"}}
 
     with open(os.path.join(out_dir, "band.json"), "w") as f:
         json.dump(manifest, f, indent=2)

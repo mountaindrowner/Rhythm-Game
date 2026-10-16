@@ -19,6 +19,7 @@ import retroSinger from '../../assets/art/pixellab-retro/singer.png';
 import retroGuitarist from '../../assets/art/pixellab-retro/guitarist.png';
 import retroDrummer from '../../assets/art/pixellab-retro/drummer.png';
 import retroKit from '../../assets/art/pixellab-retro/drumkit.png';
+import retroMic from '../../assets/art/pixellab-retro/micstand.png';
 
 /** 128 px, fully animated (play / accent / mistake). */
 export const HD_ART = {
@@ -26,8 +27,11 @@ export const HD_ART = {
   urls: { bassist: hdBassist, singer: hdSinger, guitarist: hdGuitarist, drummer: hdDrummer, drumkit: hdKit },
 };
 
-/** 64 px chunky 16-bit look. Not animated yet: code-driven motion for now. */
+/** 64 px chunky 16-bit look with the full animation library (animations.json). */
 export const RETRO_ART = {
   manifest: retroManifest,
-  urls: { bassist: retroBassist, singer: retroSinger, guitarist: retroGuitarist, drummer: retroDrummer, drumkit: retroKit },
+  urls: {
+    bassist: retroBassist, singer: retroSinger, guitarist: retroGuitarist, drummer: retroDrummer,
+    drumkit: retroKit, micstand: retroMic,
+  },
 };

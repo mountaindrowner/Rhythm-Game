@@ -50,6 +50,8 @@ const bands = {
   '3d': createBand3D(world.scene),
   pixel: createBandPixel(world.scene, atlasUrl),
 };
+// Tell the bands who sings lead in this song (her, him, or both).
+for (const b of Object.values(bands)) b.setVocalist?.(SONG.vocalist);
 const highway = createHighway(world.scene);
 const effects = createEffects(world.scene);
 const showfx = createShowFx(world.scene, stage.fans, $('flash'));
@@ -218,6 +220,7 @@ function endGame() {
   player.stop();
   input.enabled = false;
   showfx.celebrate();
+  band.finale?.(); // cheer, then bow
   showResults(perf.headline, settings.practice ? 'Practice mode was on.' : '');
 }
 
@@ -256,6 +259,7 @@ let lastFrame = performance.now();
 let menuClock = 0;
 
 function frame(now) {
+  const workStart = performance.now(); // for the smoothness numbers (perf.js)
   const frameMs = now - lastFrame;
   const dt = Math.min(0.05, frameMs / 1000);
   lastFrame = now;
@@ -291,7 +295,7 @@ function frame(now) {
   stage.update(stageTime, beat, status === 'failing' ? 'OPENING' : section, hype);
   showfx.update(now / 1000, beat, section, live && status !== 'failing', dt);
   crowd.update(beat, status === 'failing' ? 0 : stage.intensity);
-  band.update(live ? t : menuClock, live ? beat : menuClock / BEAT, live && songTime > -0.2, dt, musicEnergy);
+  band.update(live ? t : menuClock, live ? beat : menuClock / BEAT, live && songTime > -0.2, dt, musicEnergy, section);
   highway.update(t, (lane) => input.isHeld(lane));
   effects.update(dt);
   world.updateCamera(dt, now / 1000);
@@ -299,7 +303,9 @@ function frame(now) {
   for (let lane = 0; lane < 4; lane++) hud.setPadDown(lane, input.isHeld(lane));
 
   // 5. Draw.
+  const renderStart = performance.now();
   world.renderer.render(world.scene, world.camera);
+  perfMonitor.work(renderStart - workStart, performance.now() - renderStart);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -406,6 +412,7 @@ window.__BURN_BRIGHT_TEST__ = {
       ...perf.counts, hasRecording: player.hasRecording, build: BUILD_LABEL,
       tapOffsetMs: settings.tapOffsetMs, practice: settings.practice, bandStyle: settings.bandStyle,
       drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
+      perf: { ...perfMonitor.stats },
     };
   },
   start: startGame,
