@@ -6,7 +6,8 @@ A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway 
 
 **Features**
 
-- **3D band:** blocky 3D musicians with real joints. Their strums, drum hits and singing land exactly on the song's notes, and they react to your hits and misses. Switch to the original pixel-art band in Settings.
+- **HD pixel band (default):** hand-animated pixel-art musicians made with [PixelLab](https://pixellab.ai), standing on the 3D stage. Their playing loops lock to the song's beat, and they do a big move on combo milestones and stumble when you miss. See [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
+- **More band looks in Settings:** *3D models* (blocky musicians with real joints whose strums and drum hits land exactly on the notes) or *Classic* (the original pixel art).
 - **3D venue:** spotlights, LED wall, crowd, and chorus effects (fire jets, lasers, confetti, crowd phone lights, strobe).
 - **Game over:** run out of energy and the show stops. *Practice mode* turns it off, and easier difficulties drain less energy per miss.
 - **Timing check:** tap along to clicks to measure your phone and headphone delay, then apply it automatically.
@@ -74,6 +75,7 @@ src/
   world/stage.js      3D venue: stage, LED wall, truss, spotlights, crowd
   world/band3d/       the 3D musicians: rig.js (joints + IK), members.js (looks),
                       instruments.js (guitar, bass, mic, drum kit), index.js (animation)
+  world/bandHD.js     the HD pixel band (PixelLab sprites), the default look
   world/bandPixel.js  the original pixel-art band (optional look)
   world/showfx.js     chorus effects: pyro, lasers, confetti, crowd lights, strobe
   world/highway.js    lanes, beat lines, 3D note gems, hold trails
@@ -81,7 +83,8 @@ src/
   ui/hud.js           score/combo/energy text, judgement pop-ups, pads
   ui/calibration.js   the timing check screen
   ui/styles.css       look of menus and HUD
-assets/               the song and the sprite art
+assets/               the song and the sprite art (assets/art/pixellab = HD band)
+scripts/              build helpers (itch.io ZIP, PixelLab download + packing)
 charts/               the note chart (JSON + CSV)
 tests/                automated checks
 docs/                 design blueprint, guides, reference images
@@ -89,4 +92,4 @@ docs/                 design blueprint, guides, reference images
 
 ## Status
 
-v0.2 adds the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, both band looks, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.
+v0.3 adds the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, both band looks, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.

@@ -4,7 +4,7 @@
 //   * each difficulty loads the right number of notes
 //   * the embedded recording decodes and the audio clock moves
 //   * tapping pads gets judged, pause freezes time, resume continues
-//   * both band looks (3D models / pixel art) can be selected
+//   * all three band looks (HD pixel / 3D models / classic) can be selected
 //   * running out of energy ends the show (game over)
 //   * the timing check measures taps and sets the tap offset
 //   * the page never downloads anything from the internet
@@ -124,16 +124,17 @@ check(s.status === 'playing' && s.t > p1 + 0.8, 'resume continues the song');
 await page.click('#pauseBtn');
 await page.click('#quitBtn');
 
-// ---- Band look: pixel art and back to 3D ----------------------------------
+// ---- Band looks: HD pixel (default), 3D models, classic pixel art -----------
+check((await state()).bandStyle === 'hd', 'the HD pixel band is the default look');
+for (const look of ['3d', 'pixel', 'hd']) {
+  await page.click('#settingsBtn');
+  await page.click(`[data-band="${look}"]`);
+  check((await state()).bandStyle === look, `band look switches to ${look}`);
+  await page.click('#settingsDone');
+  await page.waitForTimeout(500);
+  await snap(`08-band-${look}`);
+}
 await page.click('#settingsBtn');
-await page.click('[data-band="pixel"]');
-check((await state()).bandStyle === 'pixel', 'band look switches to pixel art');
-await page.click('#settingsDone');
-await page.waitForTimeout(500);
-await snap('08-pixel-band');
-await page.click('#settingsBtn');
-await page.click('[data-band="3d"]');
-check((await state()).bandStyle === '3d', 'band look switches back to 3D models');
 
 // ---- Game over: practice off, play Expert without touching anything --------
 await page.click('label:has(#practiceToggle)');

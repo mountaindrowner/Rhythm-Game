@@ -7,7 +7,7 @@
 // =============================================================================
 
 // ---- Version shown on the menu so you can tell which build is live. --------
-export const BUILD_LABEL = '3D · v0.2';
+export const BUILD_LABEL = '3D · v0.3';
 
 // ---- Music timing -----------------------------------------------------------
 export const BPM = 152;                 // estimated tempo of the song

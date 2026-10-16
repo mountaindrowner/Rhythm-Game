@@ -225,7 +225,7 @@ button:disabled { opacity: 0.6; }
 }
 .toggle input:checked { background: var(--gold); border-color: #fff2d1; }
 .toggle input:checked::after { transform: translateX(22px); background: #1d1533; }
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .seg button { min-height: 40px; font-size: 12px; }
 
 /* ---------- Timing check ---------- */

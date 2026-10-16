@@ -1,0 +1,10 @@
+{
+  "_about": "PixelLab (pixellab.ai) assets for the HD pixel band. Re-download with scripts/pixellab/fetch_and_pack.py. Character prompts and animation prompts are recorded in docs/ART_PIPELINE.md.",
+  "members": {
+    "bassist":   { "lane": 0, "character_id": "9edad916-0964-485b-a644-fb1e4d1b43e7" },
+    "singer":    { "lane": 1, "character_id": "b5cf0d98-8948-4212-8d92-036e4228f33e" },
+    "guitarist": { "lane": 2, "character_id": "13b58784-433e-44db-b156-f0256c878dfb" },
+    "drummer":   { "lane": 3, "character_id": "ef61d222-b8ca-4f7c-bae5-c7247d0c717c" }
+  },
+  "drumkit": { "object_id": "4c49032f-f857-4308-86d6-d38c5d777166" }
+}

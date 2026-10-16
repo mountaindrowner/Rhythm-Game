@@ -23,6 +23,7 @@ import { Input } from './game/input.js';
 import { createWorld } from './world/scene.js';
 import { createStage } from './world/stage.js';
 import { createBandPixel } from './world/bandPixel.js';
+import { createBandHD } from './world/bandHD.js';
 import { createBand3D } from './world/band3d/index.js';
 import { createHighway } from './world/highway.js';
 import { createEffects } from './world/effects.js';
@@ -40,14 +41,18 @@ const $ = (id) => document.getElementById(id);
 // ---- Build everything ------------------------------------------------------
 const world = createWorld($('world'));
 const stage = createStage(world.scene);
-const bands = { '3d': createBand3D(world.scene), pixel: createBandPixel(world.scene, atlasUrl) };
+const bands = {
+  hd: createBandHD(world.scene),
+  '3d': createBand3D(world.scene),
+  pixel: createBandPixel(world.scene, atlasUrl),
+};
 const highway = createHighway(world.scene);
 const effects = createEffects(world.scene);
 const showfx = createShowFx(world.scene, stage.fans, $('flash'));
 const hud = createHud();
 const player = new SongPlayer(songUrl);
 
-let band = bands['3d'];
+let band = bands.hd;
 let status = 'menu';
 let perf = new Performance([]);
 let hype = 0;          // extra stage excitement from combos (0..1), fades over time
@@ -317,7 +322,7 @@ function refreshMenuNote() {
 // ---- Settings screen -------------------------------------------------------
 const bandButtons = [...document.querySelectorAll('[data-band]')];
 function selectBand(style) {
-  updateSettings({ bandStyle: bands[style] ? style : '3d' });
+  updateSettings({ bandStyle: bands[style] ? style : 'hd' });
   for (const [key, b] of Object.entries(bands)) b.setVisible(key === settings.bandStyle);
   band = bands[settings.bandStyle];
   bandButtons.forEach((b) => b.classList.toggle('selected', b.dataset.band === settings.bandStyle));
