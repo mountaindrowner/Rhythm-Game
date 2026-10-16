@@ -1,6 +1,7 @@
 {
-  "_about": "The Retro band's animation library (the 'recipe'). scripts/pixellab/animate.py generates any that are missing in PixelLab; fetch_and_pack.py packs them. Every animation starts AND ends on the musician's standing pose (the 'hub'), so any animation can follow any other with no jump. block: which group the game picks from. energy: calm = verses, hype = choruses (any = both). beats: how many beats one loop lasts (loops), or how long a one-shot plays.",
+  "_about": "The Retro band's animation library (the 'recipe'). scripts/pixellab/animate.py generates any that are missing in PixelLab; fetch_and_pack.py packs them. Every animation starts AND ends on the musician's standing pose (the 'hub'), so any animation can follow any other with no jump. block: which group the game picks from. energy: calm = verses, hype = choruses (any = both). beats: how many beats one loop lasts (loops), or how long a one-shot plays. canvas: the characters' size in PixelLab (64 px). version: bumped when an animation is redone; the new one is made as <member>_<name>_v2.",
   "frames": 16,
+  "canvas": 64,
   "members": {
     "bassist": {
       "holding": "holding his dark green electric bass guitar",
@@ -37,7 +38,7 @@
       "anims": [
         { "name": "idle",       "block": "idle",     "loop": true,  "beats": 4, "prompt": "standing relaxed, breathing gently, small head nod" },
         { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "strumming the guitar steadily down and up, nodding his head" },
-        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "strumming the guitar hard, head banging on each beat" },
+        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "version": 2, "prompt": "playing the guitar with huge energy: big strumming arm swings, jumping up and down on the beat, head banging hard, guitar neck pumping up and down" },
         { "name": "riff",       "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "prompt": "playing a fast riff while stepping forward with one foot and back" },
         { "name": "windmill",   "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "strumming the guitar with a big windmill swing of his right arm" },
         { "name": "sing",       "block": "sing",     "loop": true,  "beats": 2, "prompt": "leans his face forward a little to sing into a microphone just in front of his mouth while strumming the guitar" },
@@ -52,10 +53,10 @@
       "holding": "holding two wooden drumsticks",
       "anims": [
         { "name": "idle",       "block": "idle",     "loop": true,  "beats": 4, "prompt": "standing relaxed, breathing gently, tapping one stick against his leg" },
-        { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "drumming steadily: the right and left sticks alternately strike down in front of his waist, head nodding" },
-        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "prompt": "drumming hard and fast with big arm swings, head banging" },
-        { "name": "fill",       "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "prompt": "drum fill: both sticks strike rapidly from his left to his right in front of his waist" },
-        { "name": "twirl",      "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "prompt": "drumming with his left stick while twirling the right stick in his fingers" },
+        { "name": "calm",       "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "version": 2, "prompt": "drumming with big visible arm swings: each arm alternately lifts its stick up to head height and strikes down hard, shoulders rocking, head nodding firmly to the beat (his drum kit hides everything below his chest, so all the motion is in his raised arms, head and hair)" },
+        { "name": "hype",       "block": "groove",   "energy": "hype", "loop": true, "beats": 2, "version": 2, "prompt": "drumming wildly: both arms swing the sticks high above his head and smash down, violent head banging with his long hair flying, shoulders bouncing (his drum kit hides everything below his chest, so all the motion is in his raised arms, head and hair)" },
+        { "name": "fill",       "block": "groove",   "energy": "any",  "loop": true, "beats": 2, "version": 2, "prompt": "a huge drum fill: both arms swing the sticks in wide high arcs from his far left across to his far right, whole upper body leaning with the swing, hair flicking (all the motion above his chest)" },
+        { "name": "twirl",      "block": "groove",   "energy": "calm", "loop": true, "beats": 2, "version": 2, "prompt": "showing off: tosses the right stick spinning high above his head and catches it while the left arm keeps striking at shoulder height, then both arms strike down, grinning (all the motion above his chest)" },
         { "name": "accent",     "block": "accent",   "loop": false, "beats": 4, "prompt": "raises both sticks high above his head, then smashes them down together" },
         { "name": "mistake_a",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "drops one stick, fumbles and catches it, then resumes" },
         { "name": "mistake_b",  "block": "mistake",  "loop": false, "beats": 2, "prompt": "loses the beat, freezes and looks embarrassed, then resumes" },

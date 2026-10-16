@@ -13,7 +13,11 @@ animations can be chained without a jump. Safe to re-run: existing ones are
 skipped. Waits politely when PixelLab's 8 job slots are full.
 
 Needs <folder>/<member>.png from a previous fetch_and_pack run (the hub pose is
-taken from its first cell).
+taken from its first cell, trimmed back to the character's canvas size).
+
+To REDO an animation (say the prompt was too timid), edit its prompt and give
+it "version": 2. It is then made under a new PixelLab name
+(<member>_<name>_v2), so the old one stays until you delete it.
 """
 import base64
 import io
@@ -28,10 +32,21 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mcp_client import call_tool  # noqa: E402
 
 
-def hub_pose(folder, member, band):
-    """The standing pose (row 0, col 0 of the packed sheet) as PNG base64."""
+def pixellab_name(member, anim):
+    """The animation's name in PixelLab: <member>_<name>, plus _v2, _v3... for redos."""
+    version = anim.get("version", 1)
+    return f"{member}_{anim['name']}" + (f"_v{version}" if version > 1 else "")
+
+
+def hub_pose(folder, member, band, canvas):
+    """The standing pose (row 0, col 0 of the packed sheet) as PNG base64.
+
+    Packed cells are bigger than the character's canvas (animations can reach
+    outside it), and the pose sits in the middle, so cut the canvas-sized
+    square out of the centre."""
     cw, ch = band["members"][member]["cell"]
-    img = Image.open(os.path.join(folder, f"{member}.png")).convert("RGBA").crop((0, 0, cw, ch))
+    x, y = (cw - canvas) // 2, (ch - canvas) // 2
+    img = Image.open(os.path.join(folder, f"{member}.png")).convert("RGBA").crop((x, y, x + canvas, y + canvas))
     buf = io.BytesIO()
     img.save(buf, "PNG")
     return base64.b64encode(buf.getvalue()).decode()
@@ -53,14 +68,15 @@ def main():
     recipe = json.load(open(os.path.join(folder, "animations.json")))
     band = json.load(open(os.path.join(folder, "band.json")))
     frames = recipe.get("frames", 16)
+    canvas = recipe.get("canvas", 64)
 
     todo = []
     for member, spec in recipe["members"].items():
         cid = src["members"][member]["character_id"]
         have = existing_animations(cid)
-        hub = hub_pose(folder, member, band)
+        hub = hub_pose(folder, member, band, canvas)
         for a in spec["anims"]:
-            full = f"{member}_{a['name']}"
+            full = pixellab_name(member, a)
             if full in have:
                 continue
             prompt = f"{a['prompt']}, {spec['holding']}, then returns to the starting pose"

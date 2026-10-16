@@ -80,14 +80,19 @@ def pack_member(name, zip_bytes, out_dir, allow_missing, recipe=None):
     rows = {"hub": [cell(0, 0)]}  # row 0, column 0 = the standing pose, facing the viewer
     extra = {}  # per-animation info copied from the recipe (block, loop, beats...)
     wanted = ANIMS
+    source_name = {anim: f"{name}_{anim}" for anim in ANIMS}  # name in PixelLab
     if recipe:
         wanted = [a["name"] for a in recipe["anims"]]
-        extra = {a["name"]: {k: v for k, v in a.items() if k not in ("name", "prompt")} for a in recipe["anims"]}
+        extra = {a["name"]: {k: v for k, v in a.items() if k not in ("name", "prompt", "version")}
+                 for a in recipe["anims"]}
+        # Redone animations ("version": 2) live in PixelLab as <member>_<name>_v2.
+        source_name = {a["name"]: f"{name}_{a['name']}" + (f"_v{a['version']}" if a.get("version", 1) > 1 else "")
+                       for a in recipe["anims"]}
     for anim in wanted:
-        info = next((r for r in meta["rows"] if r.get("animation") == f"{name}_{anim}"), None)
+        info = next((r for r in meta["rows"] if r.get("animation") == source_name[anim]), None)
         if info is None:
             if not allow_missing:
-                sys.exit(f"{name}: animation '{name}_{anim}' not found in PixelLab sheet")
+                sys.exit(f"{name}: animation '{source_name[anim]}' not found in PixelLab sheet")
             print(f"  {name}: no '{anim}' animation yet, using the standing pose")
             rows[anim] = [rows["hub"][0]]
             continue

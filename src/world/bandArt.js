@@ -30,6 +30,10 @@ export const HD_ART = {
 /** 64 px chunky 16-bit look with the full animation library (animations.json). */
 export const RETRO_ART = {
   manifest: retroManifest,
+  // A slightly smaller kit, with the drummer standing higher behind it, so
+  // his arms and sticks are seen above the drums (otherwise only his head shows).
+  kitScale: 0.8,
+  drummerLift: 0.25, // a quarter of a musician's height
   urls: {
     bassist: retroBassist, singer: retroSinger, guitarist: retroGuitarist, drummer: retroDrummer,
     drumkit: retroKit, micstand: retroMic,

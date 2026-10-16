@@ -44,12 +44,14 @@ function pixelTexture(url) {
 
 /**
  * @param {THREE.Scene} scene
- * @param {{manifest: object, urls: Record<string, string>}} art
+ * @param {{manifest: object, urls: Record<string, string>, kitScale?: number, drummerLift?: number}} art
  *   manifest = band.json from scripts/pixellab/fetch_and_pack.py;
- *   urls = image URL per member name, plus `drumkit`
+ *   urls = image URL per member name, plus `drumkit`;
+ *   kitScale / drummerLift = how big the kit is and how high the drummer
+ *   stands behind it (see bandArt.js)
  */
 export function createSpriteBand(scene, art) {
-  const { manifest, urls } = art;
+  const { manifest, urls, kitScale = 1, drummerLift: liftShare = 0.08 } = art;
   const group = new THREE.Group();
   scene.add(group);
   const shadowMat = new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.4, depthWrite: false });
@@ -60,7 +62,7 @@ export function createSpriteBand(scene, art) {
     .filter(([name]) => name !== 'drummer')
     .map(([, m]) => m.height || m.footY));
   const PX = BAND_HEIGHT / tallest;
-  const drummerLift = 0.08 * tallest; // pixels the drummer stands above the kit's base
+  const drummerLift = liftShare * tallest; // pixels the drummer stands above the kit's base
 
   // Where each musician stands (feet position).
   const SPOTS = {
@@ -117,8 +119,10 @@ export function createSpriteBand(scene, art) {
 
   // The drum kit sits in front of the drummer and hides his legs.
   const kitInfo = manifest.drumkit;
-  const kitGeo = new THREE.PlaneGeometry(kitInfo.size[0] * PX, kitInfo.size[1] * PX);
-  kitGeo.translate(0, (kitInfo.size[1] * PX) / 2, 0); // base on the riser
+  const kitW = kitInfo.size[0] * PX * kitScale;
+  const kitH = kitInfo.size[1] * PX * kitScale;
+  const kitGeo = new THREE.PlaneGeometry(kitW, kitH);
+  kitGeo.translate(0, kitH / 2, 0); // base on the riser
   const kit = new THREE.Mesh(kitGeo, new THREE.MeshBasicMaterial({ map: pixelTexture(urls.drumkit), alphaTest: 0.5 }));
   kit.position.set(DRUM_RISER.x, TOP + DRUM_RISER.h, DRUM_RISER.z);
   group.add(kit);

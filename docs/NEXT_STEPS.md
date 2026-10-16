@@ -1,6 +1,6 @@
 # Next steps (handoff)
 
-_Last updated: v0.5._
+_Last updated: v0.5.1._
 
 ## Where things stand
 - **Names:** the band is **X-ROADS**; the game is called **Rhythm Riot** for now (the owner is still deciding).
@@ -36,6 +36,7 @@ Each needs: a PixelLab animation (or a few), a trigger (a combo, a song section,
 ## Other open items
 - **Test on a real iPhone** (audio, touch, frame rate with `?fps`).
 - **Different stages and backgrounds** (the owner's idea for later): the venue is all in `stage.js`, so a second venue could be a new function chosen per song.
-- **Animation-maker note:** `animate.py` sends the packed hub cell as the end frame. The packed cells are now larger than 64 px (animations widen the canvas). If PixelLab ever rejects that size, crop the hub to the character's 64 px canvas first.
+- **v0.5.1 drummer fix:** the owner said the drummer barely moved. His grooves were redone with big above-the-kit motion (`"version": 2` in the recipe), and he now stands higher behind a slightly smaller kit. Next time an animation looks timid, measure it first (see `ART_PIPELINE.md`) and redo it the same way.
+- **LED wall:** the drummer's head now covers part of the "ROADS" lettering in the gameplay view. Raising the logo on the wall (`drawBandLogo` in `stage.js`) would fix it.
 - **Musically accurate note chart:** the current chart was generated automatically from the audio. A note editor would help fix it.
 - **Rotate the PixelLab key:** an earlier key was pasted into chat. Make a new one and store it only as an environment secret.

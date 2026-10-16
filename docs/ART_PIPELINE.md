@@ -39,7 +39,11 @@ python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro/so
 npm run dev                                                             # check at ?autoplay&view=stage
 ```
 
-To add an animation, add an entry to the recipe and run both commands again. The game picks it up from its block automatically. While PixelLab is still generating a character's animations, its sheet download returns *423 Locked*, so pack only after `animate.py` says `done`.
+To add an animation, add an entry to the recipe and run both commands again.
+
+To **redo** one (for example because it barely moves), rewrite its prompt and add `"version": 2`. `animate.py` then makes it under a new PixelLab name (`drummer_hype_v2`), and the packer uses that one. The old version stays in PixelLab until you delete it, so you can compare before committing. In v0.5.1 the drummer's four grooves and the guitarist's hype groove were redone this way. The first prompts put the stick hits "in front of his waist", which is exactly where the drum kit hides him. The new prompts keep all the motion above his chest (sticks over his head, head-banging, hair flying), and the measured movement went up 1.5–2.8×. **Tip:** describe motion the camera can actually see. The game picks it up from its block automatically. While PixelLab is still generating a character's animations, its sheet download returns *423 Locked*, so pack only after `animate.py` says `done`.
+
+**Drummer staging.** The Retro kit is drawn at 0.8× size, and the drummer stands a quarter of a musician's height above its base (`kitScale` and `drummerLift` in `bandArt.js`). That way his arms and sticks show above the drums instead of only his head.
 
 **Props.** `source.json` can list `props` (objects that belong to a musician). The mic stand is `{"for": "guitarist"}`. The packer trims each prop. `bandSprites.js` scales it to the owner's mouth height and stands it beside him.
 
