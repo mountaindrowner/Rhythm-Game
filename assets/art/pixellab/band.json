@@ -27,7 +27,8 @@
           "frames": 8
         }
       },
-      "footY": 144
+      "footY": 144,
+      "height": 120
     },
     "singer": {
       "lane": 1,
@@ -56,7 +57,8 @@
           "frames": 8
         }
       },
-      "footY": 150
+      "footY": 150,
+      "height": 124
     },
     "guitarist": {
       "lane": 2,
@@ -85,7 +87,8 @@
           "frames": 8
         }
       },
-      "footY": 147
+      "footY": 147,
+      "height": 122
     },
     "drummer": {
       "lane": 3,
@@ -114,7 +117,8 @@
           "frames": 8
         }
       },
-      "footY": 144
+      "footY": 144,
+      "height": 120
     }
   },
   "drumkit": {

@@ -25,10 +25,17 @@ import drummerUrl from '../../assets/art/pixellab/drummer.png';
 import drumkitUrl from '../../assets/art/pixellab/drumkit.png';
 
 const URLS = { bassist: bassistUrl, singer: singerUrl, guitarist: guitaristUrl, drummer: drummerUrl };
-const PX = 0.045;            // world units per sprite pixel
+// One pixel size for the whole band, so every sprite has the same pixel
+// density. It's chosen so the tallest front-line musician is BAND_HEIGHT tall,
+// which means any art style (64 px retro or 128 px HD) fills the stage the same.
+const BAND_HEIGHT = 5.4;     // world units
+const tallest = Math.max(...Object.entries(manifest.members)
+  .filter(([name]) => name !== 'drummer')
+  .map(([, m]) => m.height || m.footY));
+const PX = BAND_HEIGHT / tallest; // world units per sprite pixel
 const Z0 = WORLD.stageZ;
 const TOP = WORLD.stageHeight;
-const DRUMMER_LIFT = 10;     // pixels the drummer stands above the kit's base
+const DRUMMER_LIFT = 0.08 * tallest; // pixels the drummer stands above the kit's base
 
 // Where each musician stands (feet position).
 const SPOTS = {
