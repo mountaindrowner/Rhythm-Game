@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { WORLD } from '../config.js';
 import { Particles, softDot } from './effects.js';
 import { moodFor, BAND_SPOTS } from './stage.js';
+import { createRiotSign } from './riotSign.js';
 
 const Z0 = WORLD.stageZ;
 const TOP = WORLD.stageHeight;
@@ -100,6 +101,8 @@ export function createShowFx(scene, fans, flashEl) {
     return line;
   });
 
+  const riotSign = createRiotSign(scene); // the floating "RIOT MODE!" sign
+
   let riot = false;
   let lastBar = -1;
   let lastHalf = -1;
@@ -150,6 +153,8 @@ export function createShowFx(scene, fans, flashEl) {
         pyro([0, 1, 2, 3]);
         confettiBurst(360);
       }
+      if (on) riotSign.show();
+      else riotSign.hide();
       riot = on;
     },
 
@@ -160,6 +165,18 @@ export function createShowFx(scene, fans, flashEl) {
     shred(who) {
       shredWho = who;
       shredStart = -2; // starts on the next update
+      strobe();
+    },
+
+    /** Transformation burst: fire and sparks around every band member (Riot Mode on/off). */
+    transform() {
+      for (const spot of Object.values(BAND_SPOTS)) {
+        for (let k = 0; k < 40; k++) {
+          const a = Math.random() * Math.PI * 2;
+          fire.emit(spot.x + Math.cos(a) * 0.9, TOP + 1.2 + Math.random() * 3, spot.z + 0.4,
+            Math.cos(a) * 3, Math.random() * 3, 0.5, FIRE[(Math.random() * FIRE.length) | 0], 0.5);
+        }
+      }
       strobe();
     },
 
@@ -195,6 +212,7 @@ export function createShowFx(scene, fans, flashEl) {
       tumbleStart = -1;
       tumble.visible = false;
       soloWho = shredWho = null;
+      riotSign.clear();
       soloBeam.visible = false;
       boltMat.opacity = 0;
     },
@@ -291,6 +309,7 @@ export function createShowFx(scene, fans, flashEl) {
         if (k >= 1) tumbleStart = -1;
       }
 
+      riotSign.update(time, dt);
       pyroFlash = Math.max(0, pyroFlash - dt * 3);
       pyroLight.intensity = pyroFlash * 60;
       fire.update(dt);

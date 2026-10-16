@@ -114,11 +114,15 @@ test('the guitarist sings lead when it is his song', () => {
   assert.ok(run(d2, 0, 32, ctx({ section: 'OPENING' })).every((p) => p.anim !== 'sing'));
 });
 
-test('in her songs he only sings backing vocals in choruses', () => {
+test('in her songs he does not sing (he has no mic)', () => {
   const d = createDirector(library(true), 'guitarist', 3);
   assert.ok(run(d, 0, 64, ctx({ section: 'VERSE 1' })).every((p) => p.anim !== 'sing'));
   const d2 = createDirector(library(true), 'guitarist', 3);
-  const chorus = run(d2, 0, 128, ctx({ energy: 'hype', section: 'CHORUS 1' }));
-  assert.ok(chorus.some((p) => p.anim === 'sing'));
-  assert.ok(chorus.some((p) => p.anim !== 'sing'));
+  assert.ok(run(d2, 0, 128, ctx({ energy: 'hype', section: 'CHORUS 1' })).every((p) => p.anim !== 'sing'));
+});
+
+test('in duets he trades lines and sings the choruses', () => {
+  const d = createDirector(library(true), 'guitarist', 3);
+  d.setVocalist('duet');
+  assert.ok(run(d, 0, 128, ctx({ energy: 'hype', section: 'CHORUS 1' })).every((p) => p.anim === 'sing'));
 });

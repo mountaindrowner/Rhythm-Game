@@ -1,0 +1,28 @@
+{
+  "_about": "Riot Mode versions of the Retro band: PixelLab 'states' (variants) of the retro characters, made with create_character_state. The game swaps to these while Riot Mode is on.",
+  "members": {
+    "bassist": {
+      "lane": 0,
+      "character_id": "66aa45e7-b79d-43b7-9df6-65a28e6a632d",
+      "edit": "RIOT MODE powered-up version: his white lab coat crackles with glowing neon-green electricity, his round glasses glow bright green, his dark green bass guitar glows neon green with little lightning sparks; still only light stubble"
+    },
+    "singer": {
+      "lane": 1,
+      "character_id": "27df0b87-1fb4-49b3-bd39-197be63c1fd9",
+      "edit": "RIOT MODE powered-up version: her black flame-logo band t-shirt is still a normal full-length t-shirt that fully covers her stomach and waist (no bare midriff), the flame logo now glows bright gold, the tips of her ponytail glow like golden fire, her microphone glows gold"
+    },
+    "guitarist": {
+      "lane": 2,
+      "character_id": "be71329d-eeb2-493f-83b0-0292b6ae8432",
+      "edit": "RIOT MODE powered-up version: his dark red electric guitar is on fire with bright orange flames along the neck, his wristbands glow electric blue, his silver cross necklace shines brightly"
+    },
+    "drummer": {
+      "lane": 3,
+      "character_id": "1f69307e-b998-4876-a9fc-9bca0a7008bc",
+      "edit": "RIOT MODE powered-up version: clean-shaven with no beard and no facial hair, both of his wooden drumsticks are on fire with bright orange flames, his black t-shirt has glowing red flame stripes"
+    }
+  },
+  "drumkit": {
+    "object_id": "ddb28255-432c-40ca-b714-acd4cb6fcb21"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "_about": "Riot Mode animations for the Riot versions of the Retro band (see source.json). Two big, high-energy loops per musician; the game alternates them every 2 bars while Riot Mode is on. Same rules as the main recipe: 16 frames, start and end on the standing pose. Make with scripts/pixellab/animate.py assets/art/pixellab-retro-riot, pack with fetch_and_pack.py --source assets/art/pixellab-retro-riot/source.json.",
+  "frames": 16,
+  "canvas": 64,
+  "members": {
+    "bassist": {
+      "holding": "holding his glowing neon-green bass guitar",
+      "anims": [
+        { "name": "riot",  "block": "riot", "loop": true, "beats": 2, "prompt": "playing the bass with wild energy: jumping up and down on every beat, head banging, the bass swinging, electricity crackling" },
+        { "name": "riot2", "block": "riot", "loop": true, "beats": 2, "prompt": "slapping the bass hard while doing a big rock kick and spinning the bass neck upward, triumphant" }
+      ]
+    },
+    "singer": {
+      "holding": "holding her glowing gold microphone",
+      "anims": [
+        { "name": "riot",  "block": "riot", "loop": true, "beats": 2, "prompt": "singing with huge energy: jumping on the beat with her free fist pumping in the air, ponytail whipping" },
+        { "name": "riot2", "block": "riot", "loop": true, "beats": 2, "prompt": "belting a big note with her head thrown back and her free arm sweeping out to the crowd, then bouncing on the beat" }
+      ]
+    },
+    "guitarist": {
+      "holding": "holding his flaming dark red electric guitar",
+      "anims": [
+        { "name": "riot",  "block": "riot", "loop": true, "beats": 2, "prompt": "shredding the guitar wildly: big windmill strums, jumping on the beat, head banging" },
+        { "name": "riot2", "block": "riot", "loop": true, "beats": 2, "prompt": "playing a fast solo leaning back with the guitar neck raised high, bouncing hard on each beat" }
+      ]
+    },
+    "drummer": {
+      "holding": "holding two flaming drumsticks",
+      "anims": [
+        { "name": "riot",  "block": "riot", "loop": true, "beats": 2, "prompt": "drumming like crazy: both flaming sticks swing high above his head and smash down, violent head banging, hair flying (all the motion above his chest)" },
+        { "name": "riot2", "block": "riot", "loop": true, "beats": 2, "prompt": "twirling both flaming drumsticks high above his head, then smashing down hard on the beat, grinning (all the motion above his chest)" }
+      ]
+    }
+  }
+}

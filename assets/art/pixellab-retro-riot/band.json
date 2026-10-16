@@ -1,0 +1,155 @@
+{
+  "members": {
+    "bassist": {
+      "lane": 0,
+      "file": "bassist.png",
+      "cell": [
+        96,
+        92
+      ],
+      "columns": 16,
+      "rows": 3,
+      "anims": {
+        "hub": {
+          "row": 0,
+          "frames": 1
+        },
+        "riot": {
+          "row": 1,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot2": {
+          "row": 2,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "idle": {
+          "row": 0,
+          "frames": 1
+        }
+      },
+      "footY": 77,
+      "height": 62
+    },
+    "singer": {
+      "lane": 1,
+      "file": "singer.png",
+      "cell": [
+        68,
+        92
+      ],
+      "columns": 16,
+      "rows": 3,
+      "anims": {
+        "hub": {
+          "row": 0,
+          "frames": 1
+        },
+        "riot": {
+          "row": 1,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot2": {
+          "row": 2,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "idle": {
+          "row": 0,
+          "frames": 1
+        }
+      },
+      "footY": 77,
+      "height": 63
+    },
+    "guitarist": {
+      "lane": 2,
+      "file": "guitarist.png",
+      "cell": [
+        92,
+        96
+      ],
+      "columns": 16,
+      "rows": 3,
+      "anims": {
+        "hub": {
+          "row": 0,
+          "frames": 1
+        },
+        "riot": {
+          "row": 1,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot2": {
+          "row": 2,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "idle": {
+          "row": 0,
+          "frames": 1
+        }
+      },
+      "footY": 79,
+      "height": 62
+    },
+    "drummer": {
+      "lane": 3,
+      "file": "drummer.png",
+      "cell": [
+        96,
+        92
+      ],
+      "columns": 16,
+      "rows": 3,
+      "anims": {
+        "hub": {
+          "row": 0,
+          "frames": 1
+        },
+        "riot": {
+          "row": 1,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot2": {
+          "row": 2,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "idle": {
+          "row": 0,
+          "frames": 1
+        }
+      },
+      "footY": 77,
+      "height": 62
+    }
+  },
+  "drumkit": {
+    "file": "drumkit.png",
+    "size": [
+      62,
+      58
+    ]
+  }
+}

@@ -1,8 +1,9 @@
 # Next steps (handoff)
 
-_Last updated: v0.9.1._
+_Last updated: v0.10._
 
 ## Where things stand
+- **v0.10 (owner requests):** a big floating "RIOT MODE!" sign with TV static under the band; the band transforms into PixelLab **Riot versions** of themselves during Riot Mode (glowing bass, flaming guitar and drumsticks, gold flame logo); the guitarist's mic stand and singing only appear in songs he sings (all current songs are hers).
 - **v0.9.1 iPhone fix:** the owner saw misses in the first seconds of a song with no notes on screen. Likely cause: iPhone Safari prepares 3D graphics in a separate process, and the first time notes are drawn the picture can freeze for a few seconds while the music (and judging) keeps going. Fixes: `highway.warmUp()` draws every kind of note once, hidden under the road, at startup and while a song loads; and a **freeze guard** in `rules.js` skips (doesn't count) notes that pass during a freeze of more than 0.25 s. **Waiting on the owner to retest on the iPhone.**
 - **v0.9: call-and-response solos + Big Rock Endings.** *You Won't Let Me Fall* (guitarist) and *Trust God Anyway* (bassist) have solos in their bridges; *You're Not My Plan B* has none (no bridge found; tell me where a solo spot is and it's one line in `songs.js`). All three songs end with a Big Rock Ending (they end on a big hit rather than a fade). **Next ideas:** more ridiculous moments as solo/Riot rewards (MAD SCIENCE, STICK LAUNCH, INFLATABLE DUCK), a daily challenge, and testing everything on a real iPhone.
 - **v0.8: Riot Mode + funny failure.** Gold Riot phrases fill the meter; swipe up to unleash ×2 (up to ×8), no energy loss, +30 energy, and a 2.5-second "swipe to save the show" chance when energy runs out. Game over now plays a sad trombone, rolls a tumbleweed across the stage and gives a silly reason. **Next:** v0.9 call-and-response solos and a Big Rock Ending.

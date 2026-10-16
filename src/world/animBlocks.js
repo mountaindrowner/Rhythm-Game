@@ -72,7 +72,7 @@ export function createDirector(info, name, seed) {
     const chorus = ctx.energy === 'hype';
     if (vocalist === 'guitarist') return true;                      // he's the lead
     if (vocalist === 'duet') return chorus || phrase % 2 === 0;     // trade lines, share choruses
-    return chorus && hash(phrase * 31 + seed) % 2 === 0;           // backing vocals in choruses
+    return false; // her songs: he has no mic, so he just plays
   }
 
   function pickLoop(beat, ctx) {

@@ -49,6 +49,26 @@ To **redo** one (for example because it barely moves), rewrite its prompt and ad
 
 **Cost.** About 90 generations for the 39 new animations plus the mic-stand candidates (2,000 per month on the current plan).
 
+## Riot Mode versions (v0.10)
+
+When Riot Mode starts, the band turns into powered-up versions of themselves. These are PixelLab **states** (variants that keep the same person) of the Retro characters, made with `create_character_state`:
+
+| Musician | Riot version | PixelLab ID |
+|---|---|---|
+| Bassist | glowing neon-green glasses and bass, crackling electricity (still light stubble) | `66aa45e7-b79d-43b7-9df6-65a28e6a632d` |
+| Singer | gold glowing flame logo, fiery ponytail tips, gold mic (still a full-length tee) | `27df0b87-1fb4-49b3-bd39-197be63c1fd9` |
+| Guitarist | guitar on fire, glowing blue wristbands | `be71329d-eeb2-493f-83b0-0292b6ae8432` |
+| Drummer | flaming drumsticks, flame-striped shirt (still clean-shaven) | `1f69307e-b998-4876-a9fc-9bca0a7008bc` |
+
+Each has two 16-frame Riot loops (`riot`, `riot2`) that take turns every 2 bars. They live in `assets/art/pixellab-retro-riot/` (`source.json` has the edit descriptions, `animations.json` the recipe), and are made and packed exactly like the main library:
+
+```bash
+python3 scripts/pixellab/animate.py assets/art/pixellab-retro-riot
+python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro-riot/source.json
+```
+
+Cost: about 100 generations (4 states and 8 animations).
+
 ## The HD band
 
 ### What was made

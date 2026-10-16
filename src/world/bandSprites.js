@@ -125,6 +125,27 @@ export function createSpriteBand(scene, art) {
     };
   });
 
+  // RIOT MODE versions (if this art set has them): a second plane per
+  // musician, hidden until Riot Mode starts. Same pixel size as the normal
+  // band, so they swap in exactly in place.
+  if (art.riot) {
+    for (const m of members) {
+      const info = art.riot.manifest.members[m.name];
+      if (!info) continue;
+      const [cw, ch] = info.cell;
+      const geo = new THREE.PlaneGeometry(cw * PX, ch * PX);
+      geo.translate(0, info.footY * PX - (ch * PX) / 2, 0);
+      const tex = pixelTexture(art.riot.urls[m.name]);
+      tex.repeat.set(1 / info.columns, 1 / info.rows);
+      const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      group.add(mesh);
+      m.riot = { info, tex, mat, mesh };
+    }
+  }
+  let riotOn = false;
+
   // The drum kit sits in front of the drummer and hides his legs.
   const kitInfo = manifest.drumkit;
   const kitW = kitInfo.size[0] * PX * kitScale;
@@ -136,8 +157,9 @@ export function createSpriteBand(scene, art) {
   group.add(kit);
 
   // Props: extra objects on stage that belong to a musician, like the
-  // guitarist's mic stand (so he can sing too). Each is scaled so the mic
-  // sits at mouth height for its owner.
+  // guitarist's mic stand. Each is scaled so the mic sits at mouth height for
+  // its owner. The mic stand only shows in songs he sings (see setVocalist).
+  const micStands = [];
   for (const [name, prop] of Object.entries(manifest.props || {})) {
     const owner = SPOTS[prop.for];
     const ownerInfo = manifest.members[prop.for];
@@ -150,6 +172,7 @@ export function createSpriteBand(scene, art) {
     // the mic pointing back at his face.
     mesh.position.set(owner.x - 1.25, owner.y, owner.z + 0.35);
     group.add(mesh);
+    if (name === 'micstand') micStands.push(mesh);
   }
 
   let defeated = false;
@@ -187,7 +210,11 @@ export function createSpriteBand(scene, art) {
       }
     },
     /** Who sings lead in this song: 'singer', 'guitarist' or 'duet'. */
-    setVocalist(v) { for (const m of members) m.director?.setVocalist(v); },
+    setVocalist(v) {
+      for (const m of members) m.director?.setVocalist(v);
+      // The guitarist only gets a mic in his songs (or duets).
+      for (const mic of micStands) mic.visible = v === 'guitarist' || v === 'duet';
+    },
     /**
      * SHRED! (a gold-medal solo): the soloist floats up off the stage for 5
      * seconds, wobbling with joy, then comes back down.
@@ -196,11 +223,21 @@ export function createSpriteBand(scene, art) {
       const m = members.find((each) => each.name === name);
       if (m) { m.shredStart = t; m.director?.celebrate(); }
     },
+    /** Riot Mode on/off: swap every musician to (or back from) their Riot version. */
+    setRiot(on) {
+      riotOn = on;
+      for (const m of members) {
+        if (!m.riot) continue;
+        m.riot.mesh.visible = on;
+        m.mesh.visible = !on;
+      }
+    },
     /** The song finished: the band cheers, then bows. */
     finale() { for (const m of members) m.director?.finale(); },
     reset() {
       defeated = false;
       for (const m of members) { m.lastHit = m.lastMistake = m.shredStart = -99; m.hitStrength = 0; m.director?.reset(); }
+      this.setRiot(false);
     },
     setDefeated(v) { defeated = v; },
     setVisible(v) { group.visible = v; },
@@ -227,6 +264,13 @@ export function createSpriteBand(scene, art) {
         if (m.director) {
           const pick = m.director.update(beat, ctx);
           show(m, pick.anim, pick.frame);
+          if (riotOn && m.riot) {
+            // Riot version: its two wild loops take turns every 2 bars.
+            const anim = Math.floor(beat / 8) % 2 ? 'riot2' : 'riot';
+            const a = m.riot.info.anims[anim];
+            const frame = Math.floor((((beat / 2) % 1) + 1) % 1 * a.frames);
+            m.riot.tex.offset.set(frame / m.riot.info.columns, 1 - (a.row + 1) / m.riot.info.rows);
+          }
         } else if (defeated) show(m, 'mistake', 3); // slumped
         else if (missing) show(m, 'mistake', Math.floor((sinceMiss / MISTAKE_TIME) * m.info.anims.mistake.frames));
         else if (accenting) show(m, 'accent', Math.floor((sinceHit / ACCENT_TIME) * m.info.anims.accent.frames));
@@ -285,6 +329,13 @@ export function createSpriteBand(scene, art) {
 
         const flash = sinceMiss >= 0 && sinceMiss < 0.3 ? 0.6 : 1; // red flash on a miss
         m.mat.color.setRGB(1, flash, flash);
+        if (m.riot) {
+          // The Riot version moves exactly like the normal one.
+          m.riot.mesh.position.copy(m.mesh.position);
+          m.riot.mesh.rotation.z = tilt;
+          m.riot.mesh.scale.set(sx, sy, 1);
+          m.riot.mat.color.setRGB(1, flash, flash);
+        }
 
         if (sinceHit >= 0 && sinceHit < 0.45) {
           const s = 1 + sinceHit * 5;

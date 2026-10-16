@@ -190,12 +190,16 @@ function handle(e) {
   } else if (e.type === 'riotStart') {
     player.sfx('riot');
     showfx.setRiot(true);
+    showfx.transform();
+    band.setRiot?.(true); // the band turns into their Riot versions
     highway.setRiot(true);
-    hud.banner(lastChanceUntil ? 'SAVED BY THE RIOT!' : 'RIOT MODE! ×2');
+    if (lastChanceUntil) hud.banner('SAVED BY THE RIOT!'); // (the big sign on stage says RIOT MODE)
     lastChanceUntil = 0;
     kick(1);
   } else if (e.type === 'riotEnd') {
     showfx.setRiot(false);
+    showfx.transform();
+    band.setRiot?.(false);
     highway.setRiot(false);
     hud.banner('RIOT OVER!');
   }
@@ -325,6 +329,7 @@ function resumeGame() {
 
 function quitGame() {
   status = 'menu';
+  band.setRiot?.(false);
   highway.setFreestyle(false);
   player.stop();
   showfx.clear();
@@ -344,6 +349,7 @@ function failGame() {
   perf.cancelHolds();
   player.powerDown();
   band.setDefeated(true);
+  band.setRiot?.(false);
   highway.setRiot(false);
   hud.banner("SHOW'S OVER!");
   // Make it funny, not sad: a sad trombone, and a tumbleweed rolls past.

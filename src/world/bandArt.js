@@ -21,6 +21,12 @@ import retroDrummer from '../../assets/art/pixellab-retro/drummer.png';
 import retroKit from '../../assets/art/pixellab-retro/drumkit.png';
 import retroMic from '../../assets/art/pixellab-retro/micstand.png';
 
+import riotManifest from '../../assets/art/pixellab-retro-riot/band.json';
+import riotBassist from '../../assets/art/pixellab-retro-riot/bassist.png';
+import riotSinger from '../../assets/art/pixellab-retro-riot/singer.png';
+import riotGuitarist from '../../assets/art/pixellab-retro-riot/guitarist.png';
+import riotDrummer from '../../assets/art/pixellab-retro-riot/drummer.png';
+
 /** 128 px, fully animated (play / accent / mistake). */
 export const HD_ART = {
   manifest: hdManifest,
@@ -37,5 +43,11 @@ export const RETRO_ART = {
   urls: {
     bassist: retroBassist, singer: retroSinger, guitarist: retroGuitarist, drummer: retroDrummer,
     drumkit: retroKit, micstand: retroMic,
+  },
+  // RIOT MODE versions of the band (powered-up PixelLab variants: glowing
+  // bass, flaming guitar and drumsticks...), swapped in while Riot Mode is on.
+  riot: {
+    manifest: riotManifest,
+    urls: { bassist: riotBassist, singer: riotSinger, guitarist: riotGuitarist, drummer: riotDrummer },
   },
 };
