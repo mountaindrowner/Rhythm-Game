@@ -7,6 +7,7 @@
 //   * tapping pads gets judged, pause freezes time, resume continues
 //   * every band look (Retro / HD pixel / 3D models / classic) can be selected
 //   * the game's per-frame work stays inside a smoothness budget
+//   * Riot Mode: a finger swipe up on the pads saves a show that's out of energy
 //   * running out of energy ends the show (game over)
 //   * the timing check measures taps and sets the tap offset
 //   * the page never downloads anything from the internet
@@ -174,7 +175,26 @@ await page.click('#settingsDone');
 await page.click('[data-diff="expert"]');
 await page.click('#startBtn');
 await waitFor('playing');
-await waitFor('failed', 60000);
+
+// Riot Mode rescue: with a full Riot meter, running out of energy gives a
+// moment to swipe up. A real finger-style swipe (press on a pad, slide up).
+await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.energy < 30, null, { timeout: 60000 });
+await page.evaluate(() => window.__BURN_BRIGHT_TEST__.fillRiot());
+await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.lastChance, null, { timeout: 60000 });
+s = await state();
+check(s.status === 'playing' && s.energy === 0, 'out of energy with Riot ready: the show waits for a swipe');
+// (No screenshot here: the rescue window is only 2.5 s and screenshots are slow.)
+const padBox = await page.locator('#pads').boundingBox();
+await page.mouse.move(padBox.x + padBox.width * 0.6, padBox.y + padBox.height * 0.5);
+await page.mouse.down();
+await page.mouse.move(padBox.x + padBox.width * 0.6, padBox.y - 90, { steps: 6 });
+await page.mouse.up();
+await page.waitForTimeout(300);
+s = await state();
+check(s.riotActive && s.energy > 0 && s.status === 'playing', `swipe up unleashed Riot Mode and saved the show (energy ${s.energy})`);
+await snap('09b-riot-mode');
+
+await waitFor('failed', 90000);
 await page.waitForTimeout(400);
 await snap('09-game-over');
 check((await page.textContent('#headline')).includes("SHOW'S OVER"), 'running out of energy shows the game-over screen');

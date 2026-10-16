@@ -7,17 +7,26 @@
 //
 // Improvement over the original: we COUNT how many fingers/keys hold each
 // lane, so lifting one of two fingers on the same pad doesn't end a hold.
+//
+// SWIPE UP (Riot Mode): a finger that moves up quickly (45+ pixels within
+// half a second) counts as a swipe, whether it started on a pad or anywhere
+// on the stage above them. Space does the same on a keyboard.
 // =============================================================================
+const SWIPE_PX = 45;
+const SWIPE_MS = 500;
 import { LANES } from '../config.js';
 
 export class Input {
   /**
    * @param {HTMLElement} padArea  element covering the four pads
-   * @param {{onPress:(lane:number)=>void, onRelease:(lane:number)=>void}} handlers
+   * @param {{onPress:(lane:number)=>void, onRelease:(lane:number)=>void, onSwipeUp?:()=>void}} handlers
+   * @param {HTMLElement} [swipeArea]  extra area (the game view) where a swipe up also counts
    */
-  constructor(padArea, { onPress, onRelease }) {
+  constructor(padArea, { onPress, onRelease, onSwipeUp = () => {} }, swipeArea = null) {
     this.onPress = onPress;
     this.onRelease = onRelease;
+    this.onSwipeUp = onSwipeUp;
+    this.swipeStart = new Map(); // pointerId -> { y, time, done }
     this.downCount = [0, 0, 0, 0];
     this.pointerLane = new Map(); // pointerId -> lane
     this.keyLane = new Map();     // key code -> lane
@@ -34,9 +43,16 @@ export class Input {
       padArea.setPointerCapture?.(e.pointerId);
       const lane = laneFromEvent(e);
       this.pointerLane.set(e.pointerId, lane);
+      this.trackSwipe(e);
       this.down(lane);
     });
+    padArea.addEventListener('pointermove', (e) => this.checkSwipe(e));
+    if (swipeArea) {
+      swipeArea.addEventListener('pointerdown', (e) => { if (this.enabled) this.trackSwipe(e); });
+      swipeArea.addEventListener('pointermove', (e) => this.checkSwipe(e));
+    }
     const end = (e) => {
+      this.swipeStart.delete(e.pointerId);
       const lane = this.pointerLane.get(e.pointerId);
       if (lane === undefined) return;
       this.pointerLane.delete(e.pointerId);
@@ -48,6 +64,7 @@ export class Input {
 
     window.addEventListener('keydown', (e) => {
       if (!this.enabled || e.repeat) return;
+      if (e.code === 'Space') { e.preventDefault(); this.onSwipeUp(); return; }
       const lane = LANES.findIndex((l) => l.keys.includes(e.code));
       if (lane < 0) return;
       e.preventDefault();
@@ -60,6 +77,20 @@ export class Input {
       this.keyLane.delete(e.code);
       this.up(lane);
     });
+  }
+
+  trackSwipe(e) {
+    this.swipeStart.set(e.pointerId, { y: e.clientY, time: performance.now(), done: false });
+  }
+
+  checkSwipe(e) {
+    const s = this.swipeStart.get(e.pointerId);
+    if (!s || s.done || !this.enabled) return;
+    if (performance.now() - s.time > SWIPE_MS) return;
+    if (s.y - e.clientY >= SWIPE_PX) {
+      s.done = true; // one swipe per finger
+      this.onSwipeUp();
+    }
   }
 
   down(lane) {
@@ -80,5 +111,6 @@ export class Input {
     this.downCount.fill(0);
     this.pointerLane.clear();
     this.keyLane.clear();
+    this.swipeStart.clear();
   }
 }

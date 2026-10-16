@@ -6,6 +6,8 @@
 //   * CROWD LIGHTS: phone lights swaying in the air (choruses and the bridge)
 //   * STROBE: a quick white flash when a chorus hits (softer with
 //     Settings → Reduce flashing)
+//   * RIOT MODE: everything at full blast (pyro every half bar, lasers)
+//   * TUMBLEWEED: when the show is over, one rolls across the empty stage
 // =============================================================================
 import * as THREE from 'three';
 import { WORLD } from '../config.js';
@@ -58,6 +60,25 @@ export function createShowFx(scene, fans, flashEl) {
   });
   scene.add(new THREE.Points(lightGeo, lightMat));
 
+  // A pixel-art tumbleweed (drawn once into a small canvas) for game over.
+  const tw = document.createElement('canvas');
+  tw.width = tw.height = 32;
+  const twg = tw.getContext('2d');
+  for (let i = 0; i < 70; i++) {
+    const a = (i / 70) * Math.PI * 2 * 3.3;
+    const r = 6 + (i % 9);
+    twg.fillStyle = i % 3 ? '#a8794a' : '#7a5232';
+    twg.fillRect(16 + Math.round(Math.cos(a) * r * 0.9), 16 + Math.round(Math.sin(a * 1.3) * r * 0.8), 2, 2);
+  }
+  const twTex = new THREE.CanvasTexture(tw);
+  twTex.magFilter = THREE.NearestFilter;
+  twTex.colorSpace = THREE.SRGBColorSpace;
+  const tumble = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: twTex, alphaTest: 0.5 }));
+  tumble.visible = false;
+  scene.add(tumble);
+  let tumbleStart = -1;
+
+  let riot = false;
   let lastBar = -1;
   let lastHalf = -1;
   let laserLevel = 0;
@@ -100,6 +121,19 @@ export function createShowFx(scene, fans, flashEl) {
   return {
     setReduceFlashing(v) { reduceFlashing = v; },
 
+    /** Riot Mode on/off. Turning it on fires everything at once. */
+    setRiot(on) {
+      if (on && !riot) {
+        strobe();
+        pyro([0, 1, 2, 3]);
+        confettiBurst(360);
+      }
+      riot = on;
+    },
+
+    /** Game over gag: a tumbleweed rolls across the stage. */
+    tumbleweed() { tumbleStart = -2; }, // starts on the next update
+
     /** A big moment (combo milestone, song finished). */
     celebrate(withConfetti = true) {
       pyro([0, 1, 2, 3]);
@@ -120,6 +154,9 @@ export function createShowFx(scene, fans, flashEl) {
       fire.clear();
       confetti.clear();
       lastBar = lastHalf = -1;
+      riot = false;
+      tumbleStart = -1;
+      tumble.visible = false;
     },
 
     /**
@@ -130,8 +167,8 @@ export function createShowFx(scene, fans, flashEl) {
      * @param {number} dt
      */
     update(time, beat, section, live, dt) {
-      const big = live && (section.includes('CHORUS') || section === 'OUTRO');
-      const final = section.startsWith('FINAL') || section === 'OUTRO';
+      const big = live && (riot || section.includes('CHORUS') || section === 'OUTRO');
+      const final = riot || section.startsWith('FINAL') || section === 'OUTRO';
 
       // Pyro on each bar's downbeat during choruses (every half bar in the finale).
       const bar = Math.floor(beat / 4);
@@ -142,7 +179,7 @@ export function createShowFx(scene, fans, flashEl) {
       lastHalf = half;
 
       // Lasers fade in for choruses (and a little for builds).
-      const laserGoal = big ? 0.5 : live && section.includes('BUILD') ? 0.2 : 0;
+      const laserGoal = riot && live ? 0.9 : big ? 0.5 : live && section.includes('BUILD') ? 0.2 : 0;
       laserLevel += (laserGoal - laserLevel) * (1 - Math.exp(-dt * 4));
       const [main, accent] = moodFor(section);
       lasers.forEach((l, i) => {
@@ -164,6 +201,16 @@ export function createShowFx(scene, fans, flashEl) {
         lightPos[i * 3 + 2] = f.z;
       });
       lightGeo.attributes.position.needsUpdate = true;
+
+      // The tumbleweed bounces across the front of the stage in 4.5 seconds.
+      if (tumbleStart === -2) tumbleStart = time;
+      if (tumbleStart >= 0) {
+        const k = (time - tumbleStart) / 4.5;
+        tumble.visible = k < 1;
+        tumble.position.set(-11 + 22 * k, TOP + 0.75 + Math.abs(Math.sin(k * 14)) * 0.7, Z0 + 0.3);
+        tumble.rotation.z = -k * 24;
+        if (k >= 1) tumbleStart = -1;
+      }
 
       pyroFlash = Math.max(0, pyroFlash - dt * 3);
       pyroLight.intensity = pyroFlash * 60;

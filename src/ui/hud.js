@@ -36,6 +36,7 @@ export function createHud() {
     score: $('score'), combo: $('combo'), life: $('lifeFill'), section: $('sectionName'),
     clock: $('clock'), progress: $('progressFill'), judgement: $('judgement'),
     countIn: $('countIn'), banner: $('banner'), mult: $('mult'),
+    riotFill: $('riotFill'), riotRow: $('riotFill').closest('.riot-row'), riotHint: $('riotHint'),
   };
   let shown = {}; // cache so we only touch the page when something changes
 
@@ -79,6 +80,21 @@ export function createHud() {
         n.dataset.level = Math.min(4, v);
         if (rising) { n.classList.remove('up'); void n.offsetWidth; n.classList.add('up'); }
       });
+      // Riot meter, and the "swipe up" hint when it's ready (or can save the show).
+      set('riotFill', el.riotFill, Math.round(perf.riotMeter * 100), (n, v) => { n.style.width = `${v}%`; });
+      set('riotState', el.riotRow, perf.riotActive ? 'active' : perf.riotReady ? 'ready' : '', (n, v) => {
+        n.classList.toggle('active', v === 'active');
+        n.classList.toggle('ready', v === 'ready');
+        el.mult.classList.toggle('riot', v === 'active');
+        document.getElementById('phone').classList.toggle('riot', v === 'active');
+      });
+      const save = perf.riotReady && perf.energy <= 25;
+      const hint = perf.riotReady ? (save ? '⬆ SWIPE UP TO SAVE THE SHOW!' : '⬆ SWIPE UP FOR RIOT MODE!') : '';
+      set('riotHint', el.riotHint, hint, (n, v) => {
+        n.hidden = !v;
+        n.textContent = v;
+        n.classList.toggle('save', v.includes('SAVE'));
+      });
       set('life', el.life, Math.round(perf.energy), (n, v) => { n.style.width = `${v}%`; });
       set('section', el.section, section, text);
       const secs = Math.floor(songTime);
@@ -98,6 +114,8 @@ export function createHud() {
       el.countIn.textContent = '';
       el.judgement.classList.remove('pop');
       el.banner.classList.remove('pop');
+      el.riotHint.hidden = true;
+      document.getElementById('phone').classList.remove('riot');
     },
   };
 }

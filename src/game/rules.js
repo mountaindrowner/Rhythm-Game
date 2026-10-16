@@ -8,7 +8,7 @@
 // listen to those events to draw sparks, animate the band, update the HUD.
 // Keeping the rules separate makes them easy to test (see tests/unit/).
 // =============================================================================
-import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS } from '../config.js';
+import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS, RIOT } from '../config.js';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -35,11 +35,26 @@ export function starsFor(score, best, { expert = false, fullCombo = false } = {}
 export class Performance {
   /**
    * @param {Array} notes  from notesForDifficulty()
-   * @param {{drain?:number}} options  drain scales energy lost from mistakes
+   * @param {{drain?:number, beatLength?:number}} options  drain scales energy
+   *   lost from mistakes; beatLength (seconds) sets how long Riot Mode lasts
    */
-  constructor(notes, { drain = 1 } = {}) {
+  constructor(notes, { drain = 1, beatLength = 0.4 } = {}) {
     this.notes = notes;
     this.drain = drain;
+    this.beatLength = beatLength;
+    // Riot Mode: the meter (0..1), whether it's running, and each gold
+    // phrase's progress: { notes in it, hit so far, broken by a miss }.
+    this.riotMeter = 0;
+    this.riotActive = false;
+    this.riotUses = 0;
+    this.lastUpdate = null;
+    this.lastWrong = null;
+    this.phrases = new Map();
+    for (const n of notes) {
+      if (!n.riot) continue;
+      if (!this.phrases.has(n.riot)) this.phrases.set(n.riot, { total: 0, hit: 0, broken: false });
+      this.phrases.get(n.riot).total++;
+    }
     this.total = notes.length;
     this.score = 0;
     this.combo = 0;
@@ -77,6 +92,8 @@ export class Performance {
       // Pressing during the count-in is free practice; after that it's a mistake.
       if (t >= LEAD - 0.02 && t - this.lastMistake[lane] > WRONG_PRESS_COOLDOWN) {
         this.counts.wrong++;
+        // Remember what this cost, in case it was really the start of a swipe.
+        this.lastWrong = { lane, t, combo: this.combo, energy: this.energy };
         return this.mistake(lane, t, 'wrong', ENERGY.wrong);
       }
       return { type: 'press', lane };
@@ -96,8 +113,15 @@ export class Performance {
     this.judged++;
     if (best.hold > 0) this.holding[lane] = best;
     else best.done = true;
+    // Riot phrase: every note hit = more meter.
+    let riotPhrase = false;
+    const phrase = best.riot && this.phrases.get(best.riot);
+    if (phrase && !phrase.broken && ++phrase.hit === phrase.total) {
+      this.riotMeter = Math.min(1, this.riotMeter + RIOT.perPhrase);
+      riotPhrase = true;
+    }
     return {
-      type: 'hit', lane, grade, note: best, timing,
+      type: 'hit', lane, grade, note: best, timing, riotPhrase,
       combo: this.combo,
       milestone: this.combo % SCORE.comboMilestone === 0,
     };
@@ -137,7 +161,24 @@ export class Performance {
         n.done = true;
         this.counts.miss++;
         this.judged++;
+        const phrase = n.riot && this.phrases.get(n.riot);
+        if (phrase && !phrase.broken) {
+          phrase.broken = true; // a missed gold note loses that phrase (its notes turn normal)
+          for (const other of this.notes) if (other.riot === n.riot) other.riotBroken = true;
+        }
         events.push(this.mistake(n.lane, t, 'miss', ENERGY.miss));
+      }
+    }
+    // Riot Mode drains the meter: a full meter lasts RIOT.fullBeats beats.
+    const dt = this.lastUpdate === null ? 0 : Math.max(0, t - this.lastUpdate);
+    this.lastUpdate = t;
+    if (this.riotActive) {
+      this.riotMeter -= dt / (RIOT.fullBeats * this.beatLength);
+      if (this.riotMeter <= 0) {
+        this.riotMeter = 0;
+        this.riotActive = false;
+        this.bonusFactor = 1;
+        events.push({ type: 'riotEnd' });
       }
     }
     // Move the cursor past notes that are completely finished.
@@ -175,8 +216,37 @@ export class Performance {
   mistake(lane, t, kind, energyChange) {
     this.lastMistake[lane] = t;
     this.combo = 0;
-    this.energy = clamp(this.energy + energyChange * this.drain, 0, 100);
+    // In Riot Mode the crowd forgives everything: no energy lost.
+    if (!this.riotActive) this.energy = clamp(this.energy + energyChange * this.drain, 0, 100);
     return { type: 'mistake', kind, lane };
+  }
+
+  /** Can Riot Mode be unleashed right now? */
+  get riotReady() {
+    return !this.riotActive && this.riotMeter >= RIOT.minToUse - 1e-9;
+  }
+
+  /**
+   * Unleash Riot Mode (from a swipe up). Doubles the multiplier, gives back
+   * some energy (this is what rescues a show that's about to end), and runs
+   * until the meter empties. Returns an event, or null if it isn't ready.
+   */
+  activateRiot(t) {
+    if (!this.riotReady) return null;
+    // A swipe that started on a pad also counted as a tap; if that tap was a
+    // wrong note, undo its penalty.
+    if (this.lastWrong && t - this.lastWrong.t < 0.45) {
+      this.counts.wrong--;
+      this.combo = this.lastWrong.combo;
+      this.energy = this.lastWrong.energy;
+      this.lastWrong = null;
+    }
+    this.riotActive = true;
+    this.riotUses++;
+    this.bonusFactor = 2;
+    this.energy = clamp(this.energy + RIOT.rescue, 0, 100);
+    this.lastUpdate = t;
+    return { type: 'riotStart' };
   }
 
   /** Weighted accuracy: perfect = 100%, great = 85%, good = 65%, miss = 0%. */

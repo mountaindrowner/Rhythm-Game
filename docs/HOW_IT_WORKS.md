@@ -43,7 +43,9 @@ Taps take a shortcut: `input.js` calls `perf.press(lane, t)` the instant your fi
 - **Score:** each hit is worth its grade's points (PERFECT 100, GREAT 70, GOOD 40) × the **multiplier**. The multiplier is ×1, then ×2 after 10 hits in a row, ×3 after 20 and ×4 after 30, shown as a badge by the combo. A miss resets it.
 - **EARLY / LATE:** every hit records how far off it was. GREAT and GOOD say EARLY or LATE under the judgement. The results screen counts them; if your taps were usually more than about 25 ms off, it offers to fix your timing setting.
 - **Stars:** your score as a share of a perfect run (`perfectScore()`): 8% = 1 star … 75% = 5 stars. **Gold stars** = an Expert full combo with 5 stars. Your best for every song and difficulty is saved by `src/progress.js` and shown in the song picker.
-- All the numbers come from `src/config.js` (`SCORE`, `STARS`, `ENERGY`).
+- **Riot Mode:** gold Riot phrases (`markRiotPhrases` in `chart.js`) fill `riotMeter`; `activateRiot()` doubles `bonusFactor`, gives energy back and stops energy loss; `update()` drains the meter over 8 bars. `input.js` turns a quick upward finger slide (45+ px in half a second) into a swipe. If energy hits 0 with Riot ready, `main.js` waits `RIOT.lastChance` seconds for a swipe before calling it a game over.
+- **Game over is funny:** a synthesized sad trombone (`player.sfx('trombone')`), a pixel tumbleweed rolling across the stage (`showfx.tumbleweed()`), and a random silly reason on the results screen (`FAIL_LINES` in `main.js`).
+- All the numbers come from `src/config.js` (`SCORE`, `STARS`, `ENERGY`, `RIOT`).
 
 Try it: change `WINDOWS.perfect` in `config.js` to `0.08` and the game becomes much more forgiving. Run `npm test` to see which rules tests notice.
 

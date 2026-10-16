@@ -211,6 +211,30 @@ html, body {
 .timing-tip { border: 1px dashed rgba(255, 190, 59, 0.6); border-radius: 14px; padding: 8px 10px; }
 .timing-tip p { margin: 0 0 6px; font-size: 12px; color: var(--cream); line-height: 1.4; }
 .timing-tip button { width: 100%; min-height: 40px; font-size: 13px; }
+
+/* ---- Riot Mode ---- */
+.riot-row span { color: #ffd27a; }
+#riotFill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #ffbe3b, #ff6a3d); transition: width 0.2s; }
+.riot-row.ready .life-bar { box-shadow: 0 0 10px #ffbe3b; }
+.riot-row.active #riotFill { background: linear-gradient(90deg, #fff2b0, #ffbe3b, #ff4f8b); transition: none; }
+#riotHint {
+  position: absolute; left: 0; right: 0; top: 21%; z-index: 4;
+  text-align: center; pointer-events: none;
+  padding: 0 16px; font: 900 15px var(--font); letter-spacing: 1px; color: #ffd27a;
+  text-shadow: 0 2px 0 #000a, 0 0 16px #ff9b3b;
+  animation: riot-pulse 0.7s ease-in-out infinite alternate;
+}
+#riotHint[hidden] { display: none; }
+#riotHint.save { color: #ff8a8a; text-shadow: 0 2px 0 #000a, 0 0 18px #ff4f4f; font-size: 16px; }
+@keyframes riot-pulse { from { transform: translateY(0) scale(1); opacity: 0.75; } to { transform: translateY(-6px) scale(1.06); opacity: 1; } }
+/* The whole screen glows gold around the edges during Riot Mode */
+#phone.riot::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  box-shadow: inset 0 0 50px rgba(255, 190, 59, 0.55);
+  animation: riot-glow 0.42s ease-in-out infinite alternate;
+}
+@keyframes riot-glow { from { opacity: 0.55; } to { opacity: 1; } }
+.mult.riot { background: linear-gradient(90deg, #ffbe3b, #ff4f8b); color: #1d1533; border-color: #fff2d1; box-shadow: 0 0 14px #ffbe3b; }
 button {
   font: 900 14px var(--font);
   color: var(--cream);

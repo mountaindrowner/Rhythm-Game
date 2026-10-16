@@ -47,15 +47,17 @@ export function createHighway(scene) {
   });
 
   // Lane dividers and glowing outer rails.
+  const dividerMat = new THREE.MeshBasicMaterial({ color: '#6f8fe0', transparent: true, opacity: 0.55 });
   for (let i = 0; i <= 4; i++) {
     const outer = i === 0 || i === 4;
     const rail = new THREE.Mesh(
       new THREE.BoxGeometry(outer ? 0.09 : 0.03, outer ? 0.08 : 0.02, roadLen),
-      new THREE.MeshBasicMaterial({ color: outer ? '#ffd27a' : '#6f8fe0', transparent: !outer, opacity: outer ? 1 : 0.55 }),
+      outer ? new THREE.MeshBasicMaterial({ color: '#ffd27a' }) : dividerMat,
     );
     rail.position.set(-HALF + i * LW, 0.02, road.position.z);
     group.add(rail);
   }
+  let riot = false; // Riot Mode: the dividers turn gold and the lanes glow
 
   // ---- Beat lines that scroll toward you in time with the music ------------
   const beatMat = new THREE.MeshBasicMaterial({ color: '#ffd9a0', transparent: true, opacity: 0.12, depthWrite: false });
@@ -103,14 +105,24 @@ export function createHighway(scene) {
   }));
   const capMat = new THREE.MeshStandardMaterial({ color: '#fff6dc', emissive: '#fff1c4', emissiveIntensity: 0.6 });
   const missMat = new THREE.MeshStandardMaterial({ color: '#4a4458', roughness: 0.8 });
+  // Riot phrase notes keep their lane color but wear a glowing gold cap.
+  const riotCapMat = new THREE.MeshStandardMaterial({ color: '#ffd24a', emissive: '#ffb020', emissiveIntensity: 1.2 });
+  // ...and a glowing gold ring around them, so they stand out on a small screen.
+  const haloGeo = new THREE.RingGeometry(0.46, 0.7, 32);
+  haloGeo.rotateX(-Math.PI / 2);
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: '#ffc83a', transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
   const gems = Array.from({ length: 90 }, () => {
     const g = new THREE.Group();
     const puck = new THREE.Mesh(puckGeo, gemMats[0]);
     const cap = new THREE.Mesh(capGeo, capMat);
-    g.add(puck, cap);
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+    halo.position.y = -0.04;
+    g.add(puck, cap, halo);
     g.visible = false;
     group.add(g);
-    return { g, puck, cap };
+    return { g, puck, cap, halo };
   });
 
   // Long-note trails (pooled)
@@ -179,12 +191,17 @@ export function createHighway(scene) {
         gem.g.position.set(laneX(n.lane), 0.1, z);
         gem.puck.material = n.miss ? missMat : gemMats[n.lane];
         gem.cap.visible = !n.miss;
-        // Grow slightly as they arrive, and spin a hold note's head while held.
-        const s = n.hold > 0 ? 1.08 : 1;
+        const golden = n.riot && !n.riotBroken && !n.miss;
+        gem.cap.material = golden ? riotCapMat : capMat;
+        gem.halo.visible = !!golden;
+        // Grow slightly as they arrive (gold ones a bit more), and spin a
+        // hold note's head while held.
+        const s = n.hold > 0 ? 1.08 : golden ? 1.12 : 1;
         gem.g.scale.set(s, s, s);
         gem.g.rotation.y = isHolding ? t * 8 : 0;
       }
     }
+    haloMat.opacity = 0.8 + 0.2 * Math.sin(t * 12); // gold rings shimmer
     for (; gi < gems.length; gi++) gems[gi].g.visible = false;
     for (; ti < tails.length; ti++) tails[ti].visible = false;
 
@@ -210,9 +227,16 @@ export function createHighway(scene) {
       r.glow.material.opacity = (held ? 0.35 : 0) + f * 0.6;
       const s = 1 + (held ? 0.12 : 0) + f * 0.25;
       r.ring.scale.set(s, s, s);
-      strips[lane].material.opacity = held ? 0.2 : 0.06;
+      strips[lane].material.opacity = (held ? 0.2 : 0.06) + (riot ? 0.08 + 0.06 * Math.sin(t * 10) : 0);
     });
   }
 
-  return { group, update, setNotes, flash };
+  /** Riot Mode on/off: gold lane dividers and pulsing lanes. */
+  function setRiot(on) {
+    riot = on;
+    dividerMat.color.set(on ? '#ffd24a' : '#6f8fe0');
+    dividerMat.opacity = on ? 0.9 : 0.55;
+  }
+
+  return { group, update, setNotes, flash, setRiot };
 }

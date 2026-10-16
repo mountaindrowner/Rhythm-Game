@@ -388,7 +388,7 @@ export function createBand3D(scene) {
       const m = members[e.lane];
       // Normal hits get a small bounce; a combo milestone (every 25 in a row)
       // makes the WHOLE band do their big move.
-      if (e.type === 'hit' && e.milestone) {
+      if ((e.type === 'hit' && e.milestone) || e.type === 'riotStart') {
         for (const each of members) { each.lastHit = t; each.hitStrength = 1; }
       } else if (e.type === 'hit' || e.type === 'holdComplete') {
         m.lastHit = t;

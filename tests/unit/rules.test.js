@@ -142,3 +142,55 @@ test('easier difficulties drain less energy per miss', () => {
   p.update(LEAD + 1.5);
   assert.equal(p.energy, ENERGY.start + ENERGY.miss * 0.5);
 });
+
+// ---- Riot Mode ---------------------------------------------------------------
+const gold = (time, lane, id) => ({ ...note(time, lane), riot: id });
+
+test('playing every note of a gold phrase fills a quarter of the Riot meter', () => {
+  const p = new Performance([gold(1, 0, 1), gold(1.5, 1, 1), gold(2, 2, 1)]);
+  p.press(0, LEAD + 1);
+  p.press(1, LEAD + 1.5);
+  assert.equal(p.riotMeter, 0);
+  const e = p.press(2, LEAD + 2);
+  assert.equal(e.riotPhrase, true);
+  assert.equal(p.riotMeter, 0.25);
+});
+
+test('missing a gold note loses that phrase', () => {
+  const p = new Performance([gold(1, 0, 1), gold(2, 1, 1)]);
+  p.update(LEAD + 1.3); // first gold note goes by
+  p.press(1, LEAD + 2);
+  assert.equal(p.riotMeter, 0);
+});
+
+test('Riot Mode: needs half a meter, doubles the multiplier, rescues energy, forgives misses, then ends', () => {
+  const notes = [note(1, 0), note(2, 0), note(3, 0)];
+  const p = new Performance(notes, { beatLength: 0.5 });
+  p.riotMeter = 0.25;
+  assert.equal(p.activateRiot(LEAD), null); // not enough yet
+  p.riotMeter = 0.5;
+  p.energy = 5;
+  assert.equal(p.activateRiot(LEAD).type, 'riotStart');
+  assert.equal(p.energy, 35);               // +30 rescue
+  p.press(0, LEAD + 1);
+  assert.equal(p.multiplier, 2);            // ×1 streak × 2 Riot
+  assert.equal(p.score, 200);
+  p.update(LEAD + 2.3);                     // a miss during Riot...
+  assert.equal(p.energy, 35 + ENERGY.perfect); // ...costs no energy
+  // Half a meter lasts 16 beats = 8 s at 0.5 s per beat.
+  const ended = p.update(LEAD + 8.1).find((e) => e.type === 'riotEnd');
+  assert.ok(ended);
+  assert.equal(p.riotActive, false);
+  assert.equal(p.multiplier, 1);
+});
+
+test('a swipe that starts on an empty pad gets its wrong-note penalty back', () => {
+  const p = new Performance([note(5, 0)]);
+  p.riotMeter = 1;
+  const before = p.energy;
+  p.press(2, LEAD + 1);                     // the swipe's first touch: a wrong note
+  assert.equal(p.counts.wrong, 1);
+  p.activateRiot(LEAD + 1.2);
+  assert.equal(p.counts.wrong, 0);
+  assert.equal(p.energy, Math.min(100, before + 30));
+});

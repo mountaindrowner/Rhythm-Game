@@ -94,6 +94,83 @@ export class SongPlayer {
     this.master.gain.linearRampToValueAtTime(0, now + 1.5);
   }
 
+  /**
+   * Little sound effects, made from scratch with oscillators (no extra
+   * files). They play on top of the music.
+   *   'riot'     a rising whoosh and a big power chord (Riot Mode!)
+   *   'trombone' the classic "wah wah wah waaah" (the show is over)
+   */
+  sfx(name) {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+    const out = ctx.createGain();
+    out.connect(ctx.destination);
+    if (name === 'riot') {
+      // Whoosh: white noise through a filter that sweeps up.
+      const noise = ctx.createBufferSource();
+      const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(300, now);
+      bp.frequency.exponentialRampToValueAtTime(6000, now + 0.6);
+      noise.connect(bp).connect(out);
+      out.gain.setValueAtTime(0.0001, now);
+      out.gain.exponentialRampToValueAtTime(0.35, now + 0.5);
+      out.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+      noise.start(now);
+      noise.stop(now + 1.6);
+      // Power chord (root, fifth, octave) with a bit of grit, hitting as the whoosh peaks.
+      for (const f of [110, 165, 220]) {
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now + 0.5);
+        g.gain.exponentialRampToValueAtTime(0.12, now + 0.55);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+        o.connect(g).connect(out);
+        o.start(now + 0.5);
+        o.stop(now + 1.7);
+      }
+    } else if (name === 'trombone') {
+      // Four sad notes sliding down, the last one long and wobbly.
+      const notes = [[293.7, 0, 0.42], [277.2, 0.45, 0.42], [261.6, 0.9, 0.42], [246.9, 1.35, 1.3]];
+      out.gain.value = 0.3;
+      for (const [f, at, len] of notes) {
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(f * 1.02, now + at);
+        o.frequency.linearRampToValueAtTime(f, now + at + 0.08);
+        const lp = ctx.createBiquadFilter(); // the "wah": a filter opening and closing
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(400, now + at);
+        lp.frequency.linearRampToValueAtTime(1400, now + at + 0.15);
+        lp.frequency.linearRampToValueAtTime(500, now + at + len);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now + at);
+        g.gain.exponentialRampToValueAtTime(0.5, now + at + 0.05);
+        g.gain.setValueAtTime(0.5, now + at + len - 0.1);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + at + len);
+        if (len > 1) { // wobble on the last note
+          const lfo = ctx.createOscillator();
+          lfo.frequency.value = 6;
+          const depth = ctx.createGain();
+          depth.gain.value = 6;
+          lfo.connect(depth).connect(o.frequency);
+          lfo.start(now + at + 0.2);
+          lfo.stop(now + at + len);
+        }
+        o.connect(lp).connect(g).connect(out);
+        o.start(now + at);
+        o.stop(now + at + len + 0.05);
+      }
+    }
+  }
+
   /** Game time in seconds (0 = moment Start was pressed, LEAD = song begins). */
   get time() {
     return this.ctx && this.playing ? this.ctx.currentTime - this.begin : 0;

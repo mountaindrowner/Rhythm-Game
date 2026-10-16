@@ -180,6 +180,10 @@ export function createSpriteBand(scene, art) {
         m.lastMistake = t;
         m.director?.mistake();
       }
+      if (e.type === 'riotStart') {
+        // RIOT MODE! Everyone does their big move at once.
+        for (const each of members) { each.lastHit = t; each.hitStrength = 1; each.director?.accent(true); }
+      }
     },
     /** Who sings lead in this song: 'singer', 'guitarist' or 'duet'. */
     setVocalist(v) { for (const m of members) m.director?.setVocalist(v); },

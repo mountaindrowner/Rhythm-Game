@@ -32,7 +32,9 @@
 
 ---
 
-## 3. Riot Mode (the big power-up)
+## 3. Riot Mode (the big power-up) — **built in v0.8**
+
+> **As built (v0.8):** gold **Riot phrases** (one bar in every 8, marked in `chart.js` → `markRiotPhrases`) fill 25% each when you hit every note in them; a missed gold note loses that phrase. At **50%+** a **swipe up** (from a pad or anywhere on the stage; Space on a keyboard) unleashes it: the multiplier doubles (up to ×8), **energy can't drop**, +30 energy, and a full meter lasts 8 bars (half lasts 4). You keep earning during it. If energy hits 0 while Riot is ready, you get **2.5 seconds to swipe and save the show**. Activation fires pyro, confetti, a strobe, a synthesized whoosh + power chord, gold lanes and a gold screen glow, and the whole band does its big move. Numbers live in `RIOT` in `config.js`. The original proposal follows.
 
 A meter fills up. When it's full, you unleash **RIOT MODE**: the most fun 8 bars of the song.
 

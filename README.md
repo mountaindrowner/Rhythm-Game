@@ -17,7 +17,8 @@ A mobile-first rhythm game built with **Three.js**. Notes fly down a 3D highway 
 - **Version badge:** every menu shows the version and git commit (for example `v0.5.0 · 7ec1098`), so you always know which build you're playing.
 - **Smoothness:** the game watches its own frame rate and lowers the rendering resolution on slow phones to stay smooth. It also times its own work each frame (about 2 ms, out of the 16.7 ms a frame gets at 60 fps). Add `?fps` to the address to see the numbers.
 - **Scoring like the classics:** a ×1–×4 streak multiplier, EARLY/LATE hints on near misses, a results screen that can fix your timing, and 1–5 stars per song with your best saved (gold stars for an Expert full combo).
-- **Game over:** run out of energy and the show stops. *Practice mode* turns it off, and easier difficulties drain less energy per miss.
+- **Riot Mode:** play every note of the gold Riot phrases to fill the RIOT meter, then **swipe up** (or press Space) to double your multiplier (up to ×8). The crowd forgives every miss while it lasts, and it can even save a show that's about to end.
+- **Game over:** run out of energy and the show stops, with a sad trombone, a tumbleweed and a silly excuse. *Practice mode* turns it off, and easier difficulties drain less energy per miss.
 - **Timing check:** tap along to clicks to measure your phone and headphone delay, then apply it automatically.
 - **Accessibility:** a *Reduce flashing* setting softens strobes and camera shake.
 
@@ -41,7 +42,7 @@ npm install        # once: downloads Three.js and the build tools
 npm run dev        # starts the game at http://localhost:5173 and reloads as you edit
 ```
 
-Controls: tap the pads, or `D F J K` on a keyboard. Hold for long notes. `Esc` pauses.
+Controls: tap the pads, or `D F J K` on a keyboard. Hold for long notes. Swipe up (or `Space`) for Riot Mode. `Esc` pauses.
 
 Developer extras (add to the page address):
 
@@ -108,4 +109,4 @@ docs/                 design blueprint, guides, reference images
 
 ## Status
 
-v0.7: gentler charts, a ×1–×4 multiplier, EARLY/LATE timing hints, and stars + best scores per song (gold stars on Expert). v0.6.1: a deeper, swaying crowd and a band that moves around the stage. v0.6: three songs with a song picker, a venue per song (Arena, City Rooftop, Sunrise Hill), and the chart maker that finds the beats in any MP3. v0.5.1: a much livelier drummer (redone grooves, raised behind a smaller kit). v0.5: the animated Retro band is the default (41 animations in blocks, switched on bar lines), the guitarist's mic and backing vocals, a roomier crowd, and a per-frame smoothness test. v0.4: the X-ROADS / Rhythm Riot names, glass controls, the pixel-art crowd, a version badge, a retro band trial look and automatic smoothness. v0.3 added the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, every band look, the smoothness budget, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.
+v0.8: **Riot Mode** (gold phrases fill the meter, swipe up for ×2 up to ×8, it can save the show) and a funny game over (sad trombone, tumbleweed). v0.7: gentler charts, a ×1–×4 multiplier, EARLY/LATE timing hints, and stars + best scores per song (gold stars on Expert). v0.6.1: a deeper, swaying crowd and a band that moves around the stage. v0.6: three songs with a song picker, a venue per song (Arena, City Rooftop, Sunrise Hill), and the chart maker that finds the beats in any MP3. v0.5.1: a much livelier drummer (redone grooves, raised behind a smaller kit). v0.5: the animated Retro band is the default (41 animations in blocks, switched on bar lines), the guitarist's mic and backing vocals, a roomier crowd, and a per-frame smoothness test. v0.4: the X-ROADS / Rhythm Riot names, glass controls, the pixel-art crowd, a version badge, a retro band trial look and automatic smoothness. v0.3 added the HD pixel band made with PixelLab. v0.2 added the 3D band, chorus effects, game over, the timing check and Settings. It has been checked in headless Chrome only. The automated browser test covers note counts, audio sync, taps, pause/resume, every band look, the smoothness budget, game over and the timing check. **It has not been tested on a real iPhone yet**, so do that before calling a release done. See `docs/BURN_BRIGHT_MASTER_BLUEPRINT.md` for the full design vision and roadmap.

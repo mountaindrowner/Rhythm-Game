@@ -59,6 +59,18 @@ export const SCORE = {
   comboMilestone: 25,  // "crowd on fire" every 25 hits in a row
 };
 
+// ---- Riot Mode (the power-up) -------------------------------------------------
+// Play every note of a gold Riot phrase to fill the meter; swipe up (or press
+// Space) once it's at least half full. While it lasts your multiplier is
+// doubled (up to ×8) and misses can't drain your energy.
+export const RIOT = {
+  perPhrase: 0.25,   // meter gained for each perfect-ly completed phrase (any grade counts)
+  minToUse: 0.5,     // the meter must be at least this full to unleash it
+  fullBeats: 32,     // a full meter lasts 32 beats (8 bars); half lasts 4 bars
+  rescue: 30,        // energy given back when you unleash it
+  lastChance: 2.5,   // seconds to swipe when your energy runs out with Riot ready
+};
+
 // ---- Stars (results screen and song picker) --------------------------------
 // Stars come from your score as a share of a "perfect run" (every note
 // PERFECT, never dropping the streak). Gold stars: an Expert full combo

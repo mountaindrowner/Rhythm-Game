@@ -14,7 +14,7 @@
 //                          |-> results   (song finished)
 //                          |-> failing -> failed   (energy ran out)
 // =============================================================================
-import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY } from './config.js';
+import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, BAND_NAME, LEAD, BEAT, ENERGY, RIOT } from './config.js';
 import {
   SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, notesForDifficulty, sectionAt, beatPosition,
 } from './song/chart.js';
@@ -75,6 +75,7 @@ let perf = new Performance([]);
 let hype = 0;          // extra stage excitement from combos (0..1), fades over time
 let lastSection = '';
 let failedAt = 0;      // game time when energy ran out
+let lastChanceUntil = 0; // game time the "swipe to save the show" chance ends (0 = none)
 
 const offset = () => settings.tapOffsetMs / 1000;
 
@@ -83,6 +84,7 @@ const offset = () => settings.tapOffsetMs / 1000;
 const AUTOPLAY = new URLSearchParams(location.search).has('autoplay');
 const autoRelease = [Infinity, Infinity, Infinity, Infinity];
 function autoplay(t) {
+  if (perf.riotReady) handle(perf.activateRiot(t)); // the robot loves Riot Mode
   for (let i = perf.cursor; i < perf.notes.length; i++) {
     const n = perf.notes[i];
     if (n.time > t) break;
@@ -108,7 +110,25 @@ const input = new Input($('pads'), {
     if (status !== 'playing') return;
     handle(perf.release(lane, player.time));
   },
-});
+  onSwipeUp: tryRiot,
+}, world.renderer.domElement);
+
+/** A swipe up (or Space): unleash Riot Mode if the meter is ready. */
+function tryRiot() {
+  if (status !== 'playing') return;
+  handle(perf.activateRiot(player.time));
+}
+
+// Funny reasons the show ended (one is picked at random on game over).
+const FAIL_LINES = [
+  "The bassist's lab-coat experiment blew every fuse in the building.",
+  'Someone unplugged the amps to charge their phone.',
+  'The drummer threw a stick into the crowd. It was his only stick.',
+  'The fog machine won. Nobody can find the stage.',
+  'A pigeon landed on the mixing desk and pressed every button.',
+  'The guitarist tripped over his cable and took the whole stage with him.',
+  'The crowd went to get snacks. All of them. At once.',
+];
 
 // ---- React to what the rules decided ---------------------------------------
 function handle(e) {
@@ -119,6 +139,7 @@ function handle(e) {
     highway.flash(e.lane, t);
     effects.burst(e.lane, e.grade === 'perfect' ? 26 : 14);
     hud.judgement(e.grade, e.timing);
+    if (e.riotPhrase) hud.banner(perf.riotReady ? 'RIOT READY!' : 'RIOT PHRASE!');
     if (e.grade === 'perfect') kick(0.25);
     if (e.milestone) {
       hype = 1;
@@ -134,6 +155,17 @@ function handle(e) {
     hud.judgement('holdComplete');
   } else if (e.type === 'mistake') {
     hud.judgement(e.kind);
+  } else if (e.type === 'riotStart') {
+    player.sfx('riot');
+    showfx.setRiot(true);
+    highway.setRiot(true);
+    hud.banner(lastChanceUntil ? 'SAVED BY THE RIOT!' : 'RIOT MODE! ×2');
+    lastChanceUntil = 0;
+    kick(1);
+  } else if (e.type === 'riotEnd') {
+    showfx.setRiot(false);
+    highway.setRiot(false);
+    hud.banner('RIOT OVER!');
   }
 }
 
@@ -147,7 +179,11 @@ async function startGame() {
   setStatus('Tuning up… preparing the recording.');
   $('startBtn').disabled = true;
 
-  perf = new Performance(notesForDifficulty(settings.difficulty), { drain: ENERGY.drain[settings.difficulty] });
+  perf = new Performance(notesForDifficulty(settings.difficulty), {
+    drain: ENERGY.drain[settings.difficulty], beatLength: SONG.beatLength,
+  });
+  highway.setRiot(false);
+  lastChanceUntil = 0;
   highway.setNotes(perf.notes);
   band.reset();
   effects.clear();
@@ -212,16 +248,22 @@ function failGame() {
   perf.cancelHolds();
   player.powerDown();
   band.setDefeated(true);
+  highway.setRiot(false);
   hud.banner("SHOW'S OVER!");
+  // Make it funny, not sad: a sad trombone, and a tumbleweed rolls past.
+  setTimeout(() => { if (status === 'failing') player.sfx('trombone'); }, 1300);
+  setTimeout(() => { if (status === 'failing') showfx.tumbleweed(); }, 700);
   setTimeout(() => {
     if (status !== 'failing') return;
     status = 'failed';
-    player.stop();
     const reached = Math.max(0, failedAt - LEAD);
     const pct = Math.round((reached / SONG.duration) * 100);
-    showResults("SHOW'S OVER", `The crowd ran out of energy at ${clock(reached)} (${pct}% of the song). `
-      + 'Hit notes to keep the energy up — or turn on Practice mode in Settings.', false);
-  }, 1700);
+    const why = FAIL_LINES[Math.floor(Math.random() * FAIL_LINES.length)];
+    showResults("SHOW'S OVER", `${why} (The crowd ran out of energy at ${clock(reached)}, ${pct}% of the song.) `
+      + 'Fill the RIOT meter and swipe up to save the show next time, or turn on Practice mode in Settings.', false);
+    // Let the trombone finish before the audio goes to sleep.
+    setTimeout(() => { if (status === 'failed') player.stop(); }, 1500);
+  }, 4200); // long enough to see the tumbleweed roll past and hear the trombone
 }
 
 function endGame() {
@@ -284,6 +326,10 @@ const OVERLAYS = ['menu', 'hud', 'pauseScreen', 'results', 'settingsScreen'];
 function show({ menu = false, hud: hudOn = false, pause = false, results = false, settings: settingsOn = false }) {
   const on = { menu, hud: hudOn, pauseScreen: pause, results, settingsScreen: settingsOn };
   for (const id of OVERLAYS) $(id).hidden = !on[id];
+  if (!hudOn) {
+    $('riotHint').hidden = true;
+    $('phone').classList.remove('riot');
+  }
 }
 
 function setStatus(msg, error = false) {
@@ -317,7 +363,12 @@ function frame(now) {
   if (status === 'playing') {
     if (AUTOPLAY) autoplay(t);
     for (const e of perf.update(t, offset())) handle(e);
-    if (!settings.practice && perf.failed) failGame();
+    if (!settings.practice && perf.failed) {
+      // Out of energy. If Riot Mode is ready, the player gets a moment to
+      // swipe up and save the show; otherwise (or if time runs out) it's over.
+      if (perf.riotReady && !lastChanceUntil) lastChanceUntil = t + RIOT.lastChance;
+      if (!lastChanceUntil || t > lastChanceUntil) failGame();
+    }
     else if (t >= songEnd()) endGame();
   }
 
@@ -330,8 +381,9 @@ function frame(now) {
     lastSection = section;
   }
   const big = section.includes('CHORUS') || section === 'OUTRO';
-  const musicEnergy = live ? (big ? 1 : section.includes('BUILD') ? 0.7 : 0.45) : 0.2;
-  hype = Math.max(Math.min(1, perf.combo / 60) * (live ? 1 : 0), hype - dt * 0.5);
+  const rioting = live && perf.riotActive;
+  const musicEnergy = live ? (big || rioting ? 1 : section.includes('BUILD') ? 0.7 : 0.45) : 0.2;
+  hype = rioting ? 1 : Math.max(Math.min(1, perf.combo / 60) * (live ? 1 : 0), hype - dt * 0.5);
   const stageTime = status === 'failing' ? failedAt : now / 1000;
   stage.update(stageTime, beat, status === 'failing' ? 'OPENING' : section, hype);
   showfx.update(now / 1000, beat, section, live && status !== 'failing', dt);
@@ -485,12 +537,16 @@ window.__BURN_BRIGHT_TEST__ = {
       ...perf.counts, hasRecording: player.hasRecording, build: BUILD_LABEL,
       tapOffsetMs: settings.tapOffsetMs, practice: settings.practice, bandStyle: settings.bandStyle,
       songId: SONG.id, venue: stage.venue, songTitle: SONG.title,
+      riotMeter: perf.riotMeter, riotActive: perf.riotActive, riotUses: perf.riotUses, lastChance: lastChanceUntil > 0,
+      nextRiotNote: perf.notes.find((n) => n.riot && !n.riotBroken && !n.hit && !n.miss && n.time > player.time)?.time ?? null,
+      riotPhrases: new Set(perf.notes.filter((n) => n.riot).map((n) => n.riot)).size,
       drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
       perf: { ...perfMonitor.stats },
     };
   },
   start: startGame,
   finish: () => endGame(), // tests only: jump to the results screen
+  fillRiot: () => { perf.riotMeter = 1; }, // tests only: a full Riot meter
   pickSong,
   pause: pauseGame,
   resume: resumeGame,

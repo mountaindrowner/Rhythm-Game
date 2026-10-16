@@ -50,6 +50,7 @@ export function selectSong(id) {
     vocalist: chart.vocalist || 'singer',
     sections: chart.sections,
     beats,
+    firstDownbeat: chart.first_downbeat || 0, // which beat is "1" of the first bar
     allNotes: chart.notes,
   });
   for (const fn of listeners) fn(SONG);
@@ -72,7 +73,7 @@ export const songEnd = () => LEAD + SONG.duration + 0.28;
  */
 export function notesForDifficulty(difficulty) {
   const maxTier = DIFFICULTIES[difficulty].maxTier;
-  return SONG.allNotes
+  const notes = SONG.allNotes
     .filter((n) => n.tier <= maxTier)
     .map((n, id) => ({
       id,
@@ -80,11 +81,45 @@ export function notesForDifficulty(difficulty) {
       lane: n.lane,
       hold: n.hold,        // seconds; 0 = normal tap note
       role: n.role,        // e.g. "kick", "guitar-strum" (used for animation)
+      riot: 0,             // which Riot phrase this note belongs to (0 = none)
       hit: false,          // player hit the head of the note
       miss: false,         // note went past without a hit
       done: false,         // nothing more can happen to this note
     }))
     .sort((a, b) => a.time - b.time || a.lane - b.lane);
+  markRiotPhrases(notes, difficulty);
+  return notes;
+}
+
+/**
+ * RIOT PHRASES: short gold sections that fill the Riot meter when you play
+ * every note in them (like Guitar Hero's star phrases). We pick one bar in
+ * every 8: the first bar in that stretch with enough notes to be a little
+ * challenge, skipping the quiet opening.
+ */
+const PHRASE_NOTES = { casual: 2, standard: 3, expert: 4 }; // fewest notes a phrase may have
+export function markRiotPhrases(notes, difficulty) {
+  const barOf = (n) => Math.floor((beatPosition(n.time - LEAD) - SONG.firstDownbeat) / 4);
+  const bars = new Map(); // bar number -> its notes
+  for (const n of notes) {
+    if (n.hold > 0 || sectionAt(n.time - LEAD) === 'OPENING') continue;
+    const bar = barOf(n);
+    if (!bars.has(bar)) bars.set(bar, []);
+    bars.get(bar).push(n);
+  }
+  const lastBar = Math.max(...bars.keys());
+  let id = 0;
+  for (let start = 4; start <= lastBar; start += 8) {
+    for (let bar = start; bar < start + 8; bar++) {
+      const inBar = bars.get(bar) || [];
+      if (inBar.length >= PHRASE_NOTES[difficulty]) {
+        id++;
+        for (const n of inBar) n.riot = id;
+        break;
+      }
+    }
+  }
+  return id; // how many phrases
 }
 
 /** Name of the song section playing at `songTime`, e.g. "CHORUS 1". */
