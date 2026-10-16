@@ -228,3 +228,16 @@ test('Big Rock Ending: missing the final note loses the pending points', () => {
   assert.equal(p.finalePending, 0);
   assert.equal(p.score, 0);
 });
+
+test('freeze guard: notes that pass while the game is frozen are skipped, not missed', () => {
+  const p = new Performance([note(1, 0), note(1.5, 1), note(2, 2), note(4, 3)]);
+  p.update(LEAD + 0.5);        // a normal frame
+  const events = p.update(LEAD + 2.6); // the next frame comes 2.1 s later: a freeze
+  assert.equal(events.filter((e) => e.kind === 'miss').length, 0);
+  assert.equal(p.counts.skipped, 3);
+  assert.equal(p.counts.miss, 0);
+  assert.equal(p.energy, ENERGY.start); // nothing lost
+  for (let t = 2.7; t <= 4.31; t += 0.05) p.update(LEAD + t); // normal frames again...
+  // ...so the 4 s note that went by unplayed is a normal miss.
+  assert.equal(p.counts.miss, 1);
+});

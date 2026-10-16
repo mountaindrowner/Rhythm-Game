@@ -11,6 +11,7 @@
 import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS, RIOT, FINALE } from '../config.js';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const FREEZE = 0.25; // seconds between updates that count as "the game froze"
 
 /** The streak multiplier (×1–×4) after `streak` hits in a row. */
 export const multiplierFor = (streak) => Math.min(SCORE.maxMultiplier, 1 + Math.floor(streak / SCORE.streakPerStep));
@@ -68,7 +69,7 @@ export class Performance {
     this.combo = 0;
     this.maxCombo = 0;
     this.energy = ENERGY.start;
-    this.counts = { perfect: 0, great: 0, good: 0, miss: 0, wrong: 0 };
+    this.counts = { perfect: 0, great: 0, good: 0, miss: 0, wrong: 0, skipped: 0 };
     this.offsets = [];  // how early (-) or late (+) each hit was, in seconds
     this.early = 0;     // GREAT/GOOD hits that were early...
     this.late = 0;      // ...or late (shown as EARLY / LATE)
@@ -175,10 +176,20 @@ export class Performance {
       }
     }
 
+    // FREEZE GUARD: if the game froze (more than a quarter second between
+    // updates, e.g. the phone was busy), notes that went by during the freeze
+    // were never on screen. They're skipped, not counted as misses.
+    const frozeSince = this.lastUpdate !== null && t - this.lastUpdate > FREEZE ? this.lastUpdate - offset : null;
     for (let i = this.cursor; i < this.notes.length; i++) {
       const n = this.notes[i];
       if (n.time > now + 0.2) break;
       if (n.ghost) continue;
+      if (!n.hit && !n.miss && !n.done && frozeSince !== null && n.time > frozeSince - WINDOWS.good && now - n.time > WINDOWS.missAfter) {
+        n.done = true;
+        n.skipped = true;
+        this.counts.skipped++;
+        continue;
+      }
       if (!n.hit && !n.miss && now - n.time > WINDOWS.missAfter) {
         n.miss = true;
         n.done = true;
@@ -292,7 +303,8 @@ export class Performance {
   /** Weighted accuracy: perfect = 100%, great = 85%, good = 65%, miss = 0%. */
   get accuracy() {
     const c = this.counts;
-    return this.total ? Math.round(((c.perfect + c.great * 0.85 + c.good * 0.65) / this.total) * 100) : 0;
+    const total = this.total - c.skipped; // notes skipped during a freeze don't count
+    return total ? Math.round(((c.perfect + c.great * 0.85 + c.good * 0.65) / total) * 100) : 0;
   }
 
   /** Out of energy: the crowd has had enough (game over unless practicing). */

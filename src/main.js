@@ -279,6 +279,7 @@ async function startGame() {
   highway.setRiot(false);
   lastChanceUntil = 0;
   highway.setNotes(perf.notes);
+  highway.warmUp(); // draw every kind of note once (hidden) while the song loads
   band.reset();
   effects.clear();
   showfx.clear();
@@ -377,7 +378,8 @@ function showResults(headline, note, finished = true) {
   $('finalScore').textContent = perf.score.toLocaleString('en-US');
 
   // Stars, and saving your best (only for a finished song).
-  const fullCombo = perf.counts.miss === 0 && perf.counts.wrong === 0 && perf.counts.good + perf.counts.great + perf.counts.perfect === perf.total;
+  const c = perf.counts;
+  const fullCombo = c.miss === 0 && c.wrong === 0 && c.good + c.great + c.perfect === perf.total - c.skipped;
   const rating = starsFor(perf.score, perfectScore(perf.notes), { expert: settings.difficulty === 'expert', fullCombo });
   const stars = finished ? rating.stars : 0;
   $('stars').textContent = starText(stars);
@@ -500,6 +502,10 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+// Get the phone's graphics ready for the notes before any song starts (see
+// highway.warmUp: without this, an iPhone can freeze the picture for a few
+// seconds the first time notes appear, while the music keeps going).
+highway.warmUp(6);
 
 // ---- Menu wiring -----------------------------------------------------------
 $('buildLabel').textContent = `${BAND_NAME} · LIVE`;

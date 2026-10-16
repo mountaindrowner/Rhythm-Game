@@ -38,7 +38,7 @@ Taps take a shortcut: `input.js` calls `perf.press(lane, t)` the instant your fi
 ## 3. The referee (`src/game/rules.js`)
 
 - **Judging:** when you press a lane, find the closest unhit note in that lane. If it's within 45 ms it's PERFECT, within 97 ms GREAT, within 175 ms GOOD. With no note nearby it's a WRONG NOTE.
-- **Misses:** in `update()`, any note more than 174 ms past the line without a hit is a MISS.
+- **Misses:** in `update()`, any note more than 174 ms past the line without a hit is a MISS. **Freeze guard:** if more than 0.25 s passed since the last update (the phone froze), notes that went by in that gap are *skipped* instead: no miss, no energy lost, not counted in accuracy.
 - **Holds:** hitting a long note's head starts a hold. Releasing early is HOLD LOST; holding to the end gives a bonus.
 - **Score:** each hit is worth its grade's points (PERFECT 100, GREAT 70, GOOD 40) × the **multiplier**. The multiplier is ×1, then ×2 after 10 hits in a row, ×3 after 20 and ×4 after 30, shown as a badge by the combo. A miss resets it.
 - **EARLY / LATE:** every hit records how far off it was. GREAT and GOOD say EARLY or LATE under the judgement. The results screen counts them; if your taps were usually more than about 25 ms off, it offers to fix your timing setting.

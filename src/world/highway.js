@@ -150,6 +150,7 @@ export function createHighway(scene) {
 
   let notes = [];
   let start = 0;
+  let warmFrames = 0; // see warmUp()
 
   function setNotes(list) {
     notes = list;
@@ -166,6 +167,29 @@ export function createHighway(scene) {
    */
   function update(t, isHeld) {
     const zFor = (time) => -(time - t) * NOTE_SPEED;
+
+    // WARM-UP (see warmUp below): draw one of every kind of note, hidden just
+    // under the far end of the road, so the graphics chip gets ready for them.
+    if (warmFrames > 0) {
+      warmFrames--;
+      const mats = [...gemMats, missMat, ghostMat];
+      gems.forEach((gem, i) => {
+        gem.g.visible = warmFrames > 0;
+        gem.g.position.set(laneX(i % 4), -1, -LEN + 1);
+        gem.puck.material = mats[i % mats.length];
+        gem.cap.visible = true;
+        gem.cap.material = i % 2 ? riotCapMat : capMat;
+        gem.halo.visible = true;
+      });
+      tails.forEach((tail, i) => {
+        tail.visible = warmFrames > 0;
+        tail.material = i % 5 === 4 ? missMat : tailMats[i % 4];
+        tail.position.set(laneX(i % 4), -1, -LEN + 1);
+      });
+      finaleBar.visible = warmFrames > 0;
+      finaleBar.position.set(0, -1, -LEN + 1);
+      if (warmFrames > 0) return;
+    }
 
     // Skip notes that are long gone.
     while (start < notes.length && notes[start].time + notes[start].hold < t - 0.6) start++;
@@ -270,8 +294,17 @@ export function createHighway(scene) {
     dividerMat.opacity = on ? 0.9 : 0.55;
   }
 
+  /**
+   * Get the phone ready to draw notes. Phones (iPhone Safari especially) can
+   * take a few seconds to prepare the graphics for a kind of object the first
+   * time it's drawn, and during that time the picture freezes while the
+   * music keeps going. So while the menu is up, we draw every kind of note a
+   * few times, hidden under the road, before any song starts.
+   */
+  function warmUp(frames = 3) { warmFrames = frames + 1; }
+
   /** Big Rock Ending on/off: the lanes pulse like a light show. */
   function setFreestyle(on) { freestyle = on; }
 
-  return { group, update, setNotes, flash, setRiot, setFreestyle };
+  return { group, update, setNotes, flash, setRiot, setFreestyle, warmUp };
 }
