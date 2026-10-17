@@ -39,6 +39,9 @@ _Last updated: v0.11.2._
    ```
 3. Check the result at `?autoplay&view=stage`, then run the tests. New grooves join their block automatically. Brand-new *blocks* need a rule in `animBlocks.js`.
 
+## Parked idea: CENTER STAGE takeovers
+The owner's idea (v0.11.2): play one musician's part well and they slam into the middle of the board, big, for a short mini-game made just for them (beakers for the scientist, hearts for the singer, string slashes for the guitarist, a drum frenzy for the drummer). Written up with open questions and name ideas in `GAME_DESIGN.md` §11. **Not built: flesh it out with the owner first.**
+
 ## Next plan: ridiculous moments (the owner wants the game to be absurd and hilarious)
 Ideas to build as special one-off animations plus stage effects. Each can be a new block in the recipe (for example `block: "moment"`) that the choreographer plays like a celebrate:
 - **SHRED SOLO (built in v0.9 as the gold-solo reward):** the soloist levitates in flames while lightning strikes.

@@ -157,3 +157,32 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 3. How rare should the rare moments be? Rare is special, but it can be frustrating if nobody ever sees them.
 4. Are there any ridiculous moments that feel off-brand for X-ROADS (a Christian rock band) and should be cut?
 5. Any moments **you** want to add? (A list of the band's inside jokes would be gold here.)
+
+## 11. Idea parked: CENTER STAGE takeovers (owner idea, not built yet)
+
+> The owner's idea, written down to flesh out before building. Nothing here is decided.
+
+**The idea:** play one band member's part really well and that musician **takes over**. They slam into the middle of the note highway in a big form (with lightning and thunder), the normal notes clear away, and for a few seconds the board fills with **their** pad's targets popping up all over. Hit as many as you can, as fast as you can, for big points. Each musician gets their own style of mini-game.
+
+**How it could work:**
+- **Earning it:** each musician has a small meter, filled by hitting **their** lane's notes (Perfects fill it faster; a miss in that lane takes some back). When a meter is full, that musician takes center stage at the next bar line. *Alternative:* a streak, for example 16 of one lane's notes in a row.
+- **The slam:** the musician (the same pixel art, drawn 3 to 4 times bigger) drops onto the middle of the board, with lightning, thunder, a screen shake and their name in big letters ("THE PROFESSOR TAKES OVER!"). The band keeps playing behind them.
+- **The mini-game (about 4 bars, around 6 seconds), one per musician:**
+  - **Bassist (the scientist): MAD SCIENCE.** Bubbling beakers pop up all over the board. Poke them before they boil over; green smoke and a little "POP!" each.
+  - **Singer: CROWD HEARTS.** Gold hearts and notes float up from the crowd. Tap them to catch them; the longer the streak, the bigger they get.
+  - **Guitarist: SHRED.** Glowing strings stretch across the board. **Slash** (swipe) through them as they light up.
+  - **Drummer: DRUM FRENZY.** Red drum pads pop up at random. Tap as many as you can; tapping on the beat scores double, so it stays a rhythm game.
+- **Scoring:** points for every target times your multiplier, a bonus for tapping on the beat, and a rating at the end (GOOD / GREAT / LEGENDARY TAKEOVER).
+- **Making room:** like the Big Rock Ending, the notes in those 4 bars are cleared so nothing is missed while you're busy.
+
+**Questions to answer first:**
+1. **Alongside Riot Mode, or instead of it?** (a) Both: Riot Mode stays the band-wide power-up and takeovers are a separate per-musician reward. (b) Merge: when you trigger the power-up, the musician you've played best takes over. (c) Replace Riot Mode with takeovers.
+2. **Earned by a meter or by a streak?** And how often: once per song per musician, or whenever the meter fills?
+3. **Do the mini-game ideas fit each character?** (Anything off-brand?)
+4. **How does it sit with the charted solos** (call-and-response in the bridge)? Maybe a takeover can't start during a solo or the Big Rock Ending.
+
+**Name ideas** (the owner isn't sold on "Riot Mode" either):
+- *For the band-wide power-up:* RHYTHM RIOT (the game's own name), AMPED, FULL THROTTLE, CROSSFIRE (a play on X-ROADS / Crossroads), ENCORE, FEVER.
+- *For the musician moment:* CENTER STAGE, TAKEOVER, SPOTLIGHT, SHOWSTOPPER, FRONT AND CENTER, SOLO SLAM.
+
+**What it would take:** the big slam can reuse the existing sprites drawn larger (pixel art scales cleanly at whole-number sizes), plus PixelLab "big pose" animations later. The targets would be a layer over the board, like the HUD, so taps stay quick. Lightning and thunder are already built (v0.11.2).
