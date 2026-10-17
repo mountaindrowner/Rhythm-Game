@@ -1,8 +1,13 @@
 # Next steps (handoff)
 
-_Last updated: v0.11.1._
+_Last updated: v0.11.2._
 
 ## Where things stand
+- **v0.11.2 (owner requests):**
+  - **Thunder:** a lightning sound made from scratch (`player.sfx('thunder')`: a crack, a zap and a rolling rumble) on every title-song strike and whenever Riot Mode starts.
+  - **The intro:** after TAP TO START the stage starts dark and lights up with the song; at 16.05 s lightning strikes, the logo slams in, the band goes Riot and the menu buttons arrive. Tapping during the intro skips to 1.5 s before the strike. (Only the first time per visit; after that the title shows its buttons right away.)
+  - **Riot Mode in a song:** lightning hits all four musicians as they transform (`showfx.lightning()`), the "RIOT MODE!" sign has a big glow behind it, and the screen edges glow inward much more strongly.
+  - **The "SWIPE UP" hint** moved onto the note highway (where the notes come from), on a dark glowing plate, and grows out of the board when it appears.
 - **v0.11.1 (owner request): title music.** *Holy Rollerz* (the owner's track) plays on the title, difficulty and settings screens. Phones only allow sound after a tap, so the title screen now opens with **TAP TO START**; that tap starts the song and the menu buttons slide in. The scene follows the song's real beats (beat map in `assets/audio/title_holy_rollerz.json`, made with `scripts/chart/listen.py`), and the lightning strikes where the song kicks in at **16.05 s**: the band turns Riot for 8 bars. More strikes at 51.3 s, 86.4 s and 114.3 s (edit `strikes` in the JSON to move them). The music stops on the set list (song previews play there), in the timing check and in the game. The built page is now about 22 MB.
 - **v0.11 (owner request: "more pizzazz, like a rock and roll show"):** new menus.
   - The title screen is its own pixel-art **rock show** (`src/ui/menuScene.js`): truss scaffolding with stage lights and beams, an LED wall, speaker stacks, the band jamming, sparks, a crowd with hands up, and a new pixel **RHYTHM RIOT logo** (`src/ui/pixelFont.js`) crackling with electricity. Every few seconds lightning strikes and the band flashes into their Riot versions. The 3D game isn't drawn behind any menu any more.

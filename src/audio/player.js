@@ -129,6 +129,7 @@ export class SongPlayer {
    *   'blip'     a menu button
    *   'chord'    a big power chord (START THE SHOW)
    *   'boom'     a deep thump (the show is about to start)
+   *   'thunder'  a lightning crack and a rolling rumble
    *   'riot'     a rising whoosh and a big power chord (Riot Mode!)
    *   'trombone' the classic "wah wah wah waaah" (the show is over)
    */
@@ -172,6 +173,69 @@ export class SongPlayer {
         o.start(now + delay);
         o.stop(now + 1.7);
       }
+    } else if (name === 'thunder') {
+      // LIGHTNING: a sharp electric crack, a zap sweeping down, then a long
+      // rolling rumble. All made from noise (random numbers) shaped by filters.
+      const sr = ctx.sampleRate;
+      const noiseBuf = (seconds, brown) => {
+        const buf = ctx.createBuffer(1, Math.ceil(sr * seconds), sr);
+        const d = buf.getChannelData(0);
+        let last = 0;
+        for (let i = 0; i < d.length; i++) {
+          const white = Math.random() * 2 - 1;
+          // "Brown" noise = each sample drifts from the last one: deep and rumbly.
+          last = brown ? (last + 0.02 * white) / 1.02 : white;
+          d[i] = brown ? last * 3.5 : white;
+        }
+        return buf;
+      };
+      out.gain.value = 0.7;
+      // 1. The crack: a very short, very bright burst.
+      const crack = ctx.createBufferSource();
+      crack.buffer = noiseBuf(0.25, false);
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 1200;
+      const cg = ctx.createGain();
+      cg.gain.setValueAtTime(0.0001, now);
+      cg.gain.exponentialRampToValueAtTime(0.9, now + 0.004);
+      cg.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+      crack.connect(hp).connect(cg).connect(out);
+      crack.start(now);
+      // 2. The zap: a filter sweeping from high to low through the noise.
+      const zap = ctx.createBufferSource();
+      zap.buffer = noiseBuf(0.5, false);
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 3;
+      bp.frequency.setValueAtTime(5000, now);
+      bp.frequency.exponentialRampToValueAtTime(400, now + 0.4);
+      const zg = ctx.createGain();
+      zg.gain.setValueAtTime(0.5, now);
+      zg.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+      zap.connect(bp).connect(zg).connect(out);
+      zap.start(now);
+      // 3. The rumble: deep noise that swells and rolls away over 3 seconds,
+      //    with a few random "rolls" in the middle.
+      const rumble = ctx.createBufferSource();
+      rumble.buffer = noiseBuf(3.2, true);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(900, now);
+      lp.frequency.exponentialRampToValueAtTime(160, now + 2.5);
+      const rg = ctx.createGain();
+      rg.gain.setValueAtTime(0.0001, now);
+      rg.gain.exponentialRampToValueAtTime(1, now + 0.06);
+      let at = now + 0.06;
+      for (let k = 0; k < 4; k++) {
+        at += 0.12 + Math.random() * 0.18;
+        rg.gain.exponentialRampToValueAtTime(0.35 + Math.random() * 0.35, at);
+        at += 0.12 + Math.random() * 0.18;
+        rg.gain.exponentialRampToValueAtTime(0.6 + Math.random() * 0.3, at);
+      }
+      rg.gain.exponentialRampToValueAtTime(0.0001, now + 3.1);
+      rumble.connect(lp).connect(rg).connect(out);
+      rumble.start(now);
     } else if (name === 'boom') {
       // The curtain drops: a deep thump.
       const o = ctx.createOscillator();

@@ -100,7 +100,7 @@ export function createHud() {
         document.getElementById('phone').classList.toggle('riot', v === 'active');
       });
       const save = perf.riotReady && perf.energy <= 25;
-      const hint = perf.riotReady ? (save ? '⬆ SWIPE UP TO SAVE THE SHOW!' : '⬆ SWIPE UP FOR RIOT MODE!') : '';
+      const hint = perf.riotReady ? (save ? '↑ SWIPE UP TO SAVE THE SHOW! ↑' : '↑ SWIPE UP FOR RIOT MODE! ↑') : '';
       set('riotHint', el.riotHint, hint, (n, v) => {
         n.hidden = !v;
         n.textContent = v;

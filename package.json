@@ -1,7 +1,7 @@
 {
   "name": "rhythm-riot",
   "private": true,
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Rhythm Riot (working title) starring X-ROADS: a 3D (Three.js) mobile rhythm game",
   "type": "module",
   "scripts": {

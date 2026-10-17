@@ -61,6 +61,27 @@ export function createRiotSign(scene) {
   mesh.renderOrder = 10; // after everything else
   scene.add(mesh);
 
+  // A big soft orange GLOW behind the letters, so the sign lights up the
+  // stage around it and you can't miss that Riot Mode is on.
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = 64;
+  glowCanvas.height = 64;
+  const gg = glowCanvas.getContext('2d');
+  const grd = gg.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,190,80,0.9)');
+  grd.addColorStop(0.45, 'rgba(255,110,40,0.45)');
+  grd.addColorStop(1, 'rgba(255,60,40,0)');
+  gg.fillStyle = grd;
+  gg.fillRect(0, 0, 64, 64);
+  const glowMat = new THREE.MeshBasicMaterial({
+    map: new THREE.CanvasTexture(glowCanvas), transparent: true, depthWrite: false, depthTest: false,
+    blending: THREE.AdditiveBlending, fog: false, opacity: 0,
+  });
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(width * 1.35, width * 0.62), glowMat);
+  glow.renderOrder = 9; // just behind the letters
+  glow.visible = false;
+  scene.add(glow);
+
   let on = false;
   let shownAt = -1;   // time it was shown (or -2 = on the next update)
   let lastDraw = -1;
@@ -102,6 +123,7 @@ export function createRiotSign(scene) {
       on = false;
       mesh.visible = false;
       mat.opacity = 0;
+      glow.visible = false;
     },
 
     update(time, dt) {
@@ -109,6 +131,7 @@ export function createRiotSign(scene) {
       // Fade in quickly, fade out a little slower.
       mat.opacity += ((on ? 1 : 0) - mat.opacity) * (1 - Math.exp(-dt * (on ? 14 : 5)));
       mesh.visible = mat.opacity > 0.02;
+      glow.visible = mesh.visible;
       if (!mesh.visible) return;
       const since = time - shownAt;
       // Slam in: starts at 2.4× size and lands in a quarter second, with a bounce.
@@ -122,6 +145,11 @@ export function createRiotSign(scene) {
       // Float: a gentle bob and sway.
       mesh.position.set(base.x + Math.sin(time * 1.3) * 0.15, base.y + Math.sin(time * 2.6) * 0.12, base.z);
       mesh.rotation.z = Math.sin(time * 1.7) * 0.02;
+      // The glow follows the sign and breathes.
+      glow.position.copy(mesh.position);
+      glow.position.z -= 0.05;
+      glow.scale.copy(mesh.scale);
+      glowMat.opacity = mat.opacity * (0.6 + 0.25 * Math.sin(time * 7));
       // Flicker like a sign with a loose wire, and crackle ~15 times a second.
       if (on) mat.opacity *= Math.random() < 0.06 ? 0.55 : 1;
       if (time - lastDraw > 0.09) {

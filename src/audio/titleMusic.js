@@ -79,6 +79,8 @@ export function createTitleMusic() {
         }
       }, 50);
     },
+    /** Jump to `t` seconds into the song (skipping the intro). */
+    skipTo(t) { try { el.currentTime = t; } catch { /* not loaded yet */ } },
     get time() { return on && !el.paused ? el.currentTime : null; },
     get playing() { return on && !el.paused; },
   };

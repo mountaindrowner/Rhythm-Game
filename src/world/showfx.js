@@ -101,6 +101,26 @@ export function createShowFx(scene, fans, flashEl) {
     return line;
   });
 
+  // RIOT STRIKE: when Riot Mode starts, lightning hits every band member at
+  // once. Lines are always 1 pixel thin in WebGL, so each bolt is drawn as
+  // three lines side by side to look thicker.
+  const strikeMat = new THREE.LineBasicMaterial({
+    color: '#e8f6ff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthTest: false,
+  });
+  const STRIKE_POINTS = 12;
+  const strikeBolts = Object.entries(BAND_SPOTS).map(([name, spot]) => {
+    const lines = [0, 1, 2].map(() => {
+      const geo = new THREE.BufferGeometry().setFromPoints(Array.from({ length: STRIKE_POINTS }, () => new THREE.Vector3()));
+      const line = new THREE.Line(geo, strikeMat);
+      line.renderOrder = 9;
+      line.frustumCulled = false;
+      scene.add(line);
+      return line;
+    });
+    return { lines, spot, head: TOP + (name === 'drummer' ? 4.4 : 3.2) };
+  });
+  let strikeStart = -1;
+
   const riotSign = createRiotSign(scene); // the floating "RIOT MODE!" sign
 
   let riot = false;
@@ -180,6 +200,12 @@ export function createShowFx(scene, fans, flashEl) {
       strobe();
     },
 
+    /** Lightning strikes the whole band (Riot Mode starts). */
+    lightning() {
+      strikeStart = -2; // starts on the next update
+      strobe();
+    },
+
     /** A small fire pop (Big Rock Ending taps). */
     pop() {
       pyro([(Math.random() * 4) | 0]);
@@ -215,6 +241,8 @@ export function createShowFx(scene, fans, flashEl) {
       riotSign.clear();
       soloBeam.visible = false;
       boltMat.opacity = 0;
+      strikeMat.opacity = 0;
+      strikeStart = -1;
     },
 
     /**
@@ -307,6 +335,37 @@ export function createShowFx(scene, fans, flashEl) {
         tumble.position.set(-11 + 22 * k, TOP + 0.75 + Math.abs(Math.sin(k * 14)) * 0.7, Z0 + 0.3);
         tumble.rotation.z = -k * 24;
         if (k >= 1) tumbleStart = -1;
+      }
+
+      // RIOT STRIKE: 0.7 s of flickering bolts from high above onto each musician.
+      if (strikeStart === -2) strikeStart = time;
+      if (strikeStart >= 0) {
+        const k = (time - strikeStart) / 0.7;
+        if (k >= 1) {
+          strikeStart = -1;
+          strikeMat.opacity = 0;
+        } else {
+          const lit = k < 0.18 || Math.random() < 0.5;
+          strikeMat.opacity = lit ? 1 - k * 0.5 : 0;
+          if (lit) {
+            pyroFlash = Math.max(pyroFlash, 0.9);
+            for (const { lines, spot, head } of strikeBolts) {
+              // One zig-zag path per musician, from up in the sky to their head.
+              const top = new THREE.Vector3(spot.x + (Math.random() - 0.5) * 4, TOP + 14, spot.z);
+              const path = [];
+              for (let i = 0; i < STRIKE_POINTS; i++) {
+                const f = i / (STRIKE_POINTS - 1);
+                const wobble = i && i < STRIKE_POINTS - 1 ? (Math.random() - 0.5) * 1.1 : 0;
+                path.push([top.x + (spot.x - top.x) * f + wobble, top.y + (head - top.y) * f]);
+              }
+              lines.forEach((line, n) => {
+                const pos = line.geometry.attributes.position;
+                path.forEach(([x, y], i) => pos.setXYZ(i, x + (n - 1) * 0.045, y, spot.z + 0.2));
+                pos.needsUpdate = true;
+              });
+            }
+          }
+        }
       }
 
       riotSign.update(time, dt);

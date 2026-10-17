@@ -71,7 +71,14 @@ const hud = createHud();
 const player = new SongPlayer(SONG.audio);
 const preview = createPreview(player);
 const titleMusic = createTitleMusic();
-const menuScene = createMenuScene($('menuScene'));
+// The menu's rock show; when the title song's lightning strikes, play thunder
+// (and the first strike ends the intro).
+const menuScene = createMenuScene($('menuScene'), {
+  onStrike() {
+    player.sfx('thunder');
+    if ($('menu').classList.contains('intro')) endIntro();
+  },
+});
 
 // When a different song is picked: its recording, its venue, and who sings
 // lead (her, him, or both) so the band animates to match.
@@ -201,8 +208,10 @@ function handle(e) {
     }
   } else if (e.type === 'riotStart') {
     player.sfx('riot');
+    player.sfx('thunder');
     showfx.setRiot(true);
     showfx.transform();
+    showfx.lightning(); // lightning strikes the band as they transform
     band.setRiot?.(true); // the band turns into their Riot versions
     highway.setRiot(true);
     if (lastChanceUntil) hud.banner('SAVED BY THE RIOT!'); // (the big sign on stage says RIOT MODE)
@@ -558,6 +567,8 @@ function frame(now) {
 
   // In the menus only the menu's own rock show is drawn: the 3D game rests.
   if (inMenus) {
+    // If the music can't play (blocked or broken), don't keep the intro waiting.
+    if (menuScene.intro && titleMusic.time == null && now - introStartedAt > 2500) endIntro();
     menuScene.update(dt, titleMusic.time);
     perfMonitor.work(performance.now() - workStart, 0);
     requestAnimationFrame(frame);
@@ -638,11 +649,26 @@ document.addEventListener('click', (e) => {
   if (!['startBtn', 'playBtn', 'tapStart'].includes(button.id) && !button.dataset.song) player.sfx('blip');
 }, true);
 
-// TITLE: the first tap starts the music and brings in the buttons.
-$('tapStart').addEventListener('click', () => {
-  $('menu').classList.add('started');
+// TITLE: the first tap starts the music and THE INTRO: the stage lights up
+// with the song, and at 16 s lightning strikes, the logo slams in and the
+// menu buttons arrive. Tapping during the intro skips to just before that.
+let introStartedAt = 0;
+$('tapStart').addEventListener('click', (e) => {
+  e.stopPropagation(); // (this tap must not also count as "skip")
+  $('menu').classList.add('started', 'intro');
+  menuScene.setIntro(true);
+  introStartedAt = performance.now();
   show('menu');
 });
+$('menu').addEventListener('click', () => {
+  if (!$('menu').classList.contains('intro')) return;
+  const t = titleMusic.time;
+  if (t != null && t < 14.6) titleMusic.skipTo(14.6); // 1.5 s before the strike
+});
+function endIntro() {
+  $('menu').classList.remove('intro');
+  menuScene.setIntro(false);
+}
 // START THE SHOW -> difficulty.
 $('startBtn').addEventListener('click', () => {
   player.sfx('chord');
@@ -818,7 +844,7 @@ window.__BURN_BRIGHT_TEST__ = {
       riotPhrases: new Set(perf.notes.filter((n) => n.riot).map((n) => n.riot)).size,
       drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
       screen: SCREENS.find((id) => !$(id).hidden) || '', inMenus, previewing: preview.playing,
-      titleMusic: titleMusic.playing, titleTime: titleMusic.time,
+      titleMusic: titleMusic.playing, titleTime: titleMusic.time, titleIntro: $('menu').classList.contains('intro'),
       countIn: countInTimes(), intro: $('introCard').classList.contains('show'), countText: $('countIn').textContent,
       perf: { ...perfMonitor.stats },
     };

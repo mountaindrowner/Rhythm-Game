@@ -91,7 +91,14 @@ await page.click('#tapStart');
 await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.titleMusic, null, { timeout: 8000 }).catch(() => {});
 s = await state();
 check(s.titleMusic, 'the first tap starts the title music');
-check(await page.isVisible('#startBtn') && s.screen === 'menu', 'then the title screen shows START THE SHOW');
+check(s.titleIntro && !(await page.isVisible('#startBtn')), 'the intro plays (the menu buttons wait for the lightning)');
+// Tap during the intro: it skips to just before the lightning at 16 s, and
+// the buttons arrive with the strike.
+await page.mouse.click(200, 400);
+await page.waitForSelector('#startBtn', { state: 'visible', timeout: 8000 }).catch(() => {});
+s = await state();
+check(!s.titleIntro && await page.isVisible('#startBtn') && s.screen === 'menu' && s.titleTime > 15.9,
+  `tapping skips the intro; the lightning brings in START THE SHOW (${s.titleTime?.toFixed(1)} s into the song)`);
 check(s.inMenus && await page.isVisible('#menuScene'), 'the menus have their own rock-show scene (the game is not drawn behind them)');
 
 // ---- Settings: turn on practice mode so the next checks can't game-over ----

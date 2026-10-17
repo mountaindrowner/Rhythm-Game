@@ -19,6 +19,9 @@
 // pixels), which keeps it cheap to draw and gives the 16-bit look.
 //
 //   setMode('title' | 'menu')   logo or no logo (sub-menus dim the scene)
+//   setIntro(true)              THE INTRO (after TAP TO START): the stage
+//                               starts dark and lights up with the music; at
+//                               the first strike the logo slams in.
 //   update(dt, musicTime)       draw one frame (only called while visible).
 //                               musicTime = seconds into the title song, or
 //                               null when it isn't playing.
@@ -41,7 +44,12 @@ const lightColor = (i) => LIGHT_COLORS[((i % LIGHT_COLORS.length) + LIGHT_COLORS
 const SHIRTS = [[74, 52, 96], [52, 66, 92], [92, 48, 70], [58, 74, 58], [80, 64, 50], [40, 40, 52]];
 const HAIR = [[30, 22, 20], [62, 40, 26], [110, 86, 50], [20, 18, 26], [90, 40, 30]];
 
-export function createMenuScene(canvas) {
+/**
+ * @param {HTMLCanvasElement} canvas
+ * @param {{ onStrike?: () => void }} hooks  onStrike runs on each MUSIC strike
+ *        (the game plays the thunder sound there)
+ */
+export function createMenuScene(canvas, { onStrike } = {}) {
   const g = canvas.getContext('2d');
   let H = 480;
   let mode = 'title';
@@ -55,9 +63,11 @@ export function createMenuScene(canvas) {
   const sparks = [];      // pyro particles
   const bolts = [];       // electricity
   let flash = 0;          // white flash from a lightning strike (0..1)
-  let riotUntil = -1;     // beat until which the band shows its Riot versions
+  let riotUntil = -Infinity;     // beat until which the band shows its Riot versions
   let nextStrike = 3;     // time of the next big lightning strike (no music)
   let lastMusic = null;   // music time on the previous frame (to spot strikes)
+  let intro = false;      // the opening: dark stage building up to the first strike
+  let logoSlamAt = -1;    // time the logo slammed in at the end of the intro
   let logoX = 0;          // where the logo was drawn (strikes go through it)
   let logoY = 0;
 
@@ -108,6 +118,8 @@ export function createMenuScene(canvas) {
     };
     bg = drawBackground();
     fg = drawForeground();
+    logoX = Math.round((W - logo.w) / 2);
+    logoY = L.logoY;
     crowd = makeCrowd();
   }
 
@@ -341,17 +353,22 @@ export function createMenuScene(canvas) {
     if (musicTime != null) {
       // Follow the title song's own beats, and strike where the song says.
       beat = titleBeat(musicTime);
-      if (lastMusic != null && musicTime < lastMusic - 1) riotUntil = -1; // the song looped
+      if (lastMusic != null && musicTime < lastMusic - 1) riotUntil = -Infinity; // the song looped
       if (lastMusic != null) {
         for (const st of TITLE_SONG.strikes) {
-          if (lastMusic < st.time && musicTime >= st.time) strike(st.bars, true);
+          if (lastMusic < st.time && musicTime >= st.time) {
+            strike(st.bars, true);
+            if (intro) { intro = false; logoSlamAt = time; } // THE moment: the logo slams in
+            onStrike?.();
+          }
         }
       }
       lastMusic = musicTime;
     } else {
       beat += dt * (bpm / 60);
       lastMusic = null;
-      if (time > nextStrike) {
+      // Without music, lightning strikes by itself, but only on the title.
+      if (mode === 'title' && !intro && time > nextStrike) {
         nextStrike = time + 4 + Math.random() * 4;
         strike(2, false);
       }
@@ -372,7 +389,14 @@ export function createMenuScene(canvas) {
     drawBand();
     updateSparks(dt, pulse);
     drawCrowd(pulse, bar);
-    if (mode === 'title') drawLogo(dt, pulse);
+    if (intro) {
+      // The intro: darkness that lifts as the song builds toward the strike.
+      const first = TITLE_SONG.strikes[0].time;
+      const k = musicTime == null ? 0 : Math.min(1, Math.max(0, musicTime / first));
+      g.fillStyle = `rgba(3,2,8,${(0.92 * (1 - k ** 1.5)).toFixed(3)})`;
+      g.fillRect(0, 0, W, H);
+    }
+    if (mode === 'title' && !intro) drawLogo(dt, pulse);
     drawBolts(dt);
 
     if (flash > 0) {
@@ -623,6 +647,18 @@ export function createMenuScene(canvas) {
     const ly = L.logoY + Math.round(Math.sin(time * 1.6) * 1.5);
     logoX = lx;
     logoY = ly;
+    // At the end of the intro the logo SLAMS in: from huge down to its size
+    // with a little bounce, in under half a second.
+    const slam = logoSlamAt >= 0 ? (time - logoSlamAt) / 0.45 : 1;
+    if (slam < 1) {
+      const sc = 1 + 1.6 * (1 - slam) ** 2 - Math.sin(slam * Math.PI) * 0.08;
+      const w = logo.w * sc;
+      const h = logo.h * sc;
+      g.globalAlpha = Math.min(1, slam * 3);
+      g.drawImage(logo.canvas, Math.round(lx + (logo.w - w) / 2), Math.round(ly + (logo.h - h) / 2), w, h);
+      g.globalAlpha = 1;
+      return;
+    }
     // Glow behind, pulsing on the beat.
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.35 + 0.45 * pulse;
@@ -766,6 +802,17 @@ export function createMenuScene(canvas) {
   return {
     update,
     setMode(m) { mode = m; },
+    setIntro(on) {
+      intro = on;
+      if (on) {
+        // A fresh start: no leftover Riot band, bolts or flash from before.
+        logoSlamAt = -1;
+        riotUntil = -Infinity;
+        bolts.length = 0;
+        flash = 0;
+      }
+    },
+    get intro() { return intro; },
     get mode() { return mode; },
   };
 }
