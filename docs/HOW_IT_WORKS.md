@@ -208,6 +208,7 @@ Pausing suspends the audio system, which freezes the music and the clock togethe
 | Add a loading-screen tip | `TIPS` in `src/main.js` |
 | Move the title screen's lightning strikes | `strikes` in `assets/audio/title_holy_rollerz.json` (seconds into the song, and how many bars the band stays Riot) |
 | Make the intro longer or shorter | `LEAD` in `src/config.js` |
+| Add a Riot Mode effect | `RIOT_EFFECTS` in `src/world/riotEffects.js`, then its motion in `bandSprites.js` and extras in `showfx.js` (search "RIOT EFFECTS") |
 | Make takeovers rarer, longer, or worth more | `STAGE` in `src/config.js` (`fill`, `maxPerSong`, `bars`) |
 | Change a mini-game's speed or text | `GAMES` in `src/ui/takeover.js` (`every` = beats between targets, `life` = how long each lasts) |
 

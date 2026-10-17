@@ -289,6 +289,7 @@ await page.mouse.up();
 await page.waitForTimeout(300);
 s = await state();
 check(s.riotActive && s.energy > 0 && s.status === 'playing', `swipe up unleashed Riot Mode and saved the show (energy ${s.energy})`);
+check(!!s.riotEffect, `Riot Mode picked an effect from the library (${s.riotEffect})`);
 await snap('09b-riot-mode');
 
 await waitFor('failed', 90000);

@@ -23,6 +23,7 @@ export function createShowFx(scene, fans, flashEl) {
   const fire = new Particles(scene, { max: 600, size: 0.42, gravity: -1, drag: 2 });
   const confetti = new Particles(scene, { max: 500, size: 0.16, additive: false, gravity: 1.6, drag: 1.2, square: true });
   const FIRE = ['#c41f0a', '#e8460f', '#f07a14', '#d89a20'].map((c) => new THREE.Color(c));
+  const SPARKLE = ['#d9c8ff', '#9fe8ff'].map((c) => new THREE.Color(c)); // ZERO GRAVITY
   const PARTY = ['#63ff79', '#ffbe3b', '#4bbdff', '#ff5b5b', '#ff5bd1', '#ffffff'].map((c) => new THREE.Color(c));
 
   // A light that flares orange when the pyro fires, lighting the band.
@@ -123,6 +124,55 @@ export function createShowFx(scene, fans, flashEl) {
 
   const riotSign = createRiotSign(scene); // the floating "RIOT MODE!" sign
 
+  // ---- RIOT EFFECTS: stage extras for some of the effects (riotEffects.js) ----
+  let effectId = null;
+  let effectLevel = 0; // fades the extras in and out
+  // GLORY: golden light rays fanning out behind the band, slowly turning.
+  const rayCanvas = document.createElement('canvas');
+  rayCanvas.width = rayCanvas.height = 256;
+  {
+    const rg = rayCanvas.getContext('2d');
+    const grd = rg.createRadialGradient(128, 128, 10, 128, 128, 128);
+    grd.addColorStop(0, 'rgba(255,250,220,1)');
+    grd.addColorStop(0.4, 'rgba(255,220,120,0.6)');
+    grd.addColorStop(1, 'rgba(255,200,80,0)');
+    rg.fillStyle = grd;
+    for (let k = 0; k < 16; k++) {
+      const a0 = (k / 16) * Math.PI * 2;
+      rg.beginPath();
+      rg.moveTo(128, 128);
+      rg.arc(128, 128, 128, a0, a0 + Math.PI / 22);
+      rg.closePath();
+      rg.fill();
+    }
+  }
+  const rays = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), new THREE.MeshBasicMaterial({
+    map: new THREE.CanvasTexture(rayCanvas), transparent: true, opacity: 0, depthWrite: false,
+    blending: THREE.AdditiveBlending, fog: false,
+  }));
+  rays.position.set(0, TOP + 4, BAND_SPOTS.drummer.z - 1.5);
+  rays.visible = false;
+  scene.add(rays);
+  // HIGH VOLTAGE: electric arcs between the musicians.
+  const ARC_PAIRS = [['bassist', 'singer'], ['singer', 'guitarist'], ['singer', 'drummer'], ['drummer', 'guitarist']];
+  const arcMat = new THREE.LineBasicMaterial({ color: '#cfefff', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthTest: false });
+  const arcs = [...ARC_PAIRS, ...ARC_PAIRS].map(() => { // two lines per pair = a thicker bolt
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 10 }, () => new THREE.Vector3())), arcMat);
+    line.frustumCulled = false;
+    line.renderOrder = 9;
+    line.visible = false;
+    scene.add(line);
+    return line;
+  });
+  // DISCO FEVER: a mirror ball turning high above the stage.
+  const discoBall = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(1.1, 1),
+    new THREE.MeshPhongMaterial({ color: '#d8e0ff', specular: '#ffffff', shininess: 120, flatShading: true, emissive: '#222244' }),
+  );
+  discoBall.position.set(0, TOP + 8.2, Z0 - 0.8);
+  discoBall.visible = false;
+  scene.add(discoBall);
+
   let riot = false;
   let lastBar = -1;
   let lastHalf = -1;
@@ -167,14 +217,18 @@ export function createShowFx(scene, fans, flashEl) {
     setReduceFlashing(v) { reduceFlashing = v; },
 
     /** Riot Mode on/off. Turning it on fires everything at once. */
-    setRiot(on) {
+    /** Riot Mode on/off, with one of the RIOT EFFECTS (its name goes on the sign). */
+    setRiot(on, fx = null) {
       if (on && !riot) {
         strobe();
         pyro([0, 1, 2, 3]);
         confettiBurst(360);
       }
-      if (on) riotSign.show();
-      else riotSign.hide();
+      if (on) {
+        effectId = fx?.id || 'inferno';
+        riotSign.setText(fx?.name || 'RIOT MODE!', fx?.colors);
+        riotSign.show();
+      } else riotSign.hide();
       riot = on;
     },
 
@@ -243,6 +297,11 @@ export function createShowFx(scene, fans, flashEl) {
       boltMat.opacity = 0;
       strikeMat.opacity = 0;
       strikeStart = -1;
+      effectId = null;
+      effectLevel = 0;
+      rays.visible = false;
+      discoBall.visible = false;
+      for (const a of arcs) a.visible = false;
     },
 
     /**
@@ -366,6 +425,48 @@ export function createShowFx(scene, fans, flashEl) {
             }
           }
         }
+      }
+
+      // RIOT EFFECTS: the stage extras fade in while their effect is on.
+      effectLevel += ((riot ? 1 : 0) - effectLevel) * (1 - Math.exp(-dt * 4));
+      const fxNow = effectLevel > 0.01 ? effectId : null;
+      rays.visible = fxNow === 'glory';
+      if (rays.visible) {
+        rays.rotation.z = time * 0.15;
+        rays.material.opacity = 0.55 * effectLevel;
+      }
+      discoBall.visible = fxNow === 'disco';
+      if (discoBall.visible) {
+        discoBall.rotation.y = time * 1.4;
+        discoBall.position.y = TOP + 8.2 + (1 - effectLevel) * 4; // lowers in from above
+      }
+      const voltage = fxNow === 'voltage';
+      for (const a of arcs) a.visible = voltage;
+      if (voltage) {
+        const lit = Math.random() < 0.6;
+        arcMat.opacity = lit ? effectLevel : 0;
+        if (lit) {
+          [...ARC_PAIRS, ...ARC_PAIRS].forEach(([from, to], n) => {
+            const A = BAND_SPOTS[from];
+            const B = BAND_SPOTS[to];
+            const ya = TOP + (from === 'drummer' ? 3.6 : 2.6);
+            const yb = TOP + (to === 'drummer' ? 3.6 : 2.6);
+            const pos = arcs[n].geometry.attributes.position;
+            for (let k = 0; k < pos.count; k++) {
+              const f = k / (pos.count - 1);
+              const wob = k && k < pos.count - 1 ? (Math.random() - 0.5) * 0.9 : 0;
+              pos.setXYZ(k, A.x + (B.x - A.x) * f, ya + (yb - ya) * f + wob, A.z + (B.z - A.z) * f + 0.3);
+            }
+            pos.needsUpdate = true;
+          });
+        }
+      }
+      // ZERO GRAVITY: sparkles drift up around the floating band.
+      if (fxNow === 'zerog' && Math.random() < dt * 30) {
+        const spots = Object.values(BAND_SPOTS);
+        const sp = spots[(Math.random() * spots.length) | 0];
+        fire.emit(sp.x + (Math.random() - 0.5) * 3, TOP + Math.random() * 2, sp.z + 0.5,
+          (Math.random() - 0.5) * 0.4, 1 + Math.random(), 0, SPARKLE[(Math.random() * 2) | 0], 1.4);
       }
 
       riotSign.update(time, dt);

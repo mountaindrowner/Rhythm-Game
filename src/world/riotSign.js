@@ -33,20 +33,32 @@ export function createRiotSign(scene) {
   letters.width = W;
   letters.height = H;
   const lg = letters.getContext('2d');
-  lg.font = 'bold 50px monospace';
-  lg.textAlign = 'center';
-  lg.textBaseline = 'middle';
-  const grad = lg.createLinearGradient(0, 12, 0, 60);
-  grad.addColorStop(0, '#fff6c8');
-  grad.addColorStop(0.45, '#ffc83a');
-  grad.addColorStop(1, '#ff5a2a');
-  lg.shadowColor = '#ff9b3b';
-  lg.shadowBlur = 16;           // the glow around the letters
-  lg.lineWidth = 5;
-  lg.strokeStyle = '#3a0d1e';   // dark outline so it reads over anything
-  lg.strokeText(TEXT, W / 2, H / 2 + 2);
-  lg.fillStyle = grad;
-  lg.fillText(TEXT, W / 2, H / 2 + 2);
+  /** Draw the words (and their colours, top to bottom) onto the letters canvas. */
+  function paintLetters(text, colors = ['#fff6c8', '#ffc83a', '#ff5a2a']) {
+    lg.clearRect(0, 0, W, H);
+    // Shrink the font until the words fit the sign.
+    let size = 50;
+    lg.font = `bold ${size}px monospace`;
+    while (size > 22 && lg.measureText(text).width > W - 24) {
+      size -= 2;
+      lg.font = `bold ${size}px monospace`;
+    }
+    lg.textAlign = 'center';
+    lg.textBaseline = 'middle';
+    const grad = lg.createLinearGradient(0, H / 2 - size / 2, 0, H / 2 + size / 2);
+    grad.addColorStop(0, colors[0]);
+    grad.addColorStop(0.45, colors[1]);
+    grad.addColorStop(1, colors[2]);
+    lg.shadowColor = colors[1];
+    lg.shadowBlur = 16;           // the glow around the letters
+    lg.lineWidth = 5;
+    lg.strokeStyle = '#3a0d1e';   // dark outline so it reads over anything
+    lg.strokeText(text, W / 2, H / 2 + 2);
+    lg.fillStyle = grad;
+    lg.fillText(text, W / 2, H / 2 + 2);
+    lg.shadowBlur = 0;
+  }
+  paintLetters(TEXT);
 
   // Big: about as wide as the band's front line. It's drawn on top of the
   // crowd (depthTest off), so fans' heads never hide it.
@@ -113,6 +125,8 @@ export function createRiotSign(scene) {
   }
 
   return {
+    /** Change what the sign says (each Riot effect has its own name and colours). */
+    setText(text, colors) { paintLetters(text, colors); },
     show() {
       if (on) return;
       on = true;

@@ -47,6 +47,7 @@ import { createHud } from './ui/hud.js';
 import { createCalibration } from './ui/calibration.js';
 import { createMenuScene } from './ui/menuScene.js';
 import { createTakeover, GAMES } from './ui/takeover.js';
+import { pickRiotEffect, riotEffect } from './world/riotEffects.js';
 
 // These imports become embedded data inside the final index.html (see
 // vite.config.js), so the published game never has to download a file.
@@ -106,7 +107,11 @@ let freestyleTaps = 0;
 // CENTER STAGE: when the ready musician's takeover is scheduled ({start, end}
 // in game time), or 'never' if no bar fits before the end of the song.
 let pendingTakeover = null;
+let lastStomp = 0; // GIANTS: the last beat that shook the camera
 const MUSICIAN_OF_LANE = ['bassist', 'singer', 'guitarist', 'drummer'];
+// RIOT EFFECTS: the one that's on now (or last), and a test override.
+let riotFx = null;
+let nextRiotFx = null; // tests only: force the next effect
 const SOLOIST_NAME = { bassist: 'BASS', singer: 'VOCAL', guitarist: 'GUITAR', drummer: 'DRUM' };
 
 const offset = () => settings.tapOffsetMs / 1000;
@@ -233,10 +238,13 @@ function handle(e) {
   } else if (e.type === 'riotStart') {
     player.sfx('riot');
     player.sfx('thunder');
-    showfx.setRiot(true);
+    // A random effect from the library (never the same one twice in a row).
+    riotFx = nextRiotFx ? riotEffect(nextRiotFx) : pickRiotEffect(riotFx?.id);
+    nextRiotFx = null;
+    showfx.setRiot(true, riotFx);
     showfx.transform();
     showfx.lightning(); // lightning strikes the band as they transform
-    band.setRiot?.(true); // the band turns into their Riot versions
+    band.setRiot?.(true, riotFx); // the band transforms (see riotEffects.js)
     highway.setRiot(true);
     if (lastChanceUntil) hud.banner('SAVED BY THE RIOT!'); // (the big sign on stage says RIOT MODE)
     lastChanceUntil = 0;
@@ -691,6 +699,11 @@ function frame(now) {
   }
   const big = section.includes('CHORUS') || section === 'OUTRO';
   const rioting = live && perf.riotActive;
+  // GIANTS: every stomp shakes the camera.
+  if (rioting && riotFx?.id === 'giants' && status === 'playing') {
+    const whole = Math.floor(beatPosition(t - LEAD));
+    if (whole !== lastStomp) { lastStomp = whole; kick(0.35); }
+  }
   const musicEnergy = live ? (big || rioting ? 1 : section.includes('BUILD') ? 0.7 : 0.45) : 0.2;
   hype = rioting ? 1 : Math.max(Math.min(1, perf.combo / 60) * (live ? 1 : 0), hype - dt * 0.5);
   const stageTime = status === 'failing' ? failedAt : now / 1000;
@@ -934,6 +947,7 @@ window.__BURN_BRIGHT_TEST__ = {
       titleMusic: titleMusic.playing, titleTime: titleMusic.time, titleIntro: $('menu').classList.contains('intro'),
       countIn: countInTimes(), intro: $('introCard').classList.contains('show'), countText: $('countIn').textContent,
       stageMeters: [0, 1, 2, 3].map((l) => perf.stageLevel(l)), stageNeed: perf.stageNeed, stageReady: perf.stageReady,
+      riotEffect: perf.riotActive ? riotFx?.id : null,
       stageUses: perf.stageUses, takeover: perf.takeover, takeoverStats: takeover.stats, takeoverTargets: takeover.targets,
       perf: { ...perfMonitor.stats },
     };
@@ -941,6 +955,8 @@ window.__BURN_BRIGHT_TEST__ = {
   start: startGame,
   finish: () => endGame(), // tests only: jump to the results screen
   fillRiot: () => { perf.riotMeter = 1; }, // tests only: a full Riot meter
+  nextRiotEffect: (id) => { nextRiotFx = id; }, // tests only: which Riot effect comes next
+  drainRiot: () => { if (perf.riotActive) perf.riotMeter = 0.0001; }, // tests only: end Riot Mode now
   titleAt: (t) => { testTitleTime = t; }, // tests only: freeze the title scene at this song time (null = live)
   fillStage: (lane = 3) => { // tests only: this musician's meter is full (takeover at the next bar)
     perf.stageMeter = perf.stageMeter.map((_, i) => (i === lane ? perf.stageNeed[i] : 0));

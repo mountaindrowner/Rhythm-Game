@@ -28,6 +28,7 @@ import * as THREE from 'three';
 import { WORLD, LANES } from '../config.js';
 import { DRUM_RISER, BAND_SPOTS } from './stage.js';
 import { createDirector, hasBlocks } from './animBlocks.js';
+import { RIOT_EFFECTS } from './riotEffects.js';
 
 const BAND_HEIGHT = 5.4;   // world units: how tall the tallest front-line musician is
 const Z0 = WORLD.stageZ;
@@ -144,8 +145,37 @@ export function createSpriteBand(scene, art) {
       m.riot = { info, tex, mat, mesh };
     }
   }
+  // RIOT EFFECTS extras (see riotEffects.js), hidden until an effect needs
+  // them: two see-through copies of each musician (ECHO's ghosts, GLITCH's
+  // red and blue copies), for the normal look and the Riot look, and a halo
+  // (GLORY). The copies share the musician's texture, so they always show
+  // the same drawn frame.
+  const ghostMat = (tex) => new THREE.MeshBasicMaterial({
+    map: tex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  for (const m of members) {
+    const make = (source) => [0, 1].map(() => {
+      const mesh = new THREE.Mesh(source.mesh.geometry, ghostMat(source.tex));
+      mesh.visible = false;
+      group.add(mesh);
+      return mesh;
+    });
+    m.ghosts = make(m);
+    if (m.riot) m.riot.ghosts = make(m.riot);
+    const halo = new THREE.Mesh(
+      new THREE.RingGeometry(0.42, 0.62, 32),
+      new THREE.MeshBasicMaterial({ color: '#ffe9a0', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    halo.visible = false;
+    group.add(halo);
+    m.halo = halo;
+    m.headY = (m.info.height || m.info.footY) * PX * 1.04; // a little above the head
+  }
   let riotOn = false;
+  let effect = RIOT_EFFECTS[0];  // which Riot effect is on (riotEffects.js)
+  let effectStart = -1;          // when it started (-2 = on the next update)
   let away = null; // CENTER STAGE: the musician who is on the board right now
+  const tint = new THREE.Color();
 
   // The drum kit sits in front of the drummer and hides his legs.
   const kitInfo = manifest.drumkit;
@@ -226,13 +256,18 @@ export function createSpriteBand(scene, art) {
     },
     /** CENTER STAGE: this musician has jumped onto the board (null = everyone's back). */
     setAway(name) { away = name; },
-    /** Riot Mode on/off: swap every musician to (or back from) their Riot version. */
-    setRiot(on) {
+    /**
+     * Riot Mode on/off, with one of the RIOT EFFECTS (riotEffects.js). Effects
+     * with look 'riot' swap every musician to their Riot version.
+     */
+    setRiot(on, fx = RIOT_EFFECTS[0]) {
       riotOn = on;
+      if (on) { effect = fx; effectStart = -2; }
+      const riotArt = on && effect.look === 'riot';
       for (const m of members) {
         if (!m.riot) continue;
-        m.riot.mesh.visible = on;
-        m.mesh.visible = !on;
+        m.riot.mesh.visible = riotArt;
+        m.mesh.visible = !riotArt;
       }
     },
     /** The song finished: the band cheers, then bows. */
@@ -268,7 +303,7 @@ export function createSpriteBand(scene, art) {
         if (m.director) {
           const pick = m.director.update(beat, ctx);
           show(m, pick.anim, pick.frame);
-          if (riotOn && m.riot) {
+          if (riotOn && m.riot && effect.look === 'riot') {
             // Riot version: its two wild loops take turns every 2 bars.
             const anim = Math.floor(beat / 8) % 2 ? 'riot2' : 'riot';
             const a = m.riot.info.anims[anim];
@@ -327,23 +362,90 @@ export function createSpriteBand(scene, art) {
           y += Math.sin(Math.PI * k) * 2.2;
           tilt += Math.sin(sinceShred * 9) * 0.12;
         }
+        // RIOT EFFECTS: extra motion and colour while Riot Mode is on.
+        const fxOn = riotOn ? effect.id : null;
+        if (effectStart === -2) effectStart = t;
+        const fk = fxOn ? Math.min(1, Math.max(0, (t - effectStart) / 0.5)) : 0; // eases in
+        const i = m.info.lane;
+        let r = 1, gr = 1, bl = 1;   // colour tint (1 = none)
+        let ghostSpread = 0;         // ECHO / GLITCH copies
+        let jitter = 0;
+        if (fxOn === 'giants') {
+          const stomp = Math.pow(1 - ((((beat % 1) + 1) % 1)), 4);   // a stomp on every beat
+          sx *= 1 + 0.55 * fk;
+          sy *= (1 + 0.55 * fk) * (1 - 0.06 * stomp * fk);
+        } else if (fxOn === 'zerog') {
+          y += fk * (1.3 + 0.5 * Math.sin(t * 1.2 + i * 1.7));
+          tilt += fk * 0.3 * Math.sin(t * 0.8 + i * 2.1);
+        } else if (fxOn === 'disco') {
+          tint.setHSL(((t * 0.45 + i * 0.25) % 1 + 1) % 1, 1, 0.62);
+          ({ r, g: gr, b: bl } = tint);
+          ghostSpread = 0.001; // one glowing copy right on top, in the same colour
+          y += fk * 0.35 * Math.abs(Math.sin(beat * Math.PI));
+          tilt += fk * 0.16 * Math.sin(beat * Math.PI);
+        } else if (fxOn === 'echo') {
+          ghostSpread = 1.15 + 0.35 * Math.sin(t * 2 + i);
+        } else if (fxOn === 'glitch') {
+          // Every 1/12 s there's a chance of a jump, a squash or a blink.
+          const step = Math.floor(t * 12) + i * 7;
+          const rnd = (Math.sin(step * 12.9898) * 43758.5453) % 1;
+          if (Math.abs(rnd) < 0.3) jitter = (rnd * 3) * 0.6;
+          if (Math.abs(rnd) > 0.9) sy *= 0.8;
+          ghostSpread = 0.22;
+        } else if (fxOn === 'glory') {
+          r = 1; gr = 0.95; bl = 0.78; // warm golden light
+          y += fk * 0.45 * (0.5 + 0.5 * Math.sin(t * 1.5 + i));
+        } else if (fxOn === 'voltage') {
+          if (Math.random() < 0.3) { r = 0.65; gr = 0.9; bl = 1; } // flickering blue
+        }
+
+        const baseX = m.mesh.position.x + jitter * fk;
+        m.mesh.position.x = baseX;
         m.mesh.position.y = m.spot.y + y;
         m.mesh.rotation.z = tilt;
         m.mesh.scale.set(sx, sy, 1);
 
-        const flash = sinceMiss >= 0 && sinceMiss < 0.3 ? 0.6 : 1; // red flash on a miss
-        m.mat.color.setRGB(1, flash, flash);
         // CENTER STAGE: whoever is away on the board isn't on the stage.
-        const here = m.name !== away;
-        m.mesh.visible = here && !(riotOn && m.riot);
+        // (GLITCH also makes them blink now and then.)
+        const here = m.name !== away && !(fxOn === 'glitch' && Math.random() < 0.04);
+        const riotArt = riotOn && effect.look === 'riot' && m.riot;
+        m.mesh.visible = here && !riotArt;
         m.shadow.visible = here;
-        if (m.riot) m.riot.mesh.visible = here && riotOn;
+
+        const flash = sinceMiss >= 0 && sinceMiss < 0.3 ? 0.6 : 1; // red flash on a miss
+        m.mat.color.setRGB(r, gr * flash, bl * flash);
         if (m.riot) {
+          m.riot.mesh.visible = here && !!riotArt;
           // The Riot version moves exactly like the normal one.
           m.riot.mesh.position.copy(m.mesh.position);
           m.riot.mesh.rotation.z = tilt;
           m.riot.mesh.scale.set(sx, sy, 1);
-          m.riot.mat.color.setRGB(1, flash, flash);
+          m.riot.mat.color.setRGB(r, gr * flash, bl * flash);
+        }
+        // The see-through copies (ECHO: ghosts either side; GLITCH: red and blue).
+        const shown = riotArt ? m.riot : m;
+        for (const set of [m.ghosts, m.riot?.ghosts]) {
+          if (!set) continue;
+          set.forEach((gh, n) => {
+            const on = here && ghostSpread > 0 && (set === shown.ghosts);
+            gh.visible = on;
+            if (!on) return;
+            const side = n ? 1 : -1;
+            gh.position.set(baseX + side * ghostSpread * fk, m.mesh.position.y + (fxOn === 'echo' ? Math.sin(t * 3 + n) * 0.15 : 0), m.mesh.position.z - 0.05);
+            gh.rotation.z = fxOn === 'echo' ? -tilt : tilt;
+            gh.scale.set(sx, sy, 1);
+            if (fxOn === 'glitch') gh.material.color.set(n ? '#00e5ff' : '#ff2bd6');
+            else if (fxOn === 'disco') gh.material.color.setRGB(r, gr, bl);
+            else gh.material.color.set('#9fd8ff');
+            gh.material.opacity = (fxOn === 'glitch' ? 0.7 : fxOn === 'disco' ? (n ? 0 : 0.6) : 0.55) * fk;
+          });
+        }
+        // GLORY: a halo floats above each head.
+        m.halo.visible = here && fxOn === 'glory';
+        if (m.halo.visible) {
+          m.halo.position.set(baseX, m.mesh.position.y + m.headY * sy, m.mesh.position.z + 0.1);
+          m.halo.rotation.set(-1.25, 0, Math.sin(t * 2 + i) * 0.1);
+          m.halo.material.opacity = 0.85 * fk;
         }
 
         if (sinceHit >= 0 && sinceHit < 0.45) {
