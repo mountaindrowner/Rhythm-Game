@@ -23,9 +23,9 @@ Two kinds of time appear in the code:
 
 ## 2. The game loop (`src/main.js`)
 
-**The screens.** The game opens on the **title screen** (START THE SHOW, SETTINGS, TIMING CHECK). START THE SHOW leads to **difficulty**, then the **set list** (your best stars and score for that difficulty on every song, and the picked song plays a preview), then a **loading screen** (a gig poster with a tip), then the **show intro**: the camera swoops in over the crowd with "LIVE AT THE ARENA", the drummer clicks his sticks 4 times on the song's own beat (3, 2, 1, ROCK!), and the band starts. `show('screenId', ...)` in `main.js` switches screens.
+**The screens.** The game opens on the **title screen**. Its first tap (TAP TO START) starts the title music, *Holy Rollerz* (`src/audio/titleMusic.js`; phones only allow sound after a tap), and brings in START THE SHOW, SETTINGS and TIMING CHECK. START THE SHOW leads to **difficulty**, then the **set list** (your best stars and score for that difficulty on every song, and the picked song plays a preview), then a **loading screen** (a gig poster with a tip), then the **show intro**: the camera swoops in over the crowd with "LIVE AT THE ARENA", the drummer clicks his sticks 4 times on the song's own beat (3, 2, 1, ROCK!), and the band starts. `show('screenId', ...)` in `main.js` switches screens.
 
-**The menus have their own world.** While a menu is open, the 3D game isn't drawn at all (it saves battery too). Instead `src/ui/menuScene.js` draws a little pixel-art rock show on a 2D canvas: truss scaffolding with stage lights, an LED wall, speaker stacks, the band (the same Retro sprite sheets), sparks and a crowd, and on the title screen the RHYTHM RIOT logo (letters hand-drawn in `src/ui/pixelFont.js`) crackling with electricity. Every few seconds lightning strikes and the band flashes into their Riot Mode versions for two bars. The canvas is only 240 pixels wide and the browser scales it up with sharp pixels, which makes it cheap to draw and gives the 16-bit look.
+**The menus have their own world.** While a menu is open, the 3D game isn't drawn at all (it saves battery too). Instead `src/ui/menuScene.js` draws a little pixel-art rock show on a 2D canvas: truss scaffolding with stage lights, an LED wall, speaker stacks, the band (the same Retro sprite sheets), sparks and a crowd, and on the title screen the RHYTHM RIOT logo (letters hand-drawn in `src/ui/pixelFont.js`) crackling with electricity. While the title music plays, the lights and the band follow its real beats (its beat map, `assets/audio/title_holy_rollerz.json`), and the lightning strikes exactly where the song kicks in (16.05 s): the band flashes into their Riot Mode versions for 8 bars. Before the first tap, with no music, the lightning just strikes now and then. The canvas is only 240 pixels wide and the browser scales it up with sharp pixels, which makes it cheap to draw and gives the 16-bit look.
 
 `frame()` runs about 60 times a second (in the menus it just draws the menu scene and stops there):
 
@@ -200,6 +200,7 @@ Pausing suspends the audio system, which freezes the music and the clock togethe
 | Change the fire jet positions | `PYRO_X` in `src/world/showfx.js` |
 | Change the title screen (lights, crowd, logo colors) | `src/ui/menuScene.js` (`LIGHT_COLORS`, `makeCrowd`, `buildLogo`) |
 | Add a loading-screen tip | `TIPS` in `src/main.js` |
+| Move the title screen's lightning strikes | `strikes` in `assets/audio/title_holy_rollerz.json` (seconds into the song, and how many bars the band stays Riot) |
 | Make the intro longer or shorter | `LEAD` in `src/config.js` |
 
 Run `npm run dev`, make the change, save, and watch the browser update. Open `http://localhost:5173/?autoplay&view=stage` to watch the band up close while you tweak them.

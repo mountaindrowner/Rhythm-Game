@@ -590,3 +590,20 @@ button.chip-btn { border-color: var(--gold); color: var(--gold); }
 #countIn.rock { font-size: 72px; color: var(--vox); }
 #countIn.pop { animation: count-slam 0.38s cubic-bezier(0.2, 1.4, 0.4, 1); }
 @keyframes count-slam { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: scale(1); } }
+
+/* ---- TAP TO START (before the first tap), then the buttons slide in ---- */
+.overlay.title-screen { flex-direction: column; justify-content: flex-end; align-items: center; }
+#menu:not(.started) .title-buttons > :not(.version) { display: none; }
+#menu.started .tap-start { display: none; }
+#menu.started .title-buttons { animation: buttons-in 0.5s cubic-bezier(0.2, 1.3, 0.4, 1); }
+@keyframes buttons-in { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+button.tap-start {
+  width: 100%; max-width: 380px; min-height: 72px; margin-bottom: 18px;
+  font-size: 26px; letter-spacing: 3px; color: #fff2d1;
+  background: transparent; border: none; box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  text-shadow: 0 3px 0 #ff5a1f, 0 0 18px #ff9b3b, 0 0 40px #ff5a1f;
+  animation: tap-blink 1.1s ease-in-out infinite;
+}
+button.tap-start::before { display: none; }
+@keyframes tap-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

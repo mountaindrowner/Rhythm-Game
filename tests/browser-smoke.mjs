@@ -1,6 +1,7 @@
 // browser-smoke.mjs — plays the BUILT game in a real (headless) Chrome and
 // checks the important things actually work:
-//   * the title screen (its own rock-show scene, no game behind it), the
+//   * the title screen (its own rock-show scene, no game behind it, and
+//     TAP TO START, which starts the title music), the
 //     difficulty and set-list screens, the song preview, the loading screen,
 //     and the show intro with the drummer's count-in
 //   * the settings screen works, with no errors
@@ -85,7 +86,12 @@ await page.goto(`file://${file}`);
 await page.waitForTimeout(1500);
 await snap('01-menu');
 let s = await state();
-check(await page.isVisible('#startBtn') && s.screen === 'menu', 'title screen shows START THE SHOW');
+check(await page.isVisible('#tapStart') && !(await page.isVisible('#startBtn')), 'title screen opens with TAP TO START');
+await page.click('#tapStart');
+await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.titleMusic, null, { timeout: 8000 }).catch(() => {});
+s = await state();
+check(s.titleMusic, 'the first tap starts the title music');
+check(await page.isVisible('#startBtn') && s.screen === 'menu', 'then the title screen shows START THE SHOW');
 check(s.inMenus && await page.isVisible('#menuScene'), 'the menus have their own rock-show scene (the game is not drawn behind them)');
 
 // ---- Settings: turn on practice mode so the next checks can't game-over ----
@@ -102,6 +108,7 @@ await snap('01b-difficulty');
 check(await screen() === 'diffScreen', 'START THE SHOW opens the difficulty screen');
 await page.click('[data-diff="casual"]');
 check(await screen() === 'songScreen', 'picking a difficulty opens the set list');
+check(!(await state()).titleMusic, 'the title music stops on the set list (song previews play there)');
 await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.previewing, null, { timeout: 8000 }).catch(() => {});
 check((await state()).previewing, 'the picked song plays a preview on the set list');
 await snap('01c-set-list');

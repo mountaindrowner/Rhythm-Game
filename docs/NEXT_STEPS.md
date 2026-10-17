@@ -1,8 +1,9 @@
 # Next steps (handoff)
 
-_Last updated: v0.11._
+_Last updated: v0.11.1._
 
 ## Where things stand
+- **v0.11.1 (owner request): title music.** *Holy Rollerz* (the owner's track) plays on the title, difficulty and settings screens. Phones only allow sound after a tap, so the title screen now opens with **TAP TO START**; that tap starts the song and the menu buttons slide in. The scene follows the song's real beats (beat map in `assets/audio/title_holy_rollerz.json`, made with `scripts/chart/listen.py`), and the lightning strikes where the song kicks in at **16.05 s**: the band turns Riot for 8 bars. More strikes at 51.3 s, 86.4 s and 114.3 s (edit `strikes` in the JSON to move them). The music stops on the set list (song previews play there), in the timing check and in the game. The built page is now about 22 MB.
 - **v0.11 (owner request: "more pizzazz, like a rock and roll show"):** new menus.
   - The title screen is its own pixel-art **rock show** (`src/ui/menuScene.js`): truss scaffolding with stage lights and beams, an LED wall, speaker stacks, the band jamming, sparks, a crowd with hands up, and a new pixel **RHYTHM RIOT logo** (`src/ui/pixelFont.js`) crackling with electricity. Every few seconds lightning strikes and the band flashes into their Riot versions. The 3D game isn't drawn behind any menu any more.
   - Flow: **START THE SHOW → difficulty → set list** (best stars and score for that difficulty on each song, a chorus **preview** of the picked song, `src/audio/preview.js`) **→ PLAY → loading screen** (a gig poster with the venue, a tip, and an "amp warming up" bar) → the loading screen punches out → the camera **swoops in over the crowd** with "LIVE AT THE ARENA" → the drummer's **4 stick clicks** on the song's own beat (3, 2, 1, ROCK!) → the song.
@@ -18,7 +19,7 @@ _Last updated: v0.11._
 - **Chart maker (built):** `scripts/chart/` finds tempo, beats and downbeats and places notes. **Sections are an energy-based best guess.** If the owner shares where each song's verses and choruses start, re-run with `--sections` (see `docs/ADDING_SONGS.md`).
 - **Tempo note:** both newer songs read as about 167 BPM (they also fit 83 BPM). If they feel too fast, re-chart with `--tempo 60-100`.
 - **First song's chart:** the chart maker suggests its beats are about 20 ms late. That's inside the Perfect window, but re-charting it would make all three songs consistent.
-- **Size:** with three MP3s embedded, the built page is about 19 MB. Lower-bitrate MP3s would shrink it if needed.
+- **Size:** with three songs and the title music embedded, the built page is about 22 MB. Lower-bitrate MP3s would shrink it if needed.
 - **Names:** the band is **X-ROADS**; the game is called **Rhythm Riot** for now (the owner is still deciding).
 - **Band:** the default look is **Retro 16-bit** (64 px PixelLab art) with 41 animations in `assets/art/pixellab-retro/` and Riot versions in `assets/art/pixellab-retro-riot/`. The choreographer `src/world/animBlocks.js` picks grooves by section, switches only on bar lines, and is unit-tested. *Pixel HD*, 3D models and Classic are in Settings.
 - **Vocals:** each chart names its lead vocalist (`singer`, `guitarist` or `duet`); the guitarist's mic stand appears only for his songs and duets. **Waiting on the owner:** which upcoming songs are his or duets.

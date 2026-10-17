@@ -19,14 +19,24 @@
 // pixels), which keeps it cheap to draw and gives the 16-bit look.
 //
 //   setMode('title' | 'menu')   logo or no logo (sub-menus dim the scene)
-//   setTempo(bpm)               the lights and band follow this beat
-//   update(dt)                  draw one frame (only called while visible)
+//   update(dt, musicTime)       draw one frame (only called while visible).
+//                               musicTime = seconds into the title song, or
+//                               null when it isn't playing.
+//
+// THE MUSIC: while the title song plays, everything moves on ITS beats (from
+// its beat map), and the big lightning strikes come exactly where the song
+// says (TITLE_SONG.strikes: the first one at 16.05 s, where the song kicks
+// in). Without music (before you tap) the scene keeps its own 120 BPM beat
+// and the lightning strikes now and then by itself.
 // =============================================================================
 import { drawPixelText, textWidth } from './pixelFont.js';
 import { RETRO_ART } from '../world/bandArt.js';
+import { TITLE_SONG, titleBeat } from '../audio/titleMusic.js';
 
 const W = 240; // canvas width in pixels (the height follows the screen shape)
 const LIGHT_COLORS = ['#ff3d6e', '#ffbe3b', '#4bbdff', '#63ff79', '#b65bff', '#ff7a1a'];
+/** The light color for number i (works for negative numbers too). */
+const lightColor = (i) => LIGHT_COLORS[((i % LIGHT_COLORS.length) + LIGHT_COLORS.length) % LIGHT_COLORS.length];
 // Fans' shirt and hair colors (dimmed further for the rows nearest you).
 const SHIRTS = [[74, 52, 96], [52, 66, 92], [92, 48, 70], [58, 74, 58], [80, 64, 50], [40, 40, 52]];
 const HAIR = [[30, 22, 20], [62, 40, 26], [110, 86, 50], [20, 18, 26], [90, 40, 30]];
@@ -35,7 +45,7 @@ export function createMenuScene(canvas) {
   const g = canvas.getContext('2d');
   let H = 480;
   let mode = 'title';
-  let bpm = 120;
+  const bpm = 120;        // the scene's own beat when no music is playing
   let time = 0;
   let beat = 0;
   let L = {};             // layout: where things go for this screen shape
@@ -46,7 +56,10 @@ export function createMenuScene(canvas) {
   const bolts = [];       // electricity
   let flash = 0;          // white flash from a lightning strike (0..1)
   let riotUntil = -1;     // beat until which the band shows its Riot versions
-  let nextStrike = 3;     // time of the next big lightning strike
+  let nextStrike = 3;     // time of the next big lightning strike (no music)
+  let lastMusic = null;   // music time on the previous frame (to spot strikes)
+  let logoX = 0;          // where the logo was drawn (strikes go through it)
+  let logoY = 0;
 
   // ---- Band art: load the sprite sheets (they're embedded in the page) -----
   const load = (url) => { const img = new Image(); img.src = url; return img; };
@@ -320,13 +333,30 @@ export function createMenuScene(canvas) {
   // ===========================================================================
   // EVERY FRAME
   // ===========================================================================
-  function update(dt) {
+  function update(dt, musicTime = null) {
     resize();
     if (!bg) return;
     dt = Math.max(0, dt);
     time += dt;
-    beat += dt * (bpm / 60);
-    const pulse = Math.exp(-(beat % 1) * 5);      // 1 right on the beat, fading
+    if (musicTime != null) {
+      // Follow the title song's own beats, and strike where the song says.
+      beat = titleBeat(musicTime);
+      if (lastMusic != null && musicTime < lastMusic - 1) riotUntil = -1; // the song looped
+      if (lastMusic != null) {
+        for (const st of TITLE_SONG.strikes) {
+          if (lastMusic < st.time && musicTime >= st.time) strike(st.bars, true);
+        }
+      }
+      lastMusic = musicTime;
+    } else {
+      beat += dt * (bpm / 60);
+      lastMusic = null;
+      if (time > nextStrike) {
+        nextStrike = time + 4 + Math.random() * 4;
+        strike(2, false);
+      }
+    }
+    const pulse = Math.exp(-(((beat % 1) + 1) % 1) * 5); // 1 right on the beat, fading
     const bar = Math.floor(beat / 4);
     g.imageSmoothingEnabled = false;
     g.globalCompositeOperation = 'source-over';
@@ -343,7 +373,7 @@ export function createMenuScene(canvas) {
     updateSparks(dt, pulse);
     drawCrowd(pulse, bar);
     if (mode === 'title') drawLogo(dt, pulse);
-    else bolts.length = 0;
+    drawBolts(dt);
 
     if (flash > 0) {
       g.fillStyle = `rgba(230,245,255,${(flash * 0.45).toFixed(3)})`;
@@ -355,7 +385,7 @@ export function createMenuScene(canvas) {
 
   function drawHaze(bar) {
     g.globalCompositeOperation = 'lighter';
-    const tint = LIGHT_COLORS[bar % LIGHT_COLORS.length];
+    const tint = lightColor(bar);
     for (let i = 0; i < 3; i++) {
       const x = ((time * (6 + i * 3) + i * 90) % (W + 120)) - 60;
       const y = L.stageY - 60 + i * 26;
@@ -401,7 +431,7 @@ export function createMenuScene(canvas) {
       const tx = x + swing;
       const ty = L.stageY + 30;
       const spread = 16;
-      const color = LIGHT_COLORS[(bar + i) % LIGHT_COLORS.length];
+      const color = lightColor(bar + i);
       const a = 0.1 + 0.12 * pulse;
       const grd = g.createLinearGradient(x, y, tx, ty);
       grd.addColorStop(0, hexA(color, a + 0.1));
@@ -426,7 +456,7 @@ export function createMenuScene(canvas) {
       const y = L.trussY + 10;
       g.fillStyle = '#1c1a26';
       g.fillRect(x - 2, y, 5, 5);
-      g.fillStyle = LIGHT_COLORS[(bar + i) % LIGHT_COLORS.length];
+      g.fillStyle = lightColor(bar + i);
       g.fillRect(x - 1, y + 4, 3, 2);
     }
     // Blinders on the towers: white flashes on the first beat of every 2nd bar.
@@ -536,7 +566,7 @@ export function createMenuScene(canvas) {
   // Silhouettes, lit from the stage: the back rows catch more light, and every
   // head, shoulder and hand gets a bright rim in the color of the lights.
   function drawCrowd(pulse, bar) {
-    const tint = LIGHT_COLORS[bar % LIGHT_COLORS.length];
+    const tint = lightColor(bar);
     const shade = (rgb, f) => `rgb(${Math.round(rgb[0] * f)},${Math.round(rgb[1] * f)},${Math.round(rgb[2] * f)})`;
     for (const p of crowd) {
       const hop = Math.round(Math.max(0, Math.sin((beat + p.phase) * Math.PI * 2)) * (1 + p.k * 2) * (0.5 + pulse));
@@ -591,6 +621,8 @@ export function createMenuScene(canvas) {
   function drawLogo(dt, pulse) {
     const lx = Math.round((W - logo.w) / 2);
     const ly = L.logoY + Math.round(Math.sin(time * 1.6) * 1.5);
+    logoX = lx;
+    logoY = ly;
     // Glow behind, pulsing on the beat.
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.35 + 0.45 * pulse;
@@ -623,23 +655,29 @@ export function createMenuScene(canvas) {
       const len = 6 + Math.random() * 12;
       bolts.push({ pts: jagged(lx + ex, ly + ey, lx + ex + Math.cos(ang) * len, ly + ey + Math.sin(ang) * len, 3), life: 0.09 });
     }
-    // Every few seconds: a BIG lightning strike from the truss through the
-    // logo onto the band, who flash into their Riot Mode versions.
-    if (time > nextStrike) {
-      nextStrike = time + 4 + Math.random() * 4;
-      const fromX = 30 + Math.random() * (W - 60);
-      const midX = lx + logo.riotX + Math.random() * logo.riotW;
-      const midY = ly + logo.riotTop + 10;
-      const end = L.spots.singer;
+  }
+
+  /**
+   * A BIG lightning strike from the truss (through the logo on the title
+   * screen) onto the band, who flash into their Riot Mode versions for
+   * `bars` bars. onBeat = it's a music strike, exactly on a bar line.
+   */
+  function strike(bars, onBeat) {
+    const fromX = 30 + Math.random() * (W - 60);
+    const end = L.spots.singer;
+    if (mode === 'title') {
+      const midX = logoX + logo.riotX + Math.random() * logo.riotW;
+      const midY = logoY + logo.riotTop + 10;
       bolts.push({ pts: jagged(fromX, L.trussY + 12, midX, midY, 6), life: 0.3, big: true });
       bolts.push({ pts: jagged(midX, midY + 30, end.x, end.y - 50, 5), life: 0.3, big: true });
-      flash = 1;
-      riotUntil = Math.ceil(beat) + 8;
-      for (let k = 0; k < 30; k++) {
-        sparks.push({ x: end.x, y: end.y - 40, vx: (Math.random() - 0.5) * 120, vy: -40 - Math.random() * 80, life: 0.7 });
-      }
+    } else {
+      bolts.push({ pts: jagged(fromX, L.trussY + 12, end.x, end.y - 50, 6), life: 0.3, big: true });
     }
-    drawBolts(dt);
+    flash = 1;
+    riotUntil = (onBeat ? Math.round(beat) : Math.ceil(beat)) + bars * 4;
+    for (let k = 0; k < 30; k++) {
+      sparks.push({ x: end.x, y: end.y - 40, vx: (Math.random() - 0.5) * 120, vy: -40 - Math.random() * 80, life: 0.7 });
+    }
   }
 
   /** A sweeping shine across the letters every few seconds. */
@@ -728,7 +766,6 @@ export function createMenuScene(canvas) {
   return {
     update,
     setMode(m) { mode = m; },
-    setTempo(b) { bpm = b || 120; },
     get mode() { return mode; },
   };
 }

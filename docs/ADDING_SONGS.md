@@ -12,6 +12,8 @@ The game can turn any song into a playable chart. `scripts/chart/make_chart.py` 
 
 All three are sung by her (`"vocalist": "singer"`).
 
+**Title music:** *Holy Rollerz* (`assets/audio/title_holy_rollerz.mp3`, re-encoded to 128 kbps without its cover art). Its beat map and lightning strikes are in `title_holy_rollerz.json`. To swap the title music, analyse the new MP3 with `scripts/chart/listen.py` (as `make_chart.py` does), save its beats the same way, and pick strike times on bar lines.
+
 ## Add a song in 3 steps
 
 You need Python 3 with numpy (`pip install numpy`) and the `ffmpeg` program.

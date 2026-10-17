@@ -29,6 +29,7 @@ import { getBest, recordResult, starText } from './progress.js';
 import { settings, updateSettings } from './settings.js';
 import { SongPlayer } from './audio/player.js';
 import { createPreview } from './audio/preview.js';
+import { createTitleMusic } from './audio/titleMusic.js';
 import { Performance, perfectScore, starsFor } from './game/rules.js';
 import { Input } from './game/input.js';
 import { createWorld } from './world/scene.js';
@@ -69,6 +70,7 @@ const perfMonitor = createPerfMonitor(world);
 const hud = createHud();
 const player = new SongPlayer(SONG.audio);
 const preview = createPreview(player);
+const titleMusic = createTitleMusic();
 const menuScene = createMenuScene($('menuScene'));
 
 // When a different song is picked: its recording, its venue, and who sings
@@ -511,12 +513,21 @@ function showResults(headline, note, finished = true) {
 // own rock-show scene instead of the 3D game).
 const SCREENS = ['menu', 'diffScreen', 'songScreen', 'loading', 'settingsScreen', 'hud', 'pauseScreen', 'results'];
 const MENU_SCREENS = ['menu', 'diffScreen', 'songScreen', 'settingsScreen', 'calibration'];
+const MUSIC_SCREENS = ['menu', 'diffScreen', 'settingsScreen'];
 let inMenus = true;
 /** Show exactly these screens (by id) and hide the rest. */
 function show(...names) {
   for (const id of SCREENS) $(id).hidden = !names.includes(id);
   inMenus = names.some((n) => MENU_SCREENS.includes(n));
   $('menuScene').hidden = !inMenus;
+  // The title music plays on the title, difficulty and settings screens (once
+  // you've tapped START); the set list has song previews instead, and the
+  // timing check and the game need it quiet. (show() always runs inside a tap,
+  // so phones allow the music to start.)
+  const musicScreen = names.some((n) => MUSIC_SCREENS.includes(n));
+  if (musicScreen && $('menu').classList.contains('started')) {
+    if (!titleMusic.playing) titleMusic.play();
+  } else titleMusic.stop();
   menuScene.setMode(names.includes('menu') ? 'title' : 'menu');
   if (!names.includes('hud')) {
     $('riotHint').hidden = true;
@@ -547,7 +558,7 @@ function frame(now) {
 
   // In the menus only the menu's own rock show is drawn: the 3D game rests.
   if (inMenus) {
-    menuScene.update(dt);
+    menuScene.update(dt, titleMusic.time);
     perfMonitor.work(performance.now() - workStart, 0);
     requestAnimationFrame(frame);
     return;
@@ -624,10 +635,15 @@ document.addEventListener('click', (e) => {
   const button = e.target.closest('button');
   if (!button || !inMenus) return;
   try { player.unlock(); } catch { /* no Web Audio: play silently */ }
-  if (button.id !== 'startBtn' && button.id !== 'playBtn' && !button.dataset.song) player.sfx('blip');
+  if (!['startBtn', 'playBtn', 'tapStart'].includes(button.id) && !button.dataset.song) player.sfx('blip');
 }, true);
 
-// TITLE: START THE SHOW -> difficulty.
+// TITLE: the first tap starts the music and brings in the buttons.
+$('tapStart').addEventListener('click', () => {
+  $('menu').classList.add('started');
+  show('menu');
+});
+// START THE SHOW -> difficulty.
 $('startBtn').addEventListener('click', () => {
   player.sfx('chord');
   show('diffScreen');
@@ -802,6 +818,7 @@ window.__BURN_BRIGHT_TEST__ = {
       riotPhrases: new Set(perf.notes.filter((n) => n.riot).map((n) => n.riot)).size,
       drawCalls: world.renderer.info.render.calls, triangles: world.renderer.info.render.triangles,
       screen: SCREENS.find((id) => !$(id).hidden) || '', inMenus, previewing: preview.playing,
+      titleMusic: titleMusic.playing, titleTime: titleMusic.time,
       countIn: countInTimes(), intro: $('introCard').classList.contains('show'), countText: $('countIn').textContent,
       perf: { ...perfMonitor.stats },
     };
