@@ -35,14 +35,16 @@
           "loop": true,
           "beats": 4,
           "use": false,
-          "note": "white flashing frames: redo before using"
+          "note": "white flashing frames: redo before using; on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "riot4": {
           "row": 4,
           "frames": 16,
           "block": "riot",
           "loop": true,
-          "beats": 2
+          "beats": 2,
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "idle": {
           "row": 0,
@@ -85,14 +87,18 @@
           "frames": 16,
           "block": "riot",
           "loop": true,
-          "beats": 4
+          "beats": 4,
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "riot4": {
           "row": 4,
           "frames": 16,
           "block": "riot",
           "loop": true,
-          "beats": 4
+          "beats": 4,
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "idle": {
           "row": 0,
@@ -137,14 +143,16 @@
           "loop": true,
           "beats": 4,
           "use": false,
-          "note": "one frame has a brown smear for flames: redo before using"
+          "note": "one frame has a brown smear for flames: redo before using; on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "riot4": {
           "row": 4,
           "frames": 16,
           "block": "riot",
           "loop": true,
-          "beats": 2
+          "beats": 2,
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "idle": {
           "row": 0,
@@ -187,14 +195,18 @@
           "frames": 16,
           "block": "riot",
           "loop": true,
-          "beats": 2
+          "beats": 2,
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "riot4": {
           "row": 4,
           "frames": 16,
           "block": "riot",
           "loop": true,
-          "beats": 4
+          "beats": 4,
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         "idle": {
           "row": 0,

@@ -27,14 +27,16 @@
           "beats": 4,
           "prompt": "leans back and laughs like a mad scientist with the bass held up high, then hunches forward and plays hard again, lab coat flaring",
           "use": false,
-          "note": "white flashing frames: redo before using"
+          "note": "white flashing frames: redo before using; on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         {
           "name": "riot4",
           "block": "riot",
           "loop": true,
           "beats": 2,
-          "prompt": "hopping from foot to foot while slapping the bass strings, head bobbing to the beat"
+          "prompt": "hopping from foot to foot while slapping the bass strings, head bobbing to the beat",
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         }
       ]
     },
@@ -60,14 +62,18 @@
           "block": "riot",
           "loop": true,
           "beats": 4,
-          "prompt": "spins once on the spot with the microphone, ponytail flying out, then faces forward and sings again"
+          "prompt": "spins once on the spot with the microphone, ponytail flying out, then faces forward and sings again",
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         {
           "name": "riot4",
           "block": "riot",
           "loop": true,
           "beats": 4,
-          "prompt": "drops down onto one knee and belts a long note with her free arm stretched up high, then stands back up"
+          "prompt": "drops down onto one knee and belts a long note with her free arm stretched up high, then stands back up",
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         }
       ]
     },
@@ -95,14 +101,16 @@
           "beats": 4,
           "prompt": "jumps up high in the air with a split kick while strumming the guitar, then lands and keeps playing",
           "use": false,
-          "note": "one frame has a brown smear for flames: redo before using"
+          "note": "one frame has a brown smear for flames: redo before using; on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         {
           "name": "riot4",
           "block": "riot",
           "loop": true,
           "beats": 2,
-          "prompt": "crouches low with knees bent and plays a fast solo, the guitar neck pointing up, bobbing on each beat"
+          "prompt": "crouches low with knees bent and plays a fast solo, the guitar neck pointing up, bobbing on each beat",
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         }
       ]
     },
@@ -128,14 +136,18 @@
           "block": "riot",
           "loop": true,
           "beats": 2,
-          "prompt": "stands tall and smashes both flaming drumsticks down hard on the beat, then raises them high again (all the motion above his chest)"
+          "prompt": "stands tall and smashes both flaming drumsticks down hard on the beat, then raises them high again (all the motion above his chest)",
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         },
         {
           "name": "riot4",
           "block": "riot",
           "loop": true,
           "beats": 4,
-          "prompt": "points both flaming drumsticks at the crowd, then plays a fast drum fill while head banging, hair flying (all the motion above his chest)"
+          "prompt": "points both flaming drumsticks at the crowd, then plays a fast drum fill while head banging, hair flying (all the motion above his chest)",
+          "use": false,
+          "note": "on hold until the owner tries it (reminder set for 2026-10-22)"
         }
       ]
     }
