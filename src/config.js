@@ -84,6 +84,19 @@ export const FINALE = {
   perTap: 25,        // points per pad tap during the Big Rock Ending (× multiplier)
 };
 
+// ---- CENTER STAGE takeovers ---------------------------------------------------
+// Each pad is also a meter for its musician, filled ONLY by Perfect hits on
+// that pad. When one fills, all the others reset to empty and that musician
+// takes over: they slam onto the board for a mini-game of their own.
+export const STAGE = {
+  fill: 0.36,       // a meter is full after Perfects on this share of that pad's notes in the song (tuned by simulation: ~45% Perfects gets one takeover, ~75% gets two)
+  minNeed: 6,       // ...but never fewer than this many Perfects
+  maxPerSong: 2,    // a good player gets about one per song, a great one two
+  bars: 6,          // how long a takeover lasts (the notes in it are cleared)
+  points: 100,      // base points per target hit (times your multiplier)
+};
+
+
 // ---- Stars (results screen and song picker) --------------------------------
 // Stars come from your score as a share of a "perfect run" (every note
 // PERFECT, never dropping the streak). Gold stars: an Expert full combo

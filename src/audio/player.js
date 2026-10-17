@@ -130,6 +130,7 @@ export class SongPlayer {
    *   'chord'    a big power chord (START THE SHOW)
    *   'boom'     a deep thump (the show is about to start)
    *   'thunder'  a lightning crack and a rolling rumble
+   *   'thwack' 'pop' 'chime' 'slash'   CENTER STAGE target hits
    *   'riot'     a rising whoosh and a big power chord (Riot Mode!)
    *   'trombone' the classic "wah wah wah waaah" (the show is over)
    */
@@ -144,7 +145,42 @@ export class SongPlayer {
     const now = ctx.currentTime;
     const out = ctx.createGain();
     out.connect(ctx.destination);
-    if (name === 'blip') {
+    if (name === 'thwack' || name === 'pop' || name === 'chime' || name === 'slash') {
+      // CENTER STAGE hit sounds (short, so lots of them can overlap).
+      const o = ctx.createOscillator();
+      const gn = ctx.createGain();
+      o.connect(gn).connect(out);
+      if (name === 'thwack') {          // a drum hit: a quick low thump
+        o.type = 'sine';
+        o.frequency.setValueAtTime(180, now);
+        o.frequency.exponentialRampToValueAtTime(55, now + 0.12);
+        gn.gain.setValueAtTime(0.0001, now);
+        gn.gain.exponentialRampToValueAtTime(0.5, now + 0.004);
+        gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      } else if (name === 'pop') {      // a bubble: a quick upward blip
+        o.type = 'sine';
+        o.frequency.setValueAtTime(300, now);
+        o.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+        gn.gain.setValueAtTime(0.0001, now);
+        gn.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
+        gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      } else if (name === 'chime') {    // a heart: a bright bell
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(1318, now);
+        gn.gain.setValueAtTime(0.0001, now);
+        gn.gain.exponentialRampToValueAtTime(0.22, now + 0.005);
+        gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      } else {                          // a string: a twangy zap sliding down
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(880, now);
+        o.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+        gn.gain.setValueAtTime(0.0001, now);
+        gn.gain.exponentialRampToValueAtTime(0.12, now + 0.005);
+        gn.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      }
+      o.start(now);
+      o.stop(now + 0.4);
+    } else if (name === 'blip') {
       // Menu button: a short bright "bip" that slides up.
       const o = ctx.createOscillator();
       o.type = 'square';

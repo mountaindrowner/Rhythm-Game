@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Performance, multiplierFor, perfectScore, starsFor } from '../../src/game/rules.js';
-import { LEAD, ENERGY } from '../../src/config.js';
+import { LEAD, ENERGY, STAGE } from '../../src/config.js';
 
 const note = (time, lane, hold = 0) => ({ time: LEAD + time, lane, hold, hit: false, miss: false, done: false });
 
@@ -240,4 +240,61 @@ test('freeze guard: notes that pass while the game is frozen are skipped, not mi
   for (let t = 2.7; t <= 4.31; t += 0.05) p.update(LEAD + t); // normal frames again...
   // ...so the 4 s note that went by unplayed is a normal miss.
   assert.equal(p.counts.miss, 1);
+});
+
+// ---- CENTER STAGE ------------------------------------------------------------
+/** A chart with 30 notes on each pad, one every 0.25 s, cycling the pads. */
+const stageChart = () => Array.from({ length: 120 }, (_, i) => note(1 + i * 0.25, i % 4));
+
+test('center stage: only PERFECT hits fill a pad\'s meter', () => {
+  const p = new Performance(stageChart());
+  assert.equal(p.stageNeed[3], Math.max(STAGE.minNeed, Math.ceil(30 * STAGE.fill))); // a third of the pad's 30 notes
+  p.press(3, LEAD + 1.75);          // perfect on drums
+  p.press(0, LEAD + 2 + 0.07);      // a GREAT on bass: doesn't count
+  assert.ok(p.stageLevel(3) > 0);
+  assert.equal(p.stageLevel(0), 0);
+});
+
+test('center stage: when one meter fills, the others empty and that musician is ready', () => {
+  const p = new Performance(stageChart());
+  p.press(0, LEAD + 1);             // one perfect on bass
+  p.stageMeter[3] = p.stageNeed[3] - 1;
+  const e = p.press(3, LEAD + 1.75); // the drums' last Perfect
+  assert.equal(e.stageReady, true);
+  assert.equal(p.stageReady, 3);
+  assert.equal(p.stageLevel(3), 1);
+  assert.equal(p.stageLevel(0), 0); // bass reset
+  // Nothing fills while someone is waiting to take over.
+  p.press(1, LEAD + 2.25);
+  assert.equal(p.stageLevel(1), 0);
+});
+
+test('center stage: a takeover clears its notes (not counted against you) and empties the meters', () => {
+  const p = new Performance(stageChart());
+  p.stageMeter[2] = p.stageNeed[2] - 1;
+  p.press(2, LEAD + 1.5);
+  const e = p.startTakeover(LEAD + 3, LEAD + 6);
+  assert.equal(e.type, 'takeoverStart');
+  assert.equal(e.lane, 2);
+  const cleared = p.notes.filter((n) => n.skipped).length;
+  assert.ok(cleared >= 12 && cleared <= 13, `${cleared} notes cleared`);
+  for (let t = 1.6; t < 5.9; t += 0.05) p.update(LEAD + t);
+  assert.equal(p.counts.miss, 7);   // the 7 unplayed notes BEFORE the takeover are misses...
+  assert.equal(p.counts.skipped, cleared); // ...the ones inside it aren't
+  assert.equal(p.endTakeover().type, 'takeoverEnd');
+  assert.equal(p.stageUses, 1);
+  assert.deepEqual(p.stageMeter, [0, 0, 0, 0]);
+});
+
+test('center stage: at most two takeovers per song', () => {
+  const p = new Performance(stageChart());
+  for (let k = 0; k < STAGE.maxPerSong; k++) {
+    p.stageReady = 3;
+    p.startTakeover(LEAD + 100, LEAD + 101);
+    p.endTakeover();
+  }
+  p.stageMeter[3] = p.stageNeed[3] - 1;
+  const e = p.press(3, LEAD + 1.75);
+  assert.equal(e.stageReady, false);
+  assert.equal(p.stageReady, -1);
 });

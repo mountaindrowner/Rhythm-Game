@@ -221,6 +221,27 @@ const work = (await state()).perf;
 check(work.updateMs < 6, `smoothness: update ${work.updateMs.toFixed(2)} ms per frame (budget 6 ms); `
   + `render call ${work.renderMs.toFixed(2)} ms, ${work.fps.toFixed(0)} fps in software rendering`);
 
+// ---- CENTER STAGE: a full meter -> the musician takes over at the next bar ----
+await page.evaluate(() => window.__BURN_BRIGHT_TEST__.fillStage(3)); // the drummer's meter is full
+s = await state();
+check(s.stageReady === 3 && s.stageMeters[3] === 1, 'a full meter makes that musician ready (the drums pad glows)');
+await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.takeover, null, { timeout: 15000 }).catch(() => {});
+s = await state();
+check(s.takeover?.lane === 3 && s.stageMeters.every((m) => m === 0), 'the drummer takes center stage on the next bar; every meter empties');
+await page.waitForFunction(() => window.__BURN_BRIGHT_TEST__.state.takeoverTargets.length > 0, null, { timeout: 8000 }).catch(() => {});
+let tapped = 0;
+for (let i = 0; i < 12; i++) {
+  const targets = (await state()).takeoverTargets;
+  if (targets[0]) { await page.mouse.click(targets[0].x, targets[0].y); tapped++; }
+  await page.waitForTimeout(150);
+}
+await snap('06b-center-stage');
+s = await state();
+check(s.takeoverStats?.hits > 0, `tapping the drums on the board scores (${s.takeoverStats?.hits} hits of ${s.takeoverStats?.spawned}, ${tapped} taps)`);
+await page.waitForFunction(() => !window.__BURN_BRIGHT_TEST__.state.takeover, null, { timeout: 20000 }).catch(() => {});
+s = await state();
+check(!s.takeover && s.stageUses === 1 && s.status === 'playing', 'the takeover ends and the notes come back');
+
 await page.click('#pauseBtn');
 const p0 = (await state()).t;
 await page.waitForTimeout(1200);

@@ -643,3 +643,27 @@ button.tap-start::before { display: none; }
 .skip-hint { display: none; margin: 0 0 22px; font: 700 12px var(--display); letter-spacing: 3px; color: #b9b2d6; opacity: 0.7; }
 #menu.intro .skip-hint { display: block; animation: tap-blink 1.6s ease-in-out infinite; }
 #menu.intro .title-buttons > :not(.version) { display: none; }
+
+/* ===========================================================================
+   CENTER STAGE (v0.12)
+   =========================================================================== */
+#takeover { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; touch-action: none; }
+#takeover.live { pointer-events: auto; }
+/* Each pad is its musician's meter: it fills up from the bottom, like a glass. */
+.pad .meter {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+  border-radius: 0 0 17px 17px; pointer-events: none;
+  background: linear-gradient(color-mix(in srgb, var(--c) 80%, white 20%), color-mix(in srgb, var(--c) 35%, transparent));
+  border-top: 2px solid rgba(255, 255, 255, 0.85);
+  opacity: 0.55;
+  transition: height 0.25s ease-out;
+}
+.pad .icon, .pad .label { position: relative; } /* stay in front of the meter */
+.pad.ready .meter { height: 100% !important; border-radius: 17px; opacity: 0.9; }
+.pad.ready { animation: pad-ready 0.35s ease-in-out infinite alternate; }
+@keyframes pad-ready {
+  from { box-shadow: 0 0 14px var(--c), inset 0 0 18px #fff6; }
+  to { box-shadow: 0 0 36px 8px var(--c), inset 0 0 26px #fffa; }
+}
+/* While a musician has the board, the pads rest. */
+#pads.takeover .pad { opacity: 0.3; filter: saturate(0.5); }

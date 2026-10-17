@@ -8,7 +8,7 @@
 // listen to those events to draw sparks, animate the band, update the HUD.
 // Keeping the rules separate makes them easy to test (see tests/unit/).
 // =============================================================================
-import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS, RIOT, FINALE } from '../config.js';
+import { WINDOWS, SCORE, ENERGY, LEAD, WRONG_PRESS_COOLDOWN, STARS, RIOT, FINALE, STAGE } from '../config.js';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const FREEZE = 0.25; // seconds between updates that count as "the game froze"
@@ -64,6 +64,16 @@ export class Performance {
       if (!this.phrases.has(n.riot)) this.phrases.set(n.riot, { total: 0, hit: 0, broken: false });
       this.phrases.get(n.riot).total++;
     }
+    // CENTER STAGE: one meter per pad, filled only by Perfects on that pad.
+    // stageNeed = how many Perfects fill it (a share of that pad's notes).
+    this.stageNeed = [0, 1, 2, 3].map((lane) => {
+      const count = notes.filter((n) => n.lane === lane && !n.ghost).length;
+      return count ? Math.max(STAGE.minNeed, Math.ceil(count * STAGE.fill)) : Infinity;
+    });
+    this.stageMeter = [0, 0, 0, 0];
+    this.stageReady = -1;  // the pad whose meter is full, waiting to take over (-1 = none)
+    this.stageUses = 0;    // takeovers so far this song
+    this.takeover = null;  // { lane, start, end } while a takeover is on
     this.total = notes.filter((n) => !n.ghost).length; // ghost notes are the soloist's, not yours
     this.score = 0;
     this.combo = 0;
@@ -143,8 +153,17 @@ export class Performance {
       this.riotMeter = Math.min(1, this.riotMeter + RIOT.perPhrase);
       riotPhrase = true;
     }
+    // CENTER STAGE: a Perfect fills this pad's meter. When it's full, the
+    // other meters empty and this musician is ready to take over.
+    let stageReady = false;
+    if (grade === 'perfect' && best.lane >= 0 && this.stageReady < 0 && !this.takeover
+        && this.stageUses < STAGE.maxPerSong && ++this.stageMeter[lane] >= this.stageNeed[lane]) {
+      this.stageReady = lane;
+      this.stageMeter = this.stageMeter.map((_, i) => (i === lane ? this.stageNeed[i] : 0));
+      stageReady = true;
+    }
     return {
-      type: 'hit', lane, grade, note: best, timing, riotPhrase, finaleBonus,
+      type: 'hit', lane, grade, note: best, timing, riotPhrase, finaleBonus, stageReady,
       combo: this.combo,
       milestone: this.combo % SCORE.comboMilestone === 0,
     };
@@ -298,6 +317,42 @@ export class Performance {
     this.energy = clamp(this.energy + RIOT.rescue, 0, 100);
     this.lastUpdate = t;
     return { type: 'riotStart' };
+  }
+
+  /** How full a pad's CENTER STAGE meter is (0..1). */
+  stageLevel(lane) {
+    return Math.min(1, this.stageMeter[lane] / this.stageNeed[lane]);
+  }
+
+  /**
+   * The ready musician takes over from game time `start` to `end`: the notes
+   * in that stretch are cleared (skipped: they don't count against you), and
+   * every meter empties. Returns an event, or null if nobody is ready.
+   */
+  startTakeover(start, end) {
+    const lane = this.stageReady;
+    if (lane < 0) return null;
+    for (const n of this.notes) {
+      if (n.ghost || n.hit || n.miss || n.done || n.finale) continue;
+      if (n.time >= start - WINDOWS.good && n.time < end) {
+        n.done = true;
+        n.skipped = true;
+        this.counts.skipped++;
+      }
+    }
+    this.takeover = { lane, start, end };
+    this.stageReady = -1;
+    this.stageMeter = [0, 0, 0, 0];
+    this.stageUses++;
+    return { type: 'takeoverStart', lane, start, end };
+  }
+
+  /** The takeover is over: back to the notes. */
+  endTakeover() {
+    if (!this.takeover) return null;
+    const { lane } = this.takeover;
+    this.takeover = null;
+    return { type: 'takeoverEnd', lane };
   }
 
   /** Weighted accuracy: perfect = 100%, great = 85%, good = 65%, miss = 0%. */

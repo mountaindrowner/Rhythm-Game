@@ -145,6 +145,7 @@ export function createSpriteBand(scene, art) {
     }
   }
   let riotOn = false;
+  let away = null; // CENTER STAGE: the musician who is on the board right now
 
   // The drum kit sits in front of the drummer and hides his legs.
   const kitInfo = manifest.drumkit;
@@ -223,6 +224,8 @@ export function createSpriteBand(scene, art) {
       const m = members.find((each) => each.name === name);
       if (m) { m.shredStart = t; m.director?.celebrate(); }
     },
+    /** CENTER STAGE: this musician has jumped onto the board (null = everyone's back). */
+    setAway(name) { away = name; },
     /** Riot Mode on/off: swap every musician to (or back from) their Riot version. */
     setRiot(on) {
       riotOn = on;
@@ -238,6 +241,7 @@ export function createSpriteBand(scene, art) {
       defeated = false;
       for (const m of members) { m.lastHit = m.lastMistake = m.shredStart = -99; m.hitStrength = 0; m.director?.reset(); }
       this.setRiot(false);
+      away = null;
     },
     setDefeated(v) { defeated = v; },
     setVisible(v) { group.visible = v; },
@@ -329,6 +333,11 @@ export function createSpriteBand(scene, art) {
 
         const flash = sinceMiss >= 0 && sinceMiss < 0.3 ? 0.6 : 1; // red flash on a miss
         m.mat.color.setRGB(1, flash, flash);
+        // CENTER STAGE: whoever is away on the board isn't on the stage.
+        const here = m.name !== away;
+        m.mesh.visible = here && !(riotOn && m.riot);
+        m.shadow.visible = here;
+        if (m.riot) m.riot.mesh.visible = here && riotOn;
         if (m.riot) {
           // The Riot version moves exactly like the normal one.
           m.riot.mesh.position.copy(m.mesh.position);

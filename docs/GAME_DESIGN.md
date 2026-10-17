@@ -158,9 +158,9 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 4. Are there any ridiculous moments that feel off-brand for X-ROADS (a Christian rock band) and should be cut?
 5. Any moments **you** want to add? (A list of the band's inside jokes would be gold here.)
 
-## 11. Idea parked: CENTER STAGE takeovers (owner idea, not built yet)
+## 11. CENTER STAGE takeovers (owner idea) — **built in v0.12**
 
-> The owner's idea, written down to flesh out before building. Nothing here is decided.
+> **Decided (owner, v0.12):** meters in the pads (option A); only **Perfect** hits fill a meter; when one fills, **all the others reset**; about **one takeover per song, two for a really good player** (a meter needs Perfects on 36% of that pad's notes; at most 2 per song). Takeovers last 6 bars. Built as below; tune in `STAGE` (`src/config.js`).
 >
 > **Mockup:** [`docs/mockups/center_stage_mockup.jpg`](mockups/center_stage_mockup.jpg) draws it over real game screens: two meter options (pads that fill up, or band portraits with rings), the slam, the four mini-games and the payoff.
 

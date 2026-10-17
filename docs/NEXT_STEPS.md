@@ -1,8 +1,9 @@
 # Next steps (handoff)
 
-_Last updated: v0.11.2._
+_Last updated: v0.12._
 
 ## Where things stand
+- **v0.12: CENTER STAGE takeovers (owner idea, built).** Each pad is also its musician's meter: it fills from the bottom with every **Perfect** on that pad. When one is full (Perfects on 36% of that pad's notes), the others empty and that musician takes over at the next bar: they leave the stage and **slam onto the note highway** in their Riot form (lightning, thunder), the notes clear for **6 bars**, and the board fills with their mini-game: **Drum Frenzy** (tap drums; on the beat ×2), **Mad Science** (poke beakers before they boil over), **Crowd Hearts** (catch rising hearts; streaks score more), **Shred** (swipe through glowing strings). A rating and the points follow (LEGENDARY / GREAT / GOOD TAKEOVER). At most 2 per song; a simulation says ~45% Perfects gets one, ~75% gets two. Never during a solo or the Big Rock Ending. Code: `src/ui/takeover.js`, rules in `rules.js` (`stageMeter`, `startTakeover`), tuning in `STAGE` (`config.js`). **Owner to try:** is it too rare or too common, are 6 bars the right length, and do the mini-games feel good on a phone?
 - **v0.11.2 (owner requests):**
   - **Thunder:** a lightning sound made from scratch (`player.sfx('thunder')`: a crack, a zap and a rolling rumble) on every title-song strike and whenever Riot Mode starts.
   - **The intro:** after TAP TO START the stage starts dark and lights up with the song; at 16.05 s lightning strikes, the logo slams in, the band goes Riot and the menu buttons arrive. Tapping during the intro skips to 1.5 s before the strike. (Only the first time per visit; after that the title shows its buttons right away.)
@@ -38,9 +39,6 @@ _Last updated: v0.11.2._
    python3 scripts/pixellab/fetch_and_pack.py --source assets/art/pixellab-retro/source.json
    ```
 3. Check the result at `?autoplay&view=stage`, then run the tests. New grooves join their block automatically. Brand-new *blocks* need a rule in `animBlocks.js`.
-
-## Parked idea: CENTER STAGE takeovers
-The owner's idea (v0.11.2): play one musician's part well and they slam into the middle of the board, big, for a short mini-game made just for them (beakers for the scientist, hearts for the singer, string slashes for the guitarist, a drum frenzy for the drummer). Written up with open questions and name ideas in `GAME_DESIGN.md` §11. **Not built: flesh it out with the owner first.**
 
 ## Next plan: ridiculous moments (the owner wants the game to be absurd and hilarious)
 Ideas to build as special one-off animations plus stage effects. Each can be a new block in the recipe (for example `block: "moment"`) that the choreographer plays like a celebrate:

@@ -19,10 +19,10 @@
 //   title (START THE SHOW) -> difficulty -> set list (song + best score,
 //   with a preview) -> PLAY -> loading screen -> the show intro + count-in
 // =============================================================================
-import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, LEAD, BEAT, ENERGY, RIOT, SOLO } from './config.js';
+import { BUILD_LABEL, BUILD_DATE, GAME_TITLE, LEAD, BEAT, ENERGY, RIOT, SOLO, STAGE } from './config.js';
 import {
   SONG, SONGS, selectSong, onSongChange, songEnd, DIFFICULTIES, prepareSong, sectionAt, beatPosition,
-  countInTimes,
+  countInTimes, timeAtBeat,
 } from './song/chart.js';
 import { VENUES, paintPoster } from './world/venues.js';
 import { getBest, recordResult, starText } from './progress.js';
@@ -46,6 +46,7 @@ import { createPerfMonitor } from './perf.js';
 import { createHud } from './ui/hud.js';
 import { createCalibration } from './ui/calibration.js';
 import { createMenuScene } from './ui/menuScene.js';
+import { createTakeover, GAMES } from './ui/takeover.js';
 
 // These imports become embedded data inside the final index.html (see
 // vite.config.js), so the published game never has to download a file.
@@ -102,6 +103,10 @@ let soloStep = -1;       // which part of the solo we're in (to show each banner
 let ghostCursor = 0;     // next solo "call" note the soloist will play
 let finaleStarted = false;
 let freestyleTaps = 0;
+// CENTER STAGE: when the ready musician's takeover is scheduled ({start, end}
+// in game time), or 'never' if no bar fits before the end of the song.
+let pendingTakeover = null;
+const MUSICIAN_OF_LANE = ['bassist', 'singer', 'guitarist', 'drummer'];
 const SOLOIST_NAME = { bassist: 'BASS', singer: 'VOCAL', guitarist: 'GUITAR', drummer: 'DRUM' };
 
 const offset = () => settings.tapOffsetMs / 1000;
@@ -112,6 +117,7 @@ const AUTOPLAY = new URLSearchParams(location.search).has('autoplay');
 const autoRelease = [Infinity, Infinity, Infinity, Infinity];
 function autoplay(t) {
   if (perf.riotReady) handle(perf.activateRiot(t)); // the robot loves Riot Mode
+  if (perf.takeover) { takeover.autoplay(t); return; }
   // Big Rock Ending: mash a random pad every few frames.
   if (finale && t >= finale.start && t < finale.time - 0.2 && Math.random() < 0.3) {
     const lane = (Math.random() * 4) | 0;
@@ -135,13 +141,27 @@ function autoplay(t) {
   }
 }
 
+// The CENTER STAGE overlay. Its points go through the referee (times your
+// multiplier, so Riot Mode doubles them too).
+const takeover = createTakeover($('takeover'), {
+  score(base) {
+    const pts = base * perf.multiplier;
+    perf.addBonus(pts);
+    return pts;
+  },
+  sfx: (name) => player.sfx(name),
+  now: () => player.time,
+  canPlay: () => status === 'playing',
+  beatLength: () => SONG.beatLength,
+});
+
 const input = new Input($('pads'), {
   onPress(lane) {
-    if (status !== 'playing') return;
+    if (status !== 'playing' || perf.takeover) return; // (the pads rest during a takeover)
     handle(perf.press(lane, player.time, offset()));
   },
   onRelease(lane) {
-    if (status !== 'playing') return;
+    if (status !== 'playing' || perf.takeover) return;
     handle(perf.release(lane, player.time));
   },
   onSwipeUp: tryRiot,
@@ -174,6 +194,10 @@ function handle(e) {
     effects.burst(e.lane, e.grade === 'perfect' ? 26 : 14);
     hud.judgement(e.grade, e.timing);
     if (e.riotPhrase) hud.banner(perf.riotReady ? 'RIOT READY!' : 'RIOT PHRASE!');
+    if (e.stageReady) {
+      hud.banner(`${GAMES[MUSICIAN_OF_LANE[e.lane]].who} IS READY!`);
+      player.sfx('chord');
+    }
     if (e.note.finale) {
       // The final note of the Big Rock Ending: bank the bonus!
       highway.setFreestyle(false);
@@ -217,6 +241,21 @@ function handle(e) {
     if (lastChanceUntil) hud.banner('SAVED BY THE RIOT!'); // (the big sign on stage says RIOT MODE)
     lastChanceUntil = 0;
     kick(1);
+  } else if (e.type === 'takeoverStart') {
+    // CENTER STAGE! The musician leaves the stage and slams onto the board.
+    const who = MUSICIAN_OF_LANE[e.lane];
+    takeover.start({ who, start: e.start, end: e.end, beatAt: (time) => beatPosition(time - LEAD) });
+    band.setAway?.(who);
+    showfx.lightning();
+    player.sfx('thunder');
+    $('pads').classList.add('takeover');
+    input.reset();
+    kick(1);
+  } else if (e.type === 'takeoverEnd') {
+    takeover.finish();
+    band.setAway?.(null);
+    $('pads').classList.remove('takeover');
+    showfx.celebrate(false);
   } else if (e.type === 'riotEnd') {
     showfx.setRiot(false);
     showfx.transform();
@@ -280,6 +319,27 @@ function bigMoments(t) {
     hud.banner('BIG ROCK ENDING! MASH THE PADS!');
     band.onEvent({ type: 'riotStart' }, t); // everyone does their big move
   }
+}
+
+// ---- CENTER STAGE scheduling ---------------------------------------------------
+/**
+ * When a meter fills, the takeover starts on the next bar line and lasts
+ * STAGE.bars bars, but never during the solo, the Big Rock Ending or the very
+ * end of the song. Returns { start, end } (game times), or null if no bar fits.
+ */
+function scheduleTakeover(t) {
+  const fd = SONG.firstDownbeat;
+  const beats = STAGE.bars * 4;
+  let b = fd + Math.ceil((beatPosition(t - LEAD + 0.3) - fd) / 4) * 4; // next bar line, 0.3 s away or more
+  for (let k = 0; k < 64; k++, b += 4) {
+    const start = LEAD + timeAtBeat(b);
+    const end = LEAD + timeAtBeat(b + beats);
+    if (end > songEnd() - 2) return null;
+    if (finale && end > finale.start - 0.3) return null;
+    if (solo && start < solo.end + 0.3 && end > solo.start - 0.3) continue; // not during the solo
+    return { start, end };
+  }
+  return null;
 }
 
 // ---- Game states -----------------------------------------------------------
@@ -351,6 +411,10 @@ async function startGame() {
   });
   highway.setRiot(false);
   lastChanceUntil = 0;
+  pendingTakeover = null;
+  takeover.clear();
+  band.setAway?.(null);
+  $('pads').classList.remove('takeover');
   highway.setNotes(perf.notes);
   highway.warmUp(); // draw every kind of note once (hidden) while the song loads
   band.reset();
@@ -421,6 +485,10 @@ function resumeGame() {
 /** Leave the song: back to the set list (or the title screen). */
 function quitGame(to = 'songScreen') {
   status = 'menu';
+  try { player.unlock(); } catch { /* no Web Audio */ } // (a tap: keep menu sounds working)
+  takeover.clear();
+  band.setAway?.(null);
+  $('pads').classList.remove('takeover');
   band.setRiot?.(false);
   highway.setFreestyle(false);
   player.stop();
@@ -436,6 +504,9 @@ function quitGame(to = 'songScreen') {
 /** Energy hit zero: cut the power, let the band slump, then show the result. */
 function failGame() {
   status = 'failing';
+  takeover.clear();
+  band.setAway?.(null);
+  $('pads').classList.remove('takeover');
   failedAt = player.time;
   input.reset();
   input.enabled = false;
@@ -569,6 +640,10 @@ function frame(now) {
   if (inMenus) {
     // If the music can't play (blocked or broken), don't keep the intro waiting.
     if (menuScene.intro && titleMusic.time == null && now - introStartedAt > 2500) endIntro();
+    if (introSkip && titleMusic.time != null) {
+      if (menuScene.intro && titleMusic.time < 14.6) titleMusic.skipTo(14.6); // 1.5 s before the strike
+      introSkip = false;
+    }
     menuScene.update(dt, titleMusic.time);
     perfMonitor.work(performance.now() - workStart, 0);
     requestAnimationFrame(frame);
@@ -594,8 +669,17 @@ function frame(now) {
     else if (t >= songEnd()) endGame();
   }
 
-  // 3b. The song's big moments (solo, Big Rock Ending).
-  if (status === 'playing') bigMoments(t);
+  // 3b. The song's big moments (solo, Big Rock Ending, CENTER STAGE).
+  if (status === 'playing') {
+    bigMoments(t);
+    if (perf.stageReady >= 0 && !pendingTakeover) pendingTakeover = scheduleTakeover(t) || 'never';
+    if (pendingTakeover && pendingTakeover !== 'never' && !perf.takeover && t >= pendingTakeover.start) {
+      handle(perf.startTakeover(pendingTakeover.start, pendingTakeover.end));
+      pendingTakeover = null;
+    }
+    if (perf.takeover && t >= perf.takeover.end) handle(perf.endTakeover());
+  }
+  takeover.update(t, dt);
 
   // 4. Animate the world.
   const songTime = t - LEAD;
@@ -657,13 +741,15 @@ $('tapStart').addEventListener('click', (e) => {
   e.stopPropagation(); // (this tap must not also count as "skip")
   $('menu').classList.add('started', 'intro');
   menuScene.setIntro(true);
+  introSkip = false;
   introStartedAt = performance.now();
   show('menu');
 });
+// (The skip waits for the music to actually be playing: a very quick tap
+// can come before the song has started.)
+let introSkip = false;
 $('menu').addEventListener('click', () => {
-  if (!$('menu').classList.contains('intro')) return;
-  const t = titleMusic.time;
-  if (t != null && t < 14.6) titleMusic.skipTo(14.6); // 1.5 s before the strike
+  if ($('menu').classList.contains('intro')) introSkip = true;
 });
 function endIntro() {
   $('menu').classList.remove('intro');
@@ -846,12 +932,18 @@ window.__BURN_BRIGHT_TEST__ = {
       screen: SCREENS.find((id) => !$(id).hidden) || '', inMenus, previewing: preview.playing,
       titleMusic: titleMusic.playing, titleTime: titleMusic.time, titleIntro: $('menu').classList.contains('intro'),
       countIn: countInTimes(), intro: $('introCard').classList.contains('show'), countText: $('countIn').textContent,
+      stageMeters: [0, 1, 2, 3].map((l) => perf.stageLevel(l)), stageNeed: perf.stageNeed, stageReady: perf.stageReady,
+      stageUses: perf.stageUses, takeover: perf.takeover, takeoverStats: takeover.stats, takeoverTargets: takeover.targets,
       perf: { ...perfMonitor.stats },
     };
   },
   start: startGame,
   finish: () => endGame(), // tests only: jump to the results screen
   fillRiot: () => { perf.riotMeter = 1; }, // tests only: a full Riot meter
+  fillStage: (lane = 3) => { // tests only: this musician's meter is full (takeover at the next bar)
+    perf.stageMeter = perf.stageMeter.map((_, i) => (i === lane ? perf.stageNeed[i] : 0));
+    perf.stageReady = lane;
+  },
   pickSong,
   pause: pauseGame,
   resume: resumeGame,

@@ -159,6 +159,12 @@ Why it looks smooth: every animation starts and ends on the same standing pose (
 
 When a chorus starts: a strobe flash, all four fire jets, and confetti from the truss. During choruses the fire jets fire on each bar, lasers sweep the crowd, the LED wall turns to flames, the truss lights chase, and the crowd holds up phone lights (also during the bridge). Fire and confetti are particles (see `Particles` in `effects.js`): lots of dots that each have a position, speed, color and lifetime.
 
+## 7b. CENTER STAGE takeovers (`src/ui/takeover.js`)
+
+Each pad is also a meter for its musician (the `.meter` inside each pad, `hud.js`). Only **Perfect** hits fill it (`perf.stageMeter` in `rules.js`). When one fills, the others reset and `perf.stageReady` names the musician. `main.js` finds the next bar line that doesn't clash with the solo or the Big Rock Ending (`scheduleTakeover`) and, when the song gets there, calls `perf.startTakeover(start, end)`, which clears the notes in those 6 bars (marked *skipped*, so they don't count against you).
+
+`takeover.js` then draws on a see-through canvas over the game: the musician's Riot sprite slams onto the board (2 beats), then their mini-game spawns targets on the beat (Drum Frenzy, Mad Science, Crowd Hearts or Shred), and you tap or swipe them. Points go through `perf.addBonus` times your multiplier. While it runs, the pads rest and the musician is hidden on the stage (`band.setAway`). At the end, a rating card shows and the notes come back.
+
 ## 8. Game over, settings and the timing check
 
 - **Game over** (`failGame()` in `main.js`): when energy reaches 0, the music slows down and fades out like a tape machine losing power (`player.powerDown()`), the band slumps, and the results screen says SHOW'S OVER. Practice mode turns this off. `ENERGY.drain` in `config.js` makes Casual and Standard more forgiving.
@@ -202,5 +208,7 @@ Pausing suspends the audio system, which freezes the music and the clock togethe
 | Add a loading-screen tip | `TIPS` in `src/main.js` |
 | Move the title screen's lightning strikes | `strikes` in `assets/audio/title_holy_rollerz.json` (seconds into the song, and how many bars the band stays Riot) |
 | Make the intro longer or shorter | `LEAD` in `src/config.js` |
+| Make takeovers rarer, longer, or worth more | `STAGE` in `src/config.js` (`fill`, `maxPerSong`, `bars`) |
+| Change a mini-game's speed or text | `GAMES` in `src/ui/takeover.js` (`every` = beats between targets, `life` = how long each lasts) |
 
 Run `npm run dev`, make the change, save, and watch the browser update. Open `http://localhost:5173/?autoplay&view=stage` to watch the band up close while you tweak them.

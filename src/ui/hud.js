@@ -26,7 +26,9 @@ export function createHud() {
     const el = document.createElement('div');
     el.className = 'pad';
     el.style.setProperty('--c', l.color);
-    el.innerHTML = `<span class="icon">${l.icon}</span><span class="label">${l.label}</span>`;
+    // The pad is also its musician's CENTER STAGE meter: .meter fills from the
+    // bottom with each Perfect on this pad.
+    el.innerHTML = `<span class="meter"></span><span class="icon">${l.icon}</span><span class="label">${l.label}</span>`;
     $('pads').append(el);
     return el;
   });
@@ -107,6 +109,13 @@ export function createHud() {
         n.classList.toggle('save', v.includes('SAVE'));
       });
       set('life', el.life, Math.round(perf.energy), (n, v) => { n.style.width = `${v}%`; });
+      // CENTER STAGE meters, one per pad (full = glowing and READY).
+      for (let lane = 0; lane < 4; lane++) {
+        set(`stage${lane}`, pads[lane], Math.round(perf.stageLevel(lane) * 100), (n, v) => {
+          n.querySelector('.meter').style.height = `${v}%`;
+        });
+        set(`ready${lane}`, pads[lane], perf.stageReady === lane, (n, v) => n.classList.toggle('ready', v));
+      }
       set('section', el.section, section, text);
       const secs = Math.floor(songTime);
       set('clock', el.clock, `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, text);
