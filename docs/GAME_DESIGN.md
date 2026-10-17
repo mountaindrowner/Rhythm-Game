@@ -161,6 +161,8 @@ For about 12 bars the spotlight goes to **one** band member, rotating each song 
 ## 11. Idea parked: CENTER STAGE takeovers (owner idea, not built yet)
 
 > The owner's idea, written down to flesh out before building. Nothing here is decided.
+>
+> **Mockup:** [`docs/mockups/center_stage_mockup.jpg`](mockups/center_stage_mockup.jpg) draws it over real game screens: two meter options (pads that fill up, or band portraits with rings), the slam, the four mini-games and the payoff.
 
 **The idea:** play one band member's part really well and that musician **takes over**. They slam into the middle of the note highway in a big form (with lightning and thunder), the normal notes clear away, and for a few seconds the board fills with **their** pad's targets popping up all over. Hit as many as you can, as fast as you can, for big points. Each musician gets their own style of mini-game.
 
