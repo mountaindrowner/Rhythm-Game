@@ -217,7 +217,11 @@ export function createShowFx(scene, fans, flashEl) {
     setReduceFlashing(v) { reduceFlashing = v; },
 
     /** Riot Mode on/off. Turning it on fires everything at once. */
-    /** Riot Mode on/off, with one of the RIOT EFFECTS (its name goes on the sign). */
+    /**
+     * Riot Mode on/off, with one of the RIOT EFFECTS. The sign always says
+     * RIOT MODE! (the owner: no effect names, you just experience it), in
+     * the effect's colours.
+     */
     setRiot(on, fx = null) {
       if (on && !riot) {
         strobe();
@@ -226,7 +230,7 @@ export function createShowFx(scene, fans, flashEl) {
       }
       if (on) {
         effectId = fx?.id || 'inferno';
-        riotSign.setText(fx?.name || 'RIOT MODE!', fx?.colors);
+        riotSign.setText('RIOT MODE!', fx?.colors);
         riotSign.show();
       } else riotSign.hide();
       riot = on;

@@ -139,3 +139,6 @@ The script expects each character to have animations named `<member>_play`, `<me
 ## Cost of the HD band
 
 About 95 PixelLab generations in total (characters, the singer fix, the drum kit and 13 animations) from a 2,000-per-month plan.
+
+### More Riot moves (v0.13.1)
+Each musician now has four Riot moves in `assets/art/pixellab-retro-riot/animations.json`: `riot`, `riot2` (v0.10) and `riot3`, `riot4` (v0.13.1, 21 generations for the 8). The game rotates through every move with `"block": "riot"` that isn't marked `"use": false` (a new one every 2 bars). To redo a weak move: edit its prompt, give it `"version": 2`, remove `"use": false`, then run `animate.py` and `fetch_and_pack.py` on the riot folder.

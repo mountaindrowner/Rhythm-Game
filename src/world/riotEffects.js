@@ -4,10 +4,10 @@
 // row), and the band, the stage and the floating sign change to match.
 //
 //   id      the name the code uses
-//   name    what the floating sign says
+//   name    the effect's name (for us: the sign always just says RIOT MODE!)
 //   look    'riot' = the band wears their Riot versions (flaming guitar,
 //           glowing bass...), 'normal' = their usual look with the effect on top
-//   colors  the sign's letters, top to bottom
+//   colors  the colours of the RIOT MODE! sign's letters, top to bottom
 //
 // HOW TO ADD ONE: add an entry here, then give it its motion in
 // bandSprites.js (search "RIOT EFFECTS") and, if it needs stage extras,

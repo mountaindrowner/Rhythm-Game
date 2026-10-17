@@ -142,7 +142,12 @@ export function createSpriteBand(scene, art) {
       const mesh = new THREE.Mesh(geo, mat);
       mesh.visible = false;
       group.add(mesh);
-      m.riot = { info, tex, mat, mesh };
+      // The Riot moves to rotate through: every "riot" block animation that
+      // isn't marked "use": false in the recipe (e.g. one waiting for a redo).
+      const moves = Object.entries(info.anims)
+        .filter(([, a]) => a.block === 'riot' && a.use !== false)
+        .map(([animName]) => animName);
+      m.riot = { info, tex, mat, mesh, moves: moves.length ? moves : ['hub'] };
     }
   }
   // RIOT EFFECTS extras (see riotEffects.js), hidden until an effect needs
@@ -304,10 +309,12 @@ export function createSpriteBand(scene, art) {
           const pick = m.director.update(beat, ctx);
           show(m, pick.anim, pick.frame);
           if (riotOn && m.riot && effect.look === 'riot') {
-            // Riot version: its two wild loops take turns every 2 bars.
-            const anim = Math.floor(beat / 8) % 2 ? 'riot2' : 'riot';
-            const a = m.riot.info.anims[anim];
-            const frame = Math.floor((((beat / 2) % 1) + 1) % 1 * a.frames);
+            // Riot version: a new move every 2 bars, rotating through every
+            // Riot move this musician has (m.riot.moves).
+            const moves = m.riot.moves;
+            const a = m.riot.info.anims[moves[Math.floor(beat / 8) % moves.length]];
+            const len = a.beats || 2;
+            const frame = Math.floor((((beat / len) % 1) + 1) % 1 * a.frames);
             m.riot.tex.offset.set(frame / m.riot.info.columns, 1 - (a.row + 1) / m.riot.info.rows);
           }
         } else if (defeated) show(m, 'mistake', 3); // slumped

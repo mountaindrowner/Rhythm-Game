@@ -632,7 +632,8 @@ export function createMenuScene(canvas, { onStrike } = {}) {
     const info = set.members[name];
     // Riot versions play their wild loops; otherwise calm, with hype every
     // few bars. In the intro, before the verse, they're just getting ready.
-    const animName = riot ? (Math.floor(beat / 8) % 2 ? 'riot2' : 'riot')
+    const riotMoves = riot ? Object.keys(info.anims).filter((n) => info.anims[n].block === 'riot' && info.anims[n].use !== false) : [];
+    const animName = riot ? riotMoves[Math.floor(beat / 8) % riotMoves.length]
       : !LV.playing ? 'idle'
         : Math.floor(beat / 16) % 3 === 2 ? 'hype' : 'calm';
     const a = info.anims[animName] || info.anims.hub;

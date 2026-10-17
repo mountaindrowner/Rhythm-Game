@@ -8,7 +8,7 @@
         92
       ],
       "columns": 16,
-      "rows": 3,
+      "rows": 5,
       "anims": {
         "hub": {
           "row": 0,
@@ -23,6 +23,22 @@
         },
         "riot2": {
           "row": 2,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot3": {
+          "row": 3,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 4,
+          "use": false,
+          "note": "white flashing frames: redo before using"
+        },
+        "riot4": {
+          "row": 4,
           "frames": 16,
           "block": "riot",
           "loop": true,
@@ -40,11 +56,11 @@
       "lane": 1,
       "file": "singer.png",
       "cell": [
-        68,
+        72,
         92
       ],
       "columns": 16,
-      "rows": 3,
+      "rows": 5,
       "anims": {
         "hub": {
           "row": 0,
@@ -63,6 +79,20 @@
           "block": "riot",
           "loop": true,
           "beats": 2
+        },
+        "riot3": {
+          "row": 3,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 4
+        },
+        "riot4": {
+          "row": 4,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 4
         },
         "idle": {
           "row": 0,
@@ -80,7 +110,7 @@
         96
       ],
       "columns": 16,
-      "rows": 3,
+      "rows": 5,
       "anims": {
         "hub": {
           "row": 0,
@@ -95,6 +125,22 @@
         },
         "riot2": {
           "row": 2,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot3": {
+          "row": 3,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 4,
+          "use": false,
+          "note": "one frame has a brown smear for flames: redo before using"
+        },
+        "riot4": {
+          "row": 4,
           "frames": 16,
           "block": "riot",
           "loop": true,
@@ -112,11 +158,11 @@
       "lane": 3,
       "file": "drummer.png",
       "cell": [
-        96,
-        92
+        100,
+        96
       ],
       "columns": 16,
-      "rows": 3,
+      "rows": 5,
       "anims": {
         "hub": {
           "row": 0,
@@ -136,12 +182,26 @@
           "loop": true,
           "beats": 2
         },
+        "riot3": {
+          "row": 3,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 2
+        },
+        "riot4": {
+          "row": 4,
+          "frames": 16,
+          "block": "riot",
+          "loop": true,
+          "beats": 4
+        },
         "idle": {
           "row": 0,
           "frames": 1
         }
       },
-      "footY": 77,
+      "footY": 79,
       "height": 62
     }
   },
