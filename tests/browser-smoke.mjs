@@ -284,7 +284,9 @@ check(s.status === 'playing' && s.energy === 0, 'out of energy with Riot ready: 
 const padBox = await page.locator('#pads').boundingBox();
 await page.mouse.move(padBox.x + padBox.width * 0.6, padBox.y + padBox.height * 0.5);
 await page.mouse.down();
-await page.mouse.move(padBox.x + padBox.width * 0.6, padBox.y - 90, { steps: 6 });
+// (Two steps: the first already crosses the 45-pixel swipe line, so a slow
+// test machine can't make the swipe look too slow.)
+await page.mouse.move(padBox.x + padBox.width * 0.6, padBox.y - 90, { steps: 2 });
 await page.mouse.up();
 await page.waitForTimeout(300);
 s = await state();

@@ -80,13 +80,13 @@ export class Input {
   }
 
   trackSwipe(e) {
-    this.swipeStart.set(e.pointerId, { y: e.clientY, time: performance.now(), done: false });
+    this.swipeStart.set(e.pointerId, { y: e.clientY, time: eventTime(e), done: false });
   }
 
   checkSwipe(e) {
     const s = this.swipeStart.get(e.pointerId);
     if (!s || s.done || !this.enabled) return;
-    if (performance.now() - s.time > SWIPE_MS) return;
+    if (eventTime(e) - s.time > SWIPE_MS) return;
     if (s.y - e.clientY >= SWIPE_PX) {
       s.done = true; // one swipe per finger
       this.onSwipeUp();
@@ -113,4 +113,13 @@ export class Input {
     this.keyLane.clear();
     this.swipeStart.clear();
   }
+}
+
+/**
+ * When the touch really happened (the event's own timestamp), not when the
+ * game got round to handling it: if the phone is busy for a moment, a quick
+ * swipe still counts as quick.
+ */
+function eventTime(e) {
+  return e.timeStamp > 0 ? e.timeStamp : performance.now();
 }
