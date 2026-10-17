@@ -38,6 +38,46 @@ import { TITLE_SONG, titleBeat } from '../audio/titleMusic.js';
 
 const W = 240; // canvas width in pixels (the height follows the screen shape)
 const LIGHT_COLORS = ['#ff3d6e', '#ffbe3b', '#4bbdff', '#63ff79', '#b65bff', '#ff7a1a'];
+// THE INTRO, step by step (seconds into the title song). Before you tap,
+// the arena is dark: only a few phone lights in the crowd.
+const LAMP_ORDER = [3, 0, 6, 1, 5, 2, 4];                 // the truss lights, in switch-on order
+const REVEAL = { drummer: 7.0, bassist: 8.5, guitarist: 10.0, singer: 11.5 }; // spotlights find each musician
+const PLAY_AT = 12.5;                                      // the verse: the band starts playing
+const FULL = {
+  ambient: 1, lamps: [1, 1, 1, 1, 1, 1, 1], led: 1, strip: 1, crowd: 1, phones: 1, fx: 1, playing: true,
+  members: { bassist: 1, singer: 1, guitarist: 1, drummer: 1 }, spots: null,
+};
+
+/**
+ * How lit everything is at `t` seconds into the intro (t < 0 = before the
+ * tap: all dark). 0 = off, 1 = fully on.
+ */
+function introLevels(t) {
+  const ramp = (from, len) => Math.min(1, Math.max(0, (t - from) / len));
+  // A light switching on flickers for a moment, like a real stage lamp.
+  const flick = (from) => (t < from ? 0 : t - from < 0.35 ? (Math.random() < 0.5 ? 1 : 0.15) : 1);
+  const lamps = [0, 0, 0, 0, 0, 0, 0];
+  LAMP_ORDER.forEach((lamp, i) => { lamps[lamp] = flick(2 + i * 0.55); });
+  const members = {};
+  const spots = {};
+  for (const [name, at] of Object.entries(REVEAL)) {
+    members[name] = ramp(at, 0.6);
+    spots[name] = members[name] * (1 - 0.6 * ramp(PLAY_AT + 1, 3)); // the spots dim once the full lights come up
+  }
+  return {
+    ambient: 0.05 * ramp(1, 1) + 0.3 * ramp(4, 8) + 0.3 * ramp(PLAY_AT, 3.5),
+    lamps,
+    led: flick(5.5) * (0.5 + 0.5 * ramp(PLAY_AT, 3)),
+    strip: flick(0.8),
+    crowd: 0.15 * ramp(2, 3) + 0.6 * ramp(6, 10),
+    phones: t < 0 ? 0.5 : 1,
+    fx: ramp(PLAY_AT, 1),
+    playing: t >= PLAY_AT,
+    members,
+    spots,
+  };
+}
+
 /** The light color for number i (works for negative numbers too). */
 const lightColor = (i) => LIGHT_COLORS[((i % LIGHT_COLORS.length) + LIGHT_COLORS.length) % LIGHT_COLORS.length];
 // Fans' shirt and hair colors (dimmed further for the rows nearest you).
@@ -67,6 +107,8 @@ export function createMenuScene(canvas, { onStrike } = {}) {
   let nextStrike = 3;     // time of the next big lightning strike (no music)
   let lastMusic = null;   // music time on the previous frame (to spot strikes)
   let intro = false;      // the opening: dark stage building up to the first strike
+  let dark = true;        // before the first tap: the arena is dark
+  let LV = FULL;          // how lit everything is right now (see introLevels)
   let logoSlamAt = -1;    // time the logo slammed in at the end of the intro
   let logoX = 0;          // where the logo was drawn (strikes go through it)
   let logoY = 0;
@@ -368,18 +410,24 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       beat += dt * (bpm / 60);
       lastMusic = null;
       // Without music, lightning strikes by itself, but only on the title.
-      if (mode === 'title' && !intro && time > nextStrike) {
+      if (mode === 'title' && !intro && !dark && time > nextStrike) {
         nextStrike = time + 4 + Math.random() * 4;
         strike(2, false);
       }
     }
     const pulse = Math.exp(-(((beat % 1) + 1) % 1) * 5); // 1 right on the beat, fading
     const bar = Math.floor(beat / 4);
+    LV = dark ? introLevels(-1) : intro ? introLevels(musicTime ?? 0) : FULL;
     g.imageSmoothingEnabled = false;
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
 
     g.drawImage(bg, 0, 0);
+    if (LV.ambient < 1) {
+      // The house lights: the arena is as dark as the intro says.
+      g.fillStyle = `rgba(2,1,6,${(1 - LV.ambient).toFixed(3)})`;
+      g.fillRect(0, 0, W, H);
+    }
     drawHaze(bar);
     drawLedWall(pulse);
     drawBeams(bar, pulse);
@@ -389,14 +437,7 @@ export function createMenuScene(canvas, { onStrike } = {}) {
     drawBand();
     updateSparks(dt, pulse);
     drawCrowd(pulse, bar);
-    if (intro) {
-      // The intro: darkness that lifts as the song builds toward the strike.
-      const first = TITLE_SONG.strikes[0].time;
-      const k = musicTime == null ? 0 : Math.min(1, Math.max(0, musicTime / first));
-      g.fillStyle = `rgba(3,2,8,${(0.92 * (1 - k ** 1.5)).toFixed(3)})`;
-      g.fillRect(0, 0, W, H);
-    }
-    if (mode === 'title' && !intro) drawLogo(dt, pulse);
+    if (mode === 'title' && !intro && !dark) drawLogo(dt, pulse);
     drawBolts(dt);
 
     if (flash > 0) {
@@ -408,7 +449,10 @@ export function createMenuScene(canvas, { onStrike } = {}) {
   }
 
   function drawHaze(bar) {
+    const lit = LV.lamps.reduce((a, b) => a + b, 0) / LV.lamps.length;
+    if (lit <= 0) return;
     g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = lit;
     const tint = lightColor(bar);
     for (let i = 0; i < 3; i++) {
       const x = ((time * (6 + i * 3) + i * 90) % (W + 120)) - 60;
@@ -421,11 +465,13 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       g.fillRect(x - r, y - r, r * 2, r * 2);
     }
     g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
   }
 
   /** The LED wall: an equalizer of lit dots bouncing to the beat. */
   function drawLedWall(pulse) {
     const wl = L.wall;
+    if (LV.led <= 0) return; // not switched on yet (intro): just darkness
     g.fillStyle = '#0d0918';
     g.fillRect(wl.x, wl.y, wl.w, wl.h);
     const cols = Math.floor(wl.w / 4);
@@ -437,7 +483,7 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       for (let r = 0; r < n; r++) {
         const k = r / (wl.h / 4);
         g.fillStyle = k > 0.75 ? '#ff4d6d' : k > 0.5 ? '#ffbe3b' : '#3fd6a0';
-        g.globalAlpha = 0.28 + 0.2 * pulse;
+        g.globalAlpha = (0.28 + 0.2 * pulse) * LV.led;
         g.fillRect(wl.x + c * 4 + 1, wl.y + wl.h - 4 - r * 4 + 1, 2, 2);
       }
     }
@@ -456,7 +502,8 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       const ty = L.stageY + 30;
       const spread = 16;
       const color = lightColor(bar + i);
-      const a = 0.1 + 0.12 * pulse;
+      if (LV.lamps[i] <= 0) continue; // this light isn't on yet (intro)
+      const a = (0.1 + 0.12 * pulse * LV.fx) * LV.lamps[i];
       const grd = g.createLinearGradient(x, y, tx, ty);
       grd.addColorStop(0, hexA(color, a + 0.1));
       grd.addColorStop(1, hexA(color, 0));
@@ -474,17 +521,24 @@ export function createMenuScene(canvas, { onStrike } = {}) {
 
   /** The lights themselves (hanging under the top truss) and the side blinders. */
   function drawLamps(bar, pulse) {
+    // (In the dark intro the light fittings themselves are barely visible.)
+    const housing = 0.15 + 0.85 * LV.ambient;
     const n = 7;
     for (let i = 0; i < n; i++) {
       const x = Math.round(L.towerL + 20 + (i * (L.towerR - L.towerL - 28)) / (n - 1));
       const y = L.trussY + 10;
+      g.globalAlpha = housing;
       g.fillStyle = '#1c1a26';
       g.fillRect(x - 2, y, 5, 5);
-      g.fillStyle = lightColor(bar + i);
+      g.globalAlpha = LV.lamps[i] > 0.5 ? 1 : housing;
+      g.fillStyle = LV.lamps[i] > 0.5 ? lightColor(bar + i) : '#2a2733';
       g.fillRect(x - 1, y + 4, 3, 2);
+      g.globalAlpha = 1;
     }
-    // Blinders on the towers: white flashes on the first beat of every 2nd bar.
-    const blink = bar % 2 === 0 && beat % 4 < 0.5;
+    // Blinders on the towers: white flashes on the first beat of every 2nd bar
+    // (once the show is properly going).
+    const blink = LV.fx >= 1 && bar % 2 === 0 && beat % 4 < 0.5;
+    g.globalAlpha = blink ? 1 : housing;
     for (const x of [L.towerL + 1, L.towerR + 1]) {
       const y = L.stageY - 70;
       g.fillStyle = '#26232f';
@@ -496,10 +550,12 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       g.fillRect(x + 6, y + 6, 3, 3);
       if (blink) glowDot(x + 5, y + 5, 26, '#fff6e0', 0.35 * pulse + 0.15);
     }
+    g.globalAlpha = 1;
   }
 
   /** Speaker cones that thump on the beat. */
   function drawSpeakers(pulse) {
+    if (LV.ambient < 0.1) return; // can't see them in the dark
     for (const x of [L.speakerL, L.speakerR]) {
       for (let k = 0; k < 2; k++) {
         const y = L.stageY - 26 * (k + 1);
@@ -521,7 +577,7 @@ export function createMenuScene(canvas, { onStrike } = {}) {
     const step = Math.floor(beat * 2);
     for (let x = 18, i = 0; x < W - 18; x += 6, i++) {
       const lit = (i + step) % 4 === 0;
-      g.fillStyle = lit ? '#ffd27a' : '#4a3560';
+      g.fillStyle = LV.strip < 0.5 ? '#1f1729' : lit ? '#ffd27a' : '#4a3560';
       g.fillRect(x, L.stageY + 5, 2, 1);
     }
   }
@@ -530,22 +586,55 @@ export function createMenuScene(canvas, { onStrike } = {}) {
   function drawBand() {
     const riot = beat < riotUntil;
     const s = L.spots;
+    // Intro: a white spotlight finds each musician in the dark.
+    if (LV.spots) {
+      g.globalCompositeOperation = 'lighter';
+      for (const [name, k] of Object.entries(LV.spots)) {
+        if (k <= 0) continue;
+        const sp = s[name];
+        const grd = g.createLinearGradient(sp.x, L.trussY + 12, sp.x, sp.y);
+        grd.addColorStop(0, `rgba(255,248,225,${(0.05 * k).toFixed(3)})`);
+        grd.addColorStop(1, `rgba(255,248,225,${(0.28 * k).toFixed(3)})`);
+        g.fillStyle = grd;
+        g.beginPath();
+        g.moveTo(sp.x - 3, L.trussY + 12);
+        g.lineTo(sp.x + 3, L.trussY + 12);
+        g.lineTo(sp.x + 26, sp.y);
+        g.lineTo(sp.x - 26, sp.y);
+        g.closePath();
+        g.fill();
+        g.fillStyle = `rgba(255,248,225,${(0.3 * k).toFixed(3)})`;
+        g.beginPath();
+        g.ellipse(sp.x, sp.y, 26, 5, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.globalCompositeOperation = 'source-over';
+    }
     // Drummer first (he's behind his kit), then the front line, singer last.
+    // (In the intro each one only appears once their spotlight finds them.)
     drawMember('drummer', s.drummer, riot);
-    if (ready(kit)) g.drawImage(kit, Math.round(s.drummer.x - kit.width / 2), Math.round(s.drummer.y - kit.height + 8));
+    if (ready(kit) && LV.members.drummer > 0) {
+      g.globalAlpha = LV.members.drummer;
+      g.drawImage(kit, Math.round(s.drummer.x - kit.width / 2), Math.round(s.drummer.y - kit.height + 8));
+      g.globalAlpha = 1;
+    }
     drawMember('bassist', s.bassist, riot);
     drawMember('guitarist', s.guitarist, riot);
     drawMember('singer', s.singer, riot);
   }
 
   function drawMember(name, spot, riot) {
+    const shown = LV.members[name];
+    if (shown <= 0) return; // still in the dark (intro)
     const set = riot ? RETRO_ART.riot.manifest : RETRO_ART.manifest;
     const img = riot ? riotSheets[name] : sheets[name];
     if (!ready(img)) return;
     const info = set.members[name];
-    // Riot versions play their wild loops; otherwise calm, with hype every few bars.
+    // Riot versions play their wild loops; otherwise calm, with hype every
+    // few bars. In the intro, before the verse, they're just getting ready.
     const animName = riot ? (Math.floor(beat / 8) % 2 ? 'riot2' : 'riot')
-      : Math.floor(beat / 16) % 3 === 2 ? 'hype' : 'calm';
+      : !LV.playing ? 'idle'
+        : Math.floor(beat / 16) % 3 === 2 ? 'hype' : 'calm';
     const a = info.anims[animName] || info.anims.hub;
     const beats = a.beats || 2;
     const frame = Math.floor((((beat / beats) % 1) + 1) % 1 * a.frames);
@@ -553,13 +642,15 @@ export function createMenuScene(canvas, { onStrike } = {}) {
     const lift = name === 'drummer' ? 14 : 0;   // stands up behind the kit
     const x = Math.round(spot.x - cw / 2);
     const y = Math.round(spot.y - info.footY - lift);
+    g.globalAlpha = shown;
     g.drawImage(img, frame * cw, a.row * ch, cw, ch, x, y, cw, ch);
+    g.globalAlpha = 1;
   }
 
   // ---- Pyro --------------------------------------------------------------------
   function updateSparks(dt, pulse) {
     // Sparkler fountains at the front corners of the stage, every 4th bar.
-    const fountain = Math.floor(beat / 4) % 4 === 3;
+    const fountain = LV.fx >= 1 && Math.floor(beat / 4) % 4 === 3;
     if (fountain) {
       for (const x of [26, W - 26]) {
         for (let k = 0; k < 3; k++) {
@@ -568,7 +659,7 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       }
     }
     // Now and then a spark drops from the top truss.
-    if (Math.random() < dt * 3) {
+    if (LV.fx > 0 && Math.random() < dt * 3) {
       sparks.push({ x: 20 + Math.random() * (W - 40), y: L.trussY + 10, vx: 0, vy: 10, life: 1.6 });
     }
     g.globalCompositeOperation = 'lighter';
@@ -593,7 +684,10 @@ export function createMenuScene(canvas, { onStrike } = {}) {
     const tint = lightColor(bar);
     const shade = (rgb, f) => `rgb(${Math.round(rgb[0] * f)},${Math.round(rgb[1] * f)},${Math.round(rgb[2] * f)})`;
     for (const p of crowd) {
-      const hop = Math.round(Math.max(0, Math.sin((beat + p.phase) * Math.PI * 2)) * (1 + p.k * 2) * (0.5 + pulse));
+      // In the intro the crowd is in the dark (only their phone lights show)
+      // and hardly moves until the band starts playing.
+      g.globalAlpha = LV.crowd;
+      const hop = Math.round(Math.max(0, Math.sin((beat + p.phase) * Math.PI * 2)) * (1 + p.k * 2) * (0.5 + pulse) * (0.25 + 0.75 * LV.fx));
       const y = p.y - hop;
       const s = p.size;
       const dim = 0.95 - p.k * 0.55;          // the front rows are in shadow
@@ -633,12 +727,14 @@ export function createMenuScene(canvas, { onStrike } = {}) {
       g.fillRect(bx + 1, y, Math.ceil(sw / 2), 1);
       g.fillRect(bx + bw - 1 - Math.ceil(sw / 2), y, Math.ceil(sw / 2), 1);
       for (const ax of arms) g.fillRect(ax - 1, y - armH - 2, 4, 1);
+      g.globalAlpha = LV.phones;
       if (p.phone && arms.length) {
         g.fillStyle = '#e8f6ff';
         g.fillRect(arms[0], y - armH - 4, 2, 2);
         glowDot(arms[0] + 1, y - armH - 3, 7, '#bfe8ff', 0.5);
       }
     }
+    g.globalAlpha = 1;
   }
 
   // ---- Logo and electricity ------------------------------------------------------
@@ -804,6 +900,7 @@ export function createMenuScene(canvas, { onStrike } = {}) {
     setMode(m) { mode = m; },
     setIntro(on) {
       intro = on;
+      dark = false;
       if (on) {
         // A fresh start: no leftover Riot band, bolts or flash from before.
         logoSlamAt = -1;

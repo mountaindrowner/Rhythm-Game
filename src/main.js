@@ -644,7 +644,7 @@ function frame(now) {
       if (menuScene.intro && titleMusic.time < 14.6) titleMusic.skipTo(14.6); // 1.5 s before the strike
       introSkip = false;
     }
-    menuScene.update(dt, titleMusic.time);
+    menuScene.update(dt, testTitleTime ?? titleMusic.time);
     perfMonitor.work(performance.now() - workStart, 0);
     requestAnimationFrame(frame);
     return;
@@ -737,6 +737,7 @@ document.addEventListener('click', (e) => {
 // with the song, and at 16 s lightning strikes, the logo slams in and the
 // menu buttons arrive. Tapping during the intro skips to just before that.
 let introStartedAt = 0;
+let testTitleTime = null; // tests only: show the title scene at this song time
 $('tapStart').addEventListener('click', (e) => {
   e.stopPropagation(); // (this tap must not also count as "skip")
   $('menu').classList.add('started', 'intro');
@@ -940,6 +941,7 @@ window.__BURN_BRIGHT_TEST__ = {
   start: startGame,
   finish: () => endGame(), // tests only: jump to the results screen
   fillRiot: () => { perf.riotMeter = 1; }, // tests only: a full Riot meter
+  titleAt: (t) => { testTitleTime = t; }, // tests only: freeze the title scene at this song time (null = live)
   fillStage: (lane = 3) => { // tests only: this musician's meter is full (takeover at the next bar)
     perf.stageMeter = perf.stageMeter.map((_, i) => (i === lane ? perf.stageNeed[i] : 0));
     perf.stageReady = lane;

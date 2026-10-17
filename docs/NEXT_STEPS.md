@@ -1,8 +1,9 @@
 # Next steps (handoff)
 
-_Last updated: v0.12._
+_Last updated: v0.12.1._
 
 ## Where things stand
+- **v0.12.1 (owner request): the lights come on with the intro.** Before TAP TO START the arena is dark (only a few phone lights in the crowd). After the tap, things switch on with the title song: the stage-edge lights (0.8 s), the truss lights one by one with a flicker (from 2 s), the LED wall (5.5 s), spotlights finding the drummer (7 s), bassist (8.5 s), guitarist (10 s) and singer (11.5 s) while they get ready (idle), then at the verse (12.5 s) they start playing and the arena lights come up, and at 16.05 s lightning, logo and the full show. The timings are `REVEAL`, `PLAY_AT` and `introLevels()` in `src/ui/menuScene.js`.
 - **v0.12: CENTER STAGE takeovers (owner idea, built).** Each pad is also its musician's meter: it fills from the bottom with every **Perfect** on that pad. When one is full (Perfects on 36% of that pad's notes), the others empty and that musician takes over at the next bar: they leave the stage and **slam onto the note highway** in their Riot form (lightning, thunder), the notes clear for **6 bars**, and the board fills with their mini-game: **Drum Frenzy** (tap drums; on the beat ×2), **Mad Science** (poke beakers before they boil over), **Crowd Hearts** (catch rising hearts; streaks score more), **Shred** (swipe through glowing strings). A rating and the points follow (LEGENDARY / GREAT / GOOD TAKEOVER). At most 2 per song; a simulation says ~45% Perfects gets one, ~75% gets two. Never during a solo or the Big Rock Ending. Code: `src/ui/takeover.js`, rules in `rules.js` (`stageMeter`, `startTakeover`), tuning in `STAGE` (`config.js`). **Owner to try:** is it too rare or too common, are 6 bars the right length, and do the mini-games feel good on a phone?
 - **v0.11.2 (owner requests):**
   - **Thunder:** a lightning sound made from scratch (`player.sfx('thunder')`: a crack, a zap and a rolling rumble) on every title-song strike and whenever Riot Mode starts.
