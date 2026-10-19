@@ -1,6 +1,6 @@
 # The itch.io page: everything to fill in
 
-Written for v0.13.2. The images are in `docs/itch/` (cover and banner); the screenshots come from the game itself (see "Screenshots" below). Copy and paste from here when making or updating the page at **itch.io → Dashboard → Create new project** (or **Edit game**).
+Written for v0.13.2. The images are in `docs/itch/` (cover, banner and page background); the screenshots come from the game itself (see "Screenshots" below). Copy and paste from here when making or updating the page at **itch.io → Dashboard → Create new project** (or **Edit game**).
 
 ---
 
@@ -119,7 +119,7 @@ These match the game's own colours.
 | **Banner** | Upload `docs/itch/banner_960x300.png`, alignment **center** |
 | **Hide game title** | ✅ (the banner already shows the logo) |
 | **Background** | `#0b0b18` (the game's night sky) |
-| **Background image** | none |
+| **Background image** | Upload `docs/itch/background_2400x1140.png` (stage lights, lightning and a crowd on both sides of the page). **Repeat:** no repeat. **Position:** center (top). If there's a **fixed** option, leave it off. The edges fade into `#0b0b18`, so it blends on any screen size. |
 | **Inner column (BG2)** | `#18112a` |
 | **Text** | `#fff2d1` (cream) |
 | **Links** | `#ffc86b` (gold) |
