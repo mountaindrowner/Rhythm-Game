@@ -3,6 +3,7 @@
 _Last updated: v0.13.2._
 
 ## Where things stand
+- **itch.io page:** everything to fill in (title, tagline, description, tags, embed size, theme colours, AI disclosure) is in `docs/ITCH_PAGE.md`; the cover and banner are in `docs/itch/`. The upload is `dist/rhythm-riot-itch.zip` from `npm run build`.
 - **v0.13.1: Riot effects, round 2 (planning with the owner).**
   - The sign never names the effect any more: it always says RIOT MODE!, in the effect's colours ("the names are overkill").
   - **Exploring new moves on the same Riot outfits** (the owner's choice): 8 new PixelLab moves made (`riot3`, `riot4` per musician in `assets/art/pixellab-retro-riot/animations.json`), cost **21 generations** (~2.6 each). 6 are good; 2 need a redo: the scientist's laugh (white flashing frames) and the guitarist's jump kick (a brown smear frame). **v0.13.2: all 8 are ON HOLD** (`"use": false`, the art is kept): Riot Mode uses the two original moves again. **Reminder set for 2026-10-22 at 12 p.m. Central** (when PixelLab refills) to try them and continue planning the Riot themes. To switch them on, remove `"use": false` (and the hold note) from `riot3`/`riot4` in both `animations.json` and `band.json`.
