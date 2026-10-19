@@ -1,0 +1,62 @@
+/* ===========================================================================
+   Rhythm Riot: custom CSS for the itch.io page.
+   itch.io only accepts custom CSS after they switch it on for your account
+   (ask their support). Paste all of this into Edit theme -> Custom CSS.
+   The class names are itch.io's own; if one stops matching after an itch
+   update, that part simply does nothing (nothing breaks).
+   =========================================================================== */
+
+/* The game's pixel font (Pixelify Sans, free from Google Fonts) for headings and buttons. */
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap');
+
+.view_game_page h1,
+.view_game_page h2,
+.view_game_page h3,
+.view_game_page .button {
+  font-family: 'Pixelify Sans', ui-monospace, monospace;
+  letter-spacing: 0.5px;
+}
+
+/* Headings in the description: gold with a warm glow, like the logo. */
+.view_game_page .formatted_description h2,
+.view_game_page .formatted_description h3 {
+  color: #ffc86b;
+  text-shadow: 0 0 10px rgba(255, 122, 42, 0.6);
+}
+
+/* Keep the pixel-art pictures crisp when the page scales them. */
+.view_game_page .formatted_description img,
+.view_game_page .screenshot_list img {
+  image-rendering: pixelated;
+}
+
+/* A glowing amp-orange frame around the game window. */
+.view_game_page .game_frame {
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #ff9b52, 0 0 28px rgba(255, 122, 42, 0.55);
+}
+
+/* Buttons: a chunky shadow like the in-game START THE SHOW button, and a glow on hover. */
+.view_game_page .button {
+  box-shadow: 0 3px 0 #b8282a;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.view_game_page .button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #b8282a, 0 0 18px rgba(255, 155, 82, 0.6);
+}
+
+/* Screenshots in the sidebar: a thin lit edge. */
+.view_game_page .screenshot_list a {
+  display: block;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 155, 82, 0.5);
+}
+
+/* The "More information" box: a dark panel like the game's menus. */
+.view_game_page .game_info_panel_widget {
+  background: rgba(24, 17, 42, 0.85);
+  border: 1px solid rgba(255, 155, 82, 0.35);
+  border-radius: 8px;
+}

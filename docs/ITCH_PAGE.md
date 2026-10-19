@@ -1,6 +1,6 @@
 # The itch.io page: everything to fill in
 
-Written for v0.13.2. The images are in `docs/itch/` (cover, banner and page background); the screenshots come from the game itself (see "Screenshots" below). Copy and paste from here when making or updating the page at **itch.io → Dashboard → Create new project** (or **Edit game**).
+Written for v0.13.2. The images are in `docs/itch/` (cover, banner, page background, and pictures for the description in `docs/itch/description/`); the screenshots come from the game itself (see "Screenshots" below). Copy and paste from here when making or updating the page at **itch.io → Dashboard → Create new project** (or **Edit game**).
 
 ---
 
@@ -109,6 +109,26 @@ Font: Pixelify Sans (SIL Open Font License)
 Built with Three.js
 ```
 
+### 6b. The fancy version: the description with pictures
+
+The pictures in `docs/itch/description/` are drawn in the game's own pixel style (the scripts that make them are in `scripts/itch/`). In the description editor, put the cursor where a picture should go and use the toolbar's **image** button to upload it. They're 600 pixels wide, which fits the description column.
+
+| Put this picture | Above this part of the text |
+|---|---|
+| *(none)* | The two opening lines |
+| `meet_x_roads.gif` (the band plays, lightning strikes, they go Riot) | Right after the opening lines: it shows the game off at a glance |
+| `header_how_to_play.png` | The HOW TO PLAY bullets (delete the plain HOW TO PLAY line) |
+| `controls.png` | After the HOW TO PLAY bullets |
+| `divider.png` | Between sections, wherever the page needs a breather |
+| `header_what_s_inside.png` | The WHAT'S IN IT bullets |
+| `header_controls.png` | The CONTROLS lines (you can drop these if `controls.png` is already up top) |
+| `header_tips.png` | The TIPS bullets |
+| `header_credits.png` | The CREDITS lines |
+
+Spare headers if you split the page up more: `header_riot_mode.png`, `header_center_stage.png`, `header_meet_x_roads.png`, `header_the_set_list.png`.
+
+Keep the **photosensitivity warning** as plain text, so screen readers and quick skimmers see it.
+
 ## 7. Edit theme (the "Edit theme" button at the top of your game page)
 
 These match the game's own colours.
@@ -128,10 +148,30 @@ These match the game's own colours.
 | **Body font** | Lato (or anything plain and easy to read) |
 | **Screenshots** | Sidebar |
 
-**Custom CSS:** itch only allows it on request, and it isn't needed for this page.
+**Custom CSS (optional extra):** itch.io only turns it on for an account when you ask their support. If they do, paste `docs/itch/custom.css` into **Edit theme → Custom CSS**. It gives the headings and buttons the game's pixel font (Pixelify Sans), a gold glow on headings, a glowing orange frame around the game window, chunky buttons like START THE SHOW, and keeps the pixel pictures crisp. The page looks fine without it.
 
 ## 8. Updating the game later
 
 1. `npm run build` → upload the new `dist/rhythm-riot-itch.zip`.
 2. **Delete the old upload** (or untick "played in the browser" on it) so only one build is played.
 3. Optional: post a short **devlog** ("Added a new song!") from the page; followers get notified.
+
+## 9. A first devlog post (optional)
+
+Devlogs show up on the page and in followers' feeds. Use `meet_x_roads.gif` as its picture.
+
+```
+Title: X-ROADS takes the stage
+
+Rhythm Riot is live! It's a rock-show rhythm game made for your phone,
+starring our band X-ROADS.
+
+In this first build:
+• 3 songs at 3 venues
+• Riot Mode: swipe up and the band transforms (8 different effects)
+• Center Stage: nail enough Perfects and a band member takes over the board
+  for a mini-game
+
+Play it right here in your browser, on your phone or computer.
+Tell us your high scores and what you want next in the comments!
+```
